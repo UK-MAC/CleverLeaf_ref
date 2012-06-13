@@ -18,7 +18,7 @@ void Cleverleaf::Cleverleaf(tbox::Pointer<hier::PatchHierarchy> hierarchy) {
 
 }
 
-void Cleverleaf::registerModelVariables() {
+void Cleverleaf::registerModelVariables(LagrangianEulerianIntegrator* integrator) {
     hier::VariableDatabase* var_db = hier::VariableDatabase.getDatabase();
 
     tbox::Pointer<hier::VariableContext> current = var_db->getContext("CURRENT");

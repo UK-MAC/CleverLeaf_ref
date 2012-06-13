@@ -1,6 +1,8 @@
 #ifndef included_LagrangianEulerianIntegrator
 #define included_LagrangianEulerianIntegrator
 
+#include "LagrangianEulerianPatchStrategy.h"
+
 #include "SAMRAI/algs/TimeRefinementLevelStrategy.h"
 #include "SAMRAI/mesh/GriddingAlgorithmStrategy.h"
 #include "SAMRAI/hier/PatchLevel.h"
@@ -8,7 +10,11 @@
 #include "SAMRAI/mesh/StandardTagAndInitStrategy.h"
 #include "SAMRAI/tbox/Serializable.h"
 
+#include <string>
+
 using namespace SAMRAI;
+
+class LagrangianEulerianPatchStrategy;
 
 class LagrangianEulerianIntegrator:
     public algs::TimeRefinementLevelStrategy,
@@ -16,6 +22,12 @@ class LagrangianEulerianIntegrator:
     public tbox::Serializable
 {
     public:
+        LagrangianEulerianIntegrator(
+                const std::string object_name,
+                tbox::Pointer<tbox::Database> input_db,
+                LagrangianEulerianPatchStrategy* patch_strategy
+                );
+
         /*
          * TimeRefinementLevelStrategy methods
          */
@@ -58,7 +70,7 @@ class LagrangianEulerianIntegrator:
         void resetDataToPreadvanceState(
                 const tbox::Pointer<hier::PatchLevel> level);
 
-        bool usingRefinedTimestepping();
+        bool usingRefinedTimestepping() const;
 
         /*
          * StandardTagAndInitialize methods

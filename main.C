@@ -7,6 +7,7 @@
 
 // Headers for major algorithm/data structure objects from SAMRAI
 
+#include "SAMRAI/algs/TimeRefinementIntegrator.h"
 #include "SAMRAI/mesh/BergerRigoutsos.h"
 #include "SAMRAI/geom/CartesianGridGeometry.h"
 #include "SAMRAI/mesh/GriddingAlgorithm.h"
@@ -93,7 +94,7 @@ int main(int argc, char* argv[]) {
         int visit_number_procs_per_file = 1;
         const std::string visit_dump_dirname = "cleverleaf.visit";
 
-        Cleverleaf* cleverleaf = new Cleverleaf();
+        Cleverleaf* cleverleaf = new Cleverleaf(patch_hierarchy);
 
         tbox::Pointer<LagrangianEulerianIntegrator> lagrangian_eulerian_integrator(
                 new LagrangianEulerianIntegrator("LagrangianEulerianIntegrator",
@@ -132,11 +133,11 @@ int main(int argc, char* argv[]) {
                     load_balancer));
 
         tbox::Pointer<algs::TimeRefinementIntegrator> time_integrator(
-                new algs::TimeRefinementIntegrato("TimeRefinementIntegrator",
+                new algs::TimeRefinementIntegrator("TimeRefinementIntegrator",
                     input_db->getDatabase("TimeRefinementIntegrator"),
                     patch_hierarchy,
                     lagrangian_eulerian_integrator,
-                    gridding_algorithm);
+                    gridding_algorithm));
 
         /*
          * All the SAMRAI components are now created!
@@ -152,7 +153,7 @@ int main(int argc, char* argv[]) {
                     visit_dump_dirname,
                     visit_number_procs_per_file));
 
-        clamour->registerVisItDataWriter(visit_data_writer);
+        cleverleaf->registerVisItDataWriter(visit_data_writer);
 
         /*
          * Write data file
@@ -184,7 +185,7 @@ int main(int argc, char* argv[]) {
         error_detector.setNull();
         gridding_algorithm.setNull();
 
-        if (clamour) delete clamour;
+        if (cleverleaf) delete cleverleaf;
 
     }
 

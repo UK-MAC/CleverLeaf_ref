@@ -119,31 +119,57 @@ double LagrangianEulerianIntegrator::advanceLevel(
         const double new_time,
         const bool first_step,
         const bool last_step,
-        const bool regrid_advance=false);
+        const bool regrid_advance=false)
+{
+
+    /*
+     * This routine performs the required steps for the predictor and corrector,
+     * and the advection. It mirrors the following routines occuring in Cloverleaf
+     * as hydro.f90:
+     *
+     *     CALL PdV(.TRUE.)
+     *     CALL accelerate()
+     *     CALL PdV(.FALSE.)
+     *     CALL flux_calc()
+     *     CALL advection()
+     *     CALL reset_field()
+     *
+     * All halo exchanges are handled by this routine, as well as ensuring correcting
+     * stepping over all levels of the AMR hierarchy.
+     */
+
+
+    /*
+     * reset_field is used to copy density, energy and velocity
+     * timelevel 1 values back to timelevel 0.
+     */
+
+
+}
 
 void LagrangianEulerianIntegrator::standardLevelSynchronization(
         const tbox::Pointer<hier::PatchHierarchy> hierarchy,
         const int coarsest_level,
         const int finest_level,
         const double sync_time,
-        const double old_time);
+        const double old_time){}
 
 void LagrangianEulerianIntegrator::synchronizeNewLevels(
         const tbox::Pointer<hier::PatchHierarchy> hierarchy,
         const int coarsest_level,
         const int finest_level,
         const double sync_time,
-        const bool initial_time);
+        const bool initial_time){}
 
 void LagrangianEulerianIntegrator::resetTimeDependentData(
         const tbox::Pointer<hier::PatchLevel> level,
         const double new_time,
-        const bool can_be_refined);
+        const bool can_be_refined){}
 
 void LagrangianEulerianIntegrator::resetDataToPreadvanceState(
-        const tbox::Pointer<hier::PatchLevel> level);
+        const tbox::Pointer<hier::PatchLevel> level){}
 
-bool LagrangianEulerianIntegrator::usingRefinedTimestepping()
+bool LagrangianEulerianIntegrator::usingRefinedTimestepping() const
 {
     return false;
 }

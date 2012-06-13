@@ -34,7 +34,7 @@ class Cleverleaf:
 
         void registerVisItDataWriter(tbox::Pointer<appu::VisItDataWriter>);
 
-        void registerModelVariables();
+        void registerModelVariables(LagrangianEulerianIntegrator* integrator);
     private:
         tbox::Pointer<hier::PatchHierarchy> d_hierarchy;
         tbox::Pointer<appu::VisItDataWriter> d_visit_writer;
