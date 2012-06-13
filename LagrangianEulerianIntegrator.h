@@ -92,9 +92,22 @@ class LagrangianEulerianIntegrator:
 
         void putToDatabase(tbox::Pointer<tbox::Database> database);
 
-    private:
+    protected:
+        /*
+         * PatchStrategy contains user-specified methods needed for
+         * operating on a patch in the AMR hierarchy.
+         */
         LagrangianEulerianPatchStrategy* d_patch_strategy;
-        std::string& d_object_name
+
+        /*
+         * The name of this object.
+         */
+        std::string& d_object_name;
+
+        /*
+         * The dimension of the problem.
+         */
+        const tbox::Dimension d_dim;
 };
 
 #endif
