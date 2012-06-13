@@ -22,7 +22,7 @@ LDFLAGS=-g -lz $(SAMRAI_LIB) $(HYPRE_LIB) $(HDF_LIB) $(MATH_LIB)
 
 all: cleverleaf
 
-cleverleaf: main.o Cleverleaf.o
+cleverleaf: main.o Cleverleaf.o LagrangianEulerianIntegrator.o LagrangianEulerianPatchStrategy.o
 	$(CXX) $^ $(LDFLAGS) -o $@
 
 %.o: src/%.C

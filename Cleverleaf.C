@@ -22,8 +22,6 @@ void Cleverleaf::registerModelVariables() {
     hier::VariableDatabase* var_db = hier::VariableDatabase.getDatabase();
 
     tbox::Pointer<hier::VariableContext> current = var_db->getContext("CURRENT");
-
-     
 }
 
 void Cleverleaf::registerVisItDataWriter(tbox::Pointer<appu::VisItDataWriter> writer) {

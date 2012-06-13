@@ -2,7 +2,8 @@
 
 // Header for application-specific algorithm/data structure object
 
-#include "Clamour.h"
+#include "Cleverleaf.h"
+#include "LagrangianEulerianIntegrator.h"
 
 // Headers for major algorithm/data structure objects from SAMRAI
 
@@ -86,19 +87,24 @@ int main(int argc, char* argv[]) {
          * Create the kamra model here to control the maths specific to this
          * program.
          */
-        tbox::Pointer<tbox::Database> clamour_db = input_db->getDatabase("Clamour");
+        tbox::Pointer<tbox::Database> cleverleaf_db = input_db->getDatabase("Cleverleaf");
 
-        bool vis_me = clamour_db->getBool("vis");
+        bool vis_me = cleverleaf_db->getBool("vis");
         int visit_number_procs_per_file = 1;
-        const std::string visit_dump_dirname = "clamour.visit";
+        const std::string visit_dump_dirname = "cleverleaf.visit";
 
-        Clamour* clamour = new Clamour(patch_hierarchy);
-        clamour->registerModelVariables();
+        Cleverleaf* cleverleaf = new Cleverleaf();
+
+        tbox::Pointer<LagrangianEulerianIntegrator> lagrangian_eulerian_integrator(
+                new LagrangianEulerianIntegrator("LagrangianEulerianIntegrator",
+                    input_db->getDatabase("LagrangianEulerianIntegrator"),
+                    // TODO: Finish params here!
+                    cleverleaf));
 
         tbox::Pointer<mesh::StandardTagAndInitialize> error_detector(
                 new mesh::StandardTagAndInitialize(dim,
                     "StandardTagAndInitialize",
-                    clamour,
+                    lagrangian_eulerian_integrator,
                     input_db->getDatabase("StandardTagAndInitialize")));
 
         tbox::Pointer<mesh::BergerRigoutsos> box_generator(
@@ -124,6 +130,13 @@ int main(int argc, char* argv[]) {
                     error_detector,
                     box_generator,
                     load_balancer));
+
+        tbox::Pointer<algs::TimeRefinementIntegrator> time_integrator(
+                new algs::TimeRefinementIntegrato("TimeRefinementIntegrator",
+                    input_db->getDatabase("TimeRefinementIntegrator"),
+                    patch_hierarchy,
+                    lagrangian_eulerian_integrator,
+                    gridding_algorithm);
 
         /*
          * All the SAMRAI components are now created!

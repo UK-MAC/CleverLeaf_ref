@@ -1,19 +1,22 @@
 #ifndef CLEVERLEAF_H 
 #define CLEVERLEAF_H 
 
+#include "LagrangianEulerianPatchStrategy.h"
+
 #include "SAMRAI/tbox/Pointer.h"
 #include "SAMRAI/appu/VisItDataWriter.h"
 #include "SAMRAI/mesh/StandardTagAndInitStrategy.h"
 #include "SAMRAI/hier/PatchHierarchy.h"
 #include "SAMRAI/hier/PatchLevel.h"
+#include "SAMRAI/pdat/CellVariable.h"
 
 using namespace SAMRAI;
 
 class Cleverleaf:
-    public mesh::StandardTagAndInitStrategy
+    public LagrangianEulerianPatchStrategy
 {
     public:
-        void Cleverleaf(tbox::Pointer<hier::PatchHierarchy>);
+        Cleverleaf(tbox::Pointer<hier::PatchHierarchy>);
 
         void initializeLevelData(
                 const tbox::Pointer<hier::PatchHierarchy> hierarchy,
