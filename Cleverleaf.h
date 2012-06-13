@@ -1,5 +1,5 @@
-#ifndef CLAMOUR_H_
-#define CLAMOUR_H_
+#ifndef CLEVERLEAF_H 
+#define CLEVERLEAF_H 
 
 #include "SAMRAI/tbox/Pointer.h"
 #include "SAMRAI/appu/VisItDataWriter.h"
@@ -9,10 +9,12 @@
 
 using namespace SAMRAI;
 
-class Clamour:
+class Cleverleaf:
     public mesh::StandardTagAndInitStrategy
 {
     public:
+        void Cleverleaf(tbox::Pointer<hier::PatchHierarchy>);
+
         void initializeLevelData(
                 const tbox::Pointer<hier::PatchHierarchy> hierarchy,
                 const int level_number,
@@ -28,8 +30,27 @@ class Clamour:
                 int finest_level);
 
         void registerVisItDataWriter(tbox::Pointer<appu::VisItDataWriter>);
+
+        void registerModelVariables();
     private:
+        tbox::Pointer<hier::PatchHierarchy> d_hierarchy;
         tbox::Pointer<appu::VisItDataWriter> d_visit_writer;
 
+        /*
+         * Variables
+         */
+        pdat::CellVariable<double> d_velocity0;
+        pdat::CellVariable<double> d_massflux;
+        pdat::CellVariable<double> d_volflux;
+        pdat::CellVariable<double> d_pressure;
+        pdat::CellVariable<double> d_viscosity;
+        pdat::CellVariable<double> d_soundspeed;
+        pdat::CellVariable<double> d_density;
+        pdat::CellVariable<double> d_energy;
+
+        /*
+         * Variable contexts
+         */
+        
 };
 #endif

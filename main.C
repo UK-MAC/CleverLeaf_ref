@@ -92,7 +92,8 @@ int main(int argc, char* argv[]) {
         int visit_number_procs_per_file = 1;
         const std::string visit_dump_dirname = "clamour.visit";
 
-        Clamour* clamour = new Clamour();
+        Clamour* clamour = new Clamour(patch_hierarchy);
+        clamour->registerModelVariables();
 
         tbox::Pointer<mesh::StandardTagAndInitialize> error_detector(
                 new mesh::StandardTagAndInitialize(dim,

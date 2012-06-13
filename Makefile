@@ -20,15 +20,15 @@ CXX=mpiCC
 CPPFLAGS=-g -Wall -Wextra -Wconversion -lz $(HYPRE_INC) $(HDF_INC) $(SAMRAI_INC) $(MATH_INC)
 LDFLAGS=-g -lz $(SAMRAI_LIB) $(HYPRE_LIB) $(HDF_LIB) $(MATH_LIB)
 
-all: clamour
+all: cleverleaf
 
-clamour: main.o Clamour.o
+cleverleaf: main.o Cleverleaf.o
 	$(CXX) $^ $(LDFLAGS) -o $@
 
-%.o: src/%.cpp
+%.o: src/%.C
 	$(CXX) $(CPPFLAGS) -c $<
 
 clean:
-	rm -f *.o clamour
+	rm -f *.o cleverleaf
 
 .PHONY: clean
