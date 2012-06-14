@@ -1,0 +1,53 @@
+Main {
+    dim = 2
+}
+
+CartesianGeometry {
+    domain_boxes = [ (0,0), (9,9) ]
+    x_lo         = 0e0, 0e0
+    x_up         = 1.e0, 1.e0
+}
+
+PatchHierarchy {
+    max_levels = 1
+    ratio_to_coarser {
+        level_1 = 2,2
+    }
+    
+    largest_patch_size {
+        level_0 = 10,10
+    }
+
+    smallest_patch_size {
+        level_0 = 8,8
+    }
+}
+
+Cleverleaf {
+    vis = TRUE
+    vis_dump_interval = 1
+}
+
+LagrangianEulerianIntegrator{}
+
+LagrangianEulerianPatchStrategy{}
+
+StandardTagAndInitialize {
+    tagging_method = "GRADIENT DETECTOR"
+}
+
+LoadBalancer {
+    //
+}
+
+GriddingAlgorithm {
+    efficiency_tolerance = 0.75e0
+    combine_efficiency = 0.85e0
+}
+
+TimeRefinementIntegrator {
+    start_time = 0.e0
+    end_time = 5.e0
+    grow_dt = 1.1e0
+    max_integrator_steps = 2
+}
