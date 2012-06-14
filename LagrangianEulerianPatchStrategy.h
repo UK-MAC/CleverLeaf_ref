@@ -1,8 +1,6 @@
 #ifndef included_LagrangianEulerianPatchStrategy
 #define included_LagrangianEulerianPatchStrategy
 
-#include "LagrangianEulerianIntegrator.h"
-
 #include "SAMRAI/hier/Patch.h"
 #include "SAMRAI/hier/VariableContext.h"
 #include "SAMRAI/tbox/Dimension.h"
@@ -10,18 +8,25 @@
 
 using namespace SAMRAI;
 
+class LagrangianEulerianIntegrator;
+
 class LagrangianEulerianPatchStrategy
 {
     public:
-        LagrangianEulerianPatchStrategy();
+        LagrangianEulerianPatchStrategy(const tbox::Dimension& dim);
 
         virtual void registerModelVariables(
                 LagrangianEulerianIntegrator* integrator) = 0;
 
+        virtual void initializeDataOnPatch(
+                hier::Patch&,
+                double init_data_time,
+                bool initial_time) = 0;
+
         virtual double computeStableDtOnPatch(
                 hier::Patch& patch,
                 const bool initial_time,
-                const double dt_time);
+                const double dt_time) = 0;
 
         virtual void tagGradientDetectorCells(
                 hier::Patch& patch,

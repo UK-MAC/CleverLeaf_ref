@@ -1,5 +1,11 @@
 #include "LagrangianEulerianPatchStrategy.h"
 
+LagrangianEulerianPatchStrategy::LagrangianEulerianPatchStrategy(
+        const tbox::Dimension& dim):
+    d_dim(dim)
+{
+}
+
 void LagrangianEulerianPatchStrategy::tagGradientDetectorCells(
                 hier::Patch& patch,
                 const double regrid_time,
@@ -22,7 +28,12 @@ void LagrangianEulerianPatchStrategy::setDataContext(
     d_data_context = context;
 }
 
-const tbox::Dimension& LagrangianEulerianPatchStrategy::getDim()
+void LagrangianEulerianPatchStrategy::clearDataContext()
+{
+    d_data_context = NULL;
+}
+
+const tbox::Dimension& LagrangianEulerianPatchStrategy::getDim() const
 {
     return d_dim;
 }

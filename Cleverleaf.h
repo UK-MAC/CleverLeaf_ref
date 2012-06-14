@@ -2,58 +2,71 @@
 #define CLEVERLEAF_H 
 
 #include "LagrangianEulerianPatchStrategy.h"
+#include "LagrangianEulerianIntegrator.h"
 
 #include "SAMRAI/tbox/Pointer.h"
 #include "SAMRAI/appu/VisItDataWriter.h"
 #include "SAMRAI/mesh/StandardTagAndInitStrategy.h"
 #include "SAMRAI/hier/PatchHierarchy.h"
 #include "SAMRAI/hier/PatchLevel.h"
+#include "SAMRAI/hier/IntVector.h"
 #include "SAMRAI/pdat/CellVariable.h"
+#include "SAMRAI/geom/CartesianGridGeometry.h"
 
 using namespace SAMRAI;
+
+using namespace std;
+
+#include <vector>
 
 class Cleverleaf:
     public LagrangianEulerianPatchStrategy
 {
     public:
-        Cleverleaf(tbox::Pointer<hier::PatchHierarchy>);
-
-        void initializeLevelData(
-                const tbox::Pointer<hier::PatchHierarchy> hierarchy,
-                const int level_number,
-                const double init_data_time,
-                const bool can_be_refined,
-                const bool initial_time,
-                const tbox::Pointer<hier::PatchLevel> old_level,
-                const bool allocate_data);
-
-        void resetHierarchyConfiguration(
-                tbox::Pointer<hier::PatchHierarchy> new_hierarchy,
-                int coarsest_level,
-                int finest_level);
+        Cleverleaf(
+                tbox::Pointer<hier::PatchHierarchy>,
+                const tbox::Dimension& dim,
+                tbox::Pointer<geom::CartesianGridGeometry> grid_geometry);
 
         void registerVisItDataWriter(tbox::Pointer<appu::VisItDataWriter>);
 
         void registerModelVariables(LagrangianEulerianIntegrator* integrator);
+
+        void initializeDataOnPatch(
+                hier::Patch&,
+                double init_data_time,
+                bool initial_time);
+
+        double computeStableDtOnPatch(
+            hier::Patch& patch,
+            const bool initial_time,
+            const double dt_time);
     private:
+
         tbox::Pointer<hier::PatchHierarchy> d_hierarchy;
         tbox::Pointer<appu::VisItDataWriter> d_visit_writer;
+
+        tbox::Pointer<geom::CartesianGridGeometry> d_grid_geometry;
+
+        const tbox::Dimension d_dim;
+
+        hier::IntVector d_nghosts;
 
         /*
          * Variables
          */
-        pdat::CellVariable<double> d_velocity0;
-        pdat::CellVariable<double> d_massflux;
-        pdat::CellVariable<double> d_volflux;
-        pdat::CellVariable<double> d_pressure;
-        pdat::CellVariable<double> d_viscosity;
-        pdat::CellVariable<double> d_soundspeed;
-        pdat::CellVariable<double> d_density;
-        pdat::CellVariable<double> d_energy;
+        tbox::Pointer<pdat::CellVariable<double> > d_velocity;
+        tbox::Pointer<pdat::CellVariable<double> > d_massflux;
+        tbox::Pointer<pdat::CellVariable<double> > d_volflux;
+        tbox::Pointer<pdat::CellVariable<double> > d_pressure;
+        tbox::Pointer<pdat::CellVariable<double> > d_viscosity;
+        tbox::Pointer<pdat::CellVariable<double> > d_soundspeed;
+        tbox::Pointer<pdat::CellVariable<double> > d_density;
+        tbox::Pointer<pdat::CellVariable<double> > d_energy;
 
         /*
          * Variable contexts
          */
-        
+        tbox::Pointer<hier::VariableContext> d_plot_context;
 };
 #endif

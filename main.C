@@ -13,6 +13,7 @@
 #include "SAMRAI/mesh/GriddingAlgorithm.h"
 #include "SAMRAI/mesh/TreeLoadBalancer.h"
 #include "SAMRAI/hier/PatchHierarchy.h"
+#include "SAMRAI/hier/VariableDatabase.h"
 #include "SAMRAI/mesh/StandardTagAndInitialize.h"
 #include "SAMRAI/appu/VisItDataWriter.h"
 
@@ -67,6 +68,8 @@ int main(int argc, char* argv[]) {
 
         const tbox::Dimension dim(static_cast<unsigned short>(main_db->getInteger("dim")));
 
+        int vis_dump_interval = main_db->getIntegerWithDefault("vis_dump_interval", 10);
+
         /*
          * Create data and algorithm objects.
          */
@@ -94,12 +97,13 @@ int main(int argc, char* argv[]) {
         int visit_number_procs_per_file = 1;
         const std::string visit_dump_dirname = "cleverleaf.visit";
 
-        Cleverleaf* cleverleaf = new Cleverleaf(patch_hierarchy);
+        Cleverleaf* cleverleaf = new Cleverleaf(patch_hierarchy,
+                dim,
+                grid_geometry);
 
         tbox::Pointer<LagrangianEulerianIntegrator> lagrangian_eulerian_integrator(
                 new LagrangianEulerianIntegrator("LagrangianEulerianIntegrator",
                     input_db->getDatabase("LagrangianEulerianIntegrator"),
-                    // TODO: Finish params here!
                     cleverleaf));
 
         tbox::Pointer<mesh::StandardTagAndInitialize> error_detector(
@@ -158,15 +162,37 @@ int main(int argc, char* argv[]) {
         /*
          * Write data file
          */
-        //if(vis_me)
-        //    visit_data_writer->writePlotData(
-        //            patch_hierarchy,
-        //            time_integrator->getIntegratorStep(),
-        //            time_integrator->getIntegratorTime());
-
+//        if(vis_me)
+//            visit_data_writer->writePlotData(
+//                    patch_hierarchy,
+//                    time_integrator->getIntegratorStep(),
+//                    time_integrator->getIntegratorTime());
+//
         /*
          * Initialise the hierarchy config and data on all patches
          */
+
+
+      double dt_now = time_integrator->initializeHierarchy();
+
+      /*
+       * After creating all objects and initializing their state, we
+       * print the input database and variable database contents
+       * to the log file.
+       */
+      tbox::plog << "\nCheck input data and variables before simulation:"
+                 << endl;
+      tbox::plog << "Input database..." << endl;
+      input_db->printClassData(tbox::plog);
+      tbox::plog << "\nVariable database..." << endl;
+      hier::VariableDatabase::getDatabase()->printClassData(tbox::plog);
+
+      //tbox::plog << "\nCheck Euler data... " << endl;
+      //euler_model->printClassData(tbox::plog);
+
+
+      double loop_time = time_integrator->getIntegratorTime();
+      double loop_time_end = time_integrator->getEndTime();
 
         /*
          * MAIN LOOP
@@ -174,6 +200,33 @@ int main(int argc, char* argv[]) {
          * Step count and integration time are maintained by algs::TimeRefinementIntegrator
          */
 
+      while ((loop_time < loop_time_end) &&
+             time_integrator->stepsRemaining()) {
+
+         int iteration_num = time_integrator->getIntegratorStep() + 1;
+
+         tbox::pout << "++++++++++++++++++++++++++++++++++++++++++++" << endl;
+         tbox::pout << "At begining of timestep # " << iteration_num - 1
+                    << endl;
+         tbox::pout << "Simulation time is " << loop_time << endl;
+         tbox::pout << "Current dt is " << dt_now << endl;
+
+         double dt_new = time_integrator->advanceHierarchy(dt_now);
+
+         loop_time += dt_now;
+         dt_now = dt_new;
+
+         tbox::pout << "At end of timestep # " << iteration_num - 1 << endl;
+         tbox::pout << "Simulation time is " << loop_time << endl;
+         tbox::pout << "++++++++++++++++++++++++++++++++++++++++++++" << endl;
+
+         if ((vis_dump_interval > 0)
+             && (iteration_num % vis_dump_interval) == 0) {
+            visit_data_writer->writePlotData(patch_hierarchy,
+               iteration_num,
+               loop_time);
+         }
+      }
         /*
          * Deallocate objects
          */

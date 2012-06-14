@@ -9,12 +9,12 @@
 #include "SAMRAI/hier/PatchHierarchy.h"
 #include "SAMRAI/mesh/StandardTagAndInitStrategy.h"
 #include "SAMRAI/tbox/Serializable.h"
+#include "SAMRAI/tbox/Pointer.h"
+#include "SAMRAI/tbox/Database.h"
 
 #include <string>
 
 using namespace SAMRAI;
-
-class LagrangianEulerianPatchStrategy;
 
 class LagrangianEulerianIntegrator:
     public algs::TimeRefinementLevelStrategy,
@@ -23,10 +23,28 @@ class LagrangianEulerianIntegrator:
 {
     public:
         LagrangianEulerianIntegrator(
-                const std::string object_name,
+                const std::string& object_name,
                 tbox::Pointer<tbox::Database> input_db,
                 LagrangianEulerianPatchStrategy* patch_strategy
                 );
+
+        ~LagrangianEulerianIntegrator();
+
+        /**
+         * @synopsis  Register a variable with the integrator, allowing
+         * it to be correctly transferred at halo exchanges as well as
+         * coarsen/refine times
+         *
+         * @param var The variable to register
+         * @param ghosts The number of ghosts this variable has
+         * @param transfer_geom
+         */
+        void registerVariable(
+                tbox::Pointer<hier::Variable> var,
+                hier::IntVector nghosts,
+                const tbox::Pointer<hier::GridGeometry> transfer_geom);
+
+        tbox::Pointer<hier::VariableContext> getPlotContext();
 
         /*
          * TimeRefinementLevelStrategy methods
@@ -114,12 +132,24 @@ class LagrangianEulerianIntegrator:
         /*
          * The name of this object.
          */
-        std::string& d_object_name;
+        std::string d_object_name;
 
         /*
          * The dimension of the problem.
          */
         const tbox::Dimension d_dim;
+
+        /*
+         * Variable contexts.
+         */
+        tbox::Pointer<hier::VariableContext> d_current;
+        tbox::Pointer<hier::VariableContext> d_new;
+        tbox::Pointer<hier::VariableContext> d_scratch;
+        tbox::Pointer<hier::VariableContext> d_plot_context;
+
+        hier::ComponentSelector d_temp_var_scratch_data;
+        hier::ComponentSelector d_temp_var_curr_data;
+        hier::ComponentSelector d_temp_var_new_data;
 };
 
 #endif

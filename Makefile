@@ -17,12 +17,12 @@ MATH_LIB=-L$(LAPACK_DIR)/lib -llapack -lblas
 
 CXX=mpiCC
 
-CPPFLAGS=-g -Wall -Wextra -Wconversion -lz $(HYPRE_INC) $(HDF_INC) $(SAMRAI_INC) $(MATH_INC)
+CPPFLAGS=-g -O0 -Wall -Wextra -Wconversion -lz $(HYPRE_INC) $(HDF_INC) $(SAMRAI_INC) $(MATH_INC)
 LDFLAGS=-g -lz $(SAMRAI_LIB) $(HYPRE_LIB) $(HDF_LIB) $(MATH_LIB)
 
 all: cleverleaf
 
-cleverleaf: main.o Cleverleaf.o LagrangianEulerianIntegrator.o LagrangianEulerianPatchStrategy.o
+cleverleaf: Cleverleaf.o LagrangianEulerianPatchStrategy.o LagrangianEulerianIntegrator.o main.o 
 	$(CXX) $^ $(LDFLAGS) -o $@
 
 %.o: src/%.C
