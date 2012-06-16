@@ -8,7 +8,7 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
         const std::string& object_name,
         tbox::Pointer<tbox::Database> input_db,
         LagrangianEulerianPatchStrategy* patch_strategy):
-        d_dim(patch_strategy->getDim())
+    d_dim(patch_strategy->getDim())
 {
     d_object_name = object_name;
 
@@ -67,95 +67,95 @@ double LagrangianEulerianIntegrator::getLevelDt(
         const double dt_time,
         const bool initial_time)
 {
-//   tbox::Pointer<hier::PatchLevel> patch_level(level);
-//
-//   const tbox::SAMRAI_MPI& mpi(patch_level->getBoxLevel()->getMPI());
-//
-//   double dt = tbox::MathUtilities<double>::getMax();
-//
-//   if (!d_use_ghosts_for_dt) {
-//
-//      d_patch_strategy->setDataContext(d_current);
-//
-//      for (hier::PatchLevel::Iterator p(patch_level); p; p++) {
-//         tbox::Pointer<hier::Patch> patch = *p;
-//
-//         patch->allocatePatchData(d_temp_var_scratch_data, dt_time);
-//
-//         double patch_dt;
-//         patch_dt = d_patch_strategy->
-//            computeStableDtOnPatch(*patch,
-//               initial_time,
-//               dt_time);
-//
-//         dt = tbox::MathUtilities<double>::Min(dt, patch_dt);
-//         //tbox::plog.precision(12);
-//         //tbox::plog << "Level " << patch_level->getLevelNumber()
-//         //           << " Patch " << p()
-//         //           << " box " << patch->getBox()
-//         //           << " has patch_dt " << patch_dt
-//         //           << " dt " << dt
-//         //           << std::endl;
-//
-//         patch->deallocatePatchData(d_temp_var_scratch_data);
-//      }
-//
-//      d_patch_strategy->clearDataContext();
-//
-//   } else {
-//
-//      //tbox::plog << "use ghosts for dt" << std::endl;
-//
-//      patch_level->allocatePatchData(d_saved_var_scratch_data, dt_time);
-//
-//      d_patch_strategy->setDataContext(d_scratch);
-//
-//      d_bdry_sched_advance[patch_level->getLevelNumber()]->fillData(dt_time);
-//
-//      for (hier::PatchLevel::Iterator ip(patch_level); ip; ip++) {
-//         tbox::Pointer<hier::Patch> patch = *ip;
-//
-//         patch->allocatePatchData(d_temp_var_scratch_data, dt_time);
-//
-//         double patch_dt;
-//         patch_dt = d_patch_strategy->
-//            computeStableDtOnPatch(*patch,
-//               initial_time,
-//               dt_time);
-//
-//         dt = tbox::MathUtilities<double>::Min(dt, patch_dt);
-//
-//         patch->deallocatePatchData(d_temp_var_scratch_data);
-//      }
-//
-//      d_patch_strategy->clearDataContext();
-//
-//      /*
-//       * Copy data from scratch to current and de-allocate scratch storage.
-//       * This may be excessive here, but seems necessary if the
-//       * computation of dt affects the state of the problem solution.
-//       * Also, this getLevelDt() routine is called at initialization only
-//       * in most cases.
-//       */
-//
-//      copyTimeDependentData(patch_level, d_scratch, d_current);
-//
-//      patch_level->deallocatePatchData(d_saved_var_scratch_data);
-//   }
-//
-//   /*
-//    * The level time increment is a global min over all patches.
-//    */
-//
-//   double global_dt = dt;
-//
-//   if (mpi.getSize() > 1) {
-//      mpi.AllReduce(&global_dt, 1, MPI_MIN);
-//   }
-//
-//   global_dt *= tbox::MathUtilities<double>::Min(d_cfl_init, d_cfl);
-//
-//   return global_dt;
+    //   tbox::Pointer<hier::PatchLevel> patch_level(level);
+    //
+    //   const tbox::SAMRAI_MPI& mpi(patch_level->getBoxLevel()->getMPI());
+    //
+    //   double dt = tbox::MathUtilities<double>::getMax();
+    //
+    //   if (!d_use_ghosts_for_dt) {
+    //
+    //      d_patch_strategy->setDataContext(d_current);
+    //
+    //      for (hier::PatchLevel::Iterator p(patch_level); p; p++) {
+    //         tbox::Pointer<hier::Patch> patch = *p;
+    //
+    //         patch->allocatePatchData(d_temp_var_scratch_data, dt_time);
+    //
+    //         double patch_dt;
+    //         patch_dt = d_patch_strategy->
+    //            computeStableDtOnPatch(*patch,
+    //               initial_time,
+    //               dt_time);
+    //
+    //         dt = tbox::MathUtilities<double>::Min(dt, patch_dt);
+    //         //tbox::plog.precision(12);
+    //         //tbox::plog << "Level " << patch_level->getLevelNumber()
+    //         //           << " Patch " << p()
+    //         //           << " box " << patch->getBox()
+    //         //           << " has patch_dt " << patch_dt
+    //         //           << " dt " << dt
+    //         //           << std::endl;
+    //
+    //         patch->deallocatePatchData(d_temp_var_scratch_data);
+    //      }
+    //
+    //      d_patch_strategy->clearDataContext();
+    //
+    //   } else {
+    //
+    //      //tbox::plog << "use ghosts for dt" << std::endl;
+    //
+    //      patch_level->allocatePatchData(d_saved_var_scratch_data, dt_time);
+    //
+    //      d_patch_strategy->setDataContext(d_scratch);
+    //
+    //      d_bdry_sched_advance[patch_level->getLevelNumber()]->fillData(dt_time);
+    //
+    //      for (hier::PatchLevel::Iterator ip(patch_level); ip; ip++) {
+    //         tbox::Pointer<hier::Patch> patch = *ip;
+    //
+    //         patch->allocatePatchData(d_temp_var_scratch_data, dt_time);
+    //
+    //         double patch_dt;
+    //         patch_dt = d_patch_strategy->
+    //            computeStableDtOnPatch(*patch,
+    //               initial_time,
+    //               dt_time);
+    //
+    //         dt = tbox::MathUtilities<double>::Min(dt, patch_dt);
+    //
+    //         patch->deallocatePatchData(d_temp_var_scratch_data);
+    //      }
+    //
+    //      d_patch_strategy->clearDataContext();
+    //
+    //      /*
+    //       * Copy data from scratch to current and de-allocate scratch storage.
+    //       * This may be excessive here, but seems necessary if the
+    //       * computation of dt affects the state of the problem solution.
+    //       * Also, this getLevelDt() routine is called at initialization only
+    //       * in most cases.
+    //       */
+    //
+    //      copyTimeDependentData(patch_level, d_scratch, d_current);
+    //
+    //      patch_level->deallocatePatchData(d_saved_var_scratch_data);
+    //   }
+    //
+    //   /*
+    //    * The level time increment is a global min over all patches.
+    //    */
+    //
+    //   double global_dt = dt;
+    //
+    //   if (mpi.getSize() > 1) {
+    //      mpi.AllReduce(&global_dt, 1, MPI_MIN);
+    //   }
+    //
+    //   global_dt *= tbox::MathUtilities<double>::Min(d_cfl_init, d_cfl);
+    //
+    //   return global_dt;
 
     return 0.004;
 }
@@ -187,6 +187,9 @@ double LagrangianEulerianIntegrator::advanceLevel(
      */
 
 
+    /*
+     * TODO: Acceleration kernel.
+     */
 
 
     /*
@@ -237,24 +240,38 @@ void LagrangianEulerianIntegrator::initializeLevelData (
         const bool allocate_data)
 {
 
-   tbox::Pointer<hier::PatchLevel> level(
-      hierarchy->getPatchLevel(level_number));
+    tbox::Pointer<hier::PatchLevel> level(
+            hierarchy->getPatchLevel(level_number));
 
-   d_patch_strategy->setDataContext(d_current);
+    /* 
+     * Allocate storage needed to initialize level and fill data
+     * from coarser levels in AMR hierarchy, potentially. Since
+     * time gets set when we allocate data, re-stamp it to current
+     * time if we don't need to allocate.
+     */
+    if (allocate_data) {
+        level->allocatePatchData(d_temp_var_cur_data, init_data_time); 
+        level->allocatePatchData(d_temp_var_new_data, init_data_time); 
+    } else {
+        level->setTime(init_data_time, d_temp_var_cur_data); 
+    }
 
-   for (hier::PatchLevel::Iterator p(level); p; p++) {
-      tbox::Pointer<hier::Patch> patch(*p);
 
-      patch->allocatePatchData(d_temp_var_cur_data, init_data_time);
+    d_patch_strategy->setDataContext(d_current);
 
-      d_patch_strategy->initializeDataOnPatch(*patch,
-         init_data_time,
-         initial_time);
+    for (hier::PatchLevel::Iterator p(level); p; p++) {
+        tbox::Pointer<hier::Patch> patch(*p);
 
-      patch->deallocatePatchData(d_temp_var_cur_data);
-   }
+        patch->allocatePatchData(d_temp_var_scratch_data, init_data_time);
 
-   d_patch_strategy->clearDataContext();
+        d_patch_strategy->initializeDataOnPatch(*patch,
+                init_data_time,
+                initial_time);
+
+        patch->deallocatePatchData(d_temp_var_scratch_data);
+    }
+
+    d_patch_strategy->clearDataContext();
 
 }
 
@@ -284,26 +301,31 @@ void LagrangianEulerianIntegrator::registerVariable(
         const hier::IntVector ghosts,
         const tbox::Pointer<hier::GridGeometry> transfer_geom)
 {
-   const tbox::Dimension dim(ghosts.getDim());
+#ifdef DEBUG
+    tbox::pout << "Registering variable: " << var->getName() << std::endl;
+#endif
 
-   hier::VariableDatabase* variable_db = hier::VariableDatabase::getDatabase();
+    const tbox::Dimension dim(ghosts.getDim());
 
-   const hier::IntVector& zero_ghosts(hier::IntVector::getZero(dim));
+    hier::VariableDatabase* variable_db = hier::VariableDatabase::getDatabase();
 
-   int cur_id = variable_db->registerVariableAndContext(var,
-           d_current,
-           zero_ghosts);
-   int new_id = variable_db->registerVariableAndContext(var,
-           d_new,
-           zero_ghosts);
+    const hier::IntVector& zero_ghosts(hier::IntVector::getZero(dim));
 
-   int scr_id = variable_db->registerVariableAndContext(var,
-           d_scratch,
-           ghosts);
+    int cur_id = variable_db->registerVariableAndContext(var,
+            d_current,
+            zero_ghosts);
 
-   d_temp_var_scratch_data.setFlag(scr_id);
-   d_temp_var_cur_data.setFlag(cur_id);
-   d_temp_var_new_data.setFlag(new_id);
+    int new_id = variable_db->registerVariableAndContext(var,
+            d_new,
+            zero_ghosts);
+
+    int scr_id = variable_db->registerVariableAndContext(var,
+            d_scratch,
+            ghosts);
+
+    d_temp_var_scratch_data.setFlag(scr_id);
+    d_temp_var_cur_data.setFlag(cur_id);
+    d_temp_var_new_data.setFlag(new_id);
 }
 
 tbox::Pointer<hier::VariableContext> LagrangianEulerianIntegrator::getPlotContext()
