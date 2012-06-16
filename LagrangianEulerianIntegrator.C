@@ -31,8 +31,6 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
     d_current = hier::VariableDatabase::getDatabase()->getContext("CURRENT");
     d_new = hier::VariableDatabase::getDatabase()->getContext("NEW");
 
-    d_scratch = hier::VariableDatabase::getDatabase()->getContext("SCRATCH");
-
     d_plot_context = d_current;
 }
 
@@ -319,11 +317,6 @@ void LagrangianEulerianIntegrator::registerVariable(
             d_new,
             zero_ghosts);
 
-    int scr_id = variable_db->registerVariableAndContext(var,
-            d_scratch,
-            ghosts);
-
-    d_temp_var_scratch_data.setFlag(scr_id);
     d_temp_var_cur_data.setFlag(cur_id);
     d_temp_var_new_data.setFlag(new_id);
 }
