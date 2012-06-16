@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
 
         const tbox::Dimension dim(static_cast<unsigned short>(main_db->getInteger("dim")));
 
-        int vis_dump_interval = main_db->getIntegerWithDefault("vis_dump_interval", 10);
+        int vis_dump_interval = main_db->getIntegerWithDefault("vis_dump_interval", 1);
 
         /*
          * Create data and algorithm objects.
