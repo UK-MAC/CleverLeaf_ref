@@ -116,10 +116,12 @@ void Cleverleaf::initializeDataOnPatch(
     tbox::Pointer<pdat::CellData<double> > density = patch.getPatchData(d_density, getDataContext());
     tbox::Pointer<pdat::CellData<double> > energy = patch.getPatchData(d_energy, getDataContext());
 
+    /*
+     * Fill pressure with some data
+     */
     double* pressure_data = pressure->getPointer();
     double*  u = velocity->getPointer(0);
     double*  v = velocity->getPointer(1);
-
 
     const hier::Index ifirst = patch.getBox().lower();
     const hier::Index ilast = patch.getBox().upper();
@@ -150,7 +152,16 @@ void Cleverleaf::initializeDataOnPatch(
         }
     }
 
-    cout << "FILLING DATA" << endl;
+    /*
+     * Use the fillAll() methods to initialise other variables for now...
+     */
+     velocity->fillAll(0.0);
+     massflux->fillAll(0.0);
+     volflux->fillAll(0.0);
+     viscosity->fillAll(0.0);
+     soundspeed->fillAll(0.0);
+     density->fillAll(0.0);
+     energy->fillAll(0.0);
 }
 
 double Cleverleaf::computeStableDtOnPatch(
@@ -159,5 +170,11 @@ double Cleverleaf::computeStableDtOnPatch(
         const double dt_time)
 {
     return 0.04;
+}
+
+void Cleverleaf::accelerate(
+        hier::Patch& patch,
+        double dt)
+{
 }
 
