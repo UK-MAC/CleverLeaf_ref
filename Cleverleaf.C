@@ -2,6 +2,8 @@
 
 #include "SAMRAI/hier/VariableDatabase.h"
 
+#include <iostream>
+
 Cleverleaf::Cleverleaf(
         tbox::Pointer<hier::PatchHierarchy> hierarchy,
         const tbox::Dimension& dim,
@@ -55,21 +57,19 @@ void Cleverleaf::registerVisItDataWriter(tbox::Pointer<appu::VisItDataWriter> wr
     d_visit_writer = writer;
 }
 
-
 void Cleverleaf::initializeDataOnPatch(
         hier::Patch& patch,
         double init_data_time,
         bool initial_time)
 {
-    
-    if (initial_time) {
-
         tbox::Pointer<pdat::CellData<double> > velocity = patch.getPatchData(d_velocity, getDataContext());
+        tbox::Pointer<pdat::CellData<double> > density = patch.getPatchData(d_density, getDataContext());
 
-        velocity->fillAll(1.0);
-    }
+        cout << "FILLING DATA" << endl;
+
+        velocity->fillAll(4.4);
+        density->fillAll(4.4);
 }
-
 
 double Cleverleaf::computeStableDtOnPatch(
         hier::Patch& patch,
