@@ -34,18 +34,22 @@ class LagrangianEulerianPatchStrategy
                 const bool initial_error,
                 const int tag_index);
 
-        tbox::Pointer<hier::VariableContext> getDataContext();
+        tbox::Pointer<hier::VariableContext> getCurrentDataContext();
+        tbox::Pointer<hier::VariableContext> getNewDataContext();
 
-        void setDataContext(
+        void setCurrentDataContext(
                 tbox::Pointer<hier::VariableContext> context);
 
-        void clearDataContext();
+        void setNewDataContext(
+                tbox::Pointer<hier::VariableContext> context);
 
         const tbox::Dimension& getDim() const;
 
     private:
         const tbox::Dimension d_dim;
 
-        tbox::Pointer<hier::VariableContext> d_data_context;
+        tbox::Pointer<hier::VariableContext> d_new_data_context;
+
+        tbox::Pointer<hier::VariableContext> d_current_data_context;
 };
 #endif

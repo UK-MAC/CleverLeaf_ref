@@ -107,14 +107,14 @@ void Cleverleaf::initializeDataOnPatch(
         double init_data_time,
         bool initial_time)
 {
-    tbox::Pointer<pdat::CellData<double> > velocity = patch.getPatchData(d_velocity, getDataContext());
-    tbox::Pointer<pdat::CellData<double> > massflux = patch.getPatchData(d_massflux, getDataContext());
-    tbox::Pointer<pdat::CellData<double> > volflux = patch.getPatchData(d_volflux, getDataContext());
-    tbox::Pointer<pdat::CellData<double> > pressure = patch.getPatchData(d_pressure, getDataContext());
-    tbox::Pointer<pdat::CellData<double> > viscosity = patch.getPatchData(d_viscosity, getDataContext());
-    tbox::Pointer<pdat::CellData<double> > soundspeed = patch.getPatchData(d_soundspeed, getDataContext());
-    tbox::Pointer<pdat::CellData<double> > density = patch.getPatchData(d_density, getDataContext());
-    tbox::Pointer<pdat::CellData<double> > energy = patch.getPatchData(d_energy, getDataContext());
+    tbox::Pointer<pdat::CellData<double> > velocity = patch.getPatchData(d_velocity, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > massflux = patch.getPatchData(d_massflux, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > volflux = patch.getPatchData(d_volflux, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > soundspeed = patch.getPatchData(d_soundspeed, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > density = patch.getPatchData(d_density, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > energy = patch.getPatchData(d_energy, getCurrentDataContext());
 
     double* pressure_data = pressure->getPointer();
     double*  u = velocity->getPointer(0);

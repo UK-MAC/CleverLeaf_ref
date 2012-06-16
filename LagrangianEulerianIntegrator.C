@@ -31,6 +31,13 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
     d_current = hier::VariableDatabase::getDatabase()->getContext("CURRENT");
     d_new = hier::VariableDatabase::getDatabase()->getContext("NEW");
 
+    /*
+     * Pass these contexts up to the patch strategy
+     */
+
+    patch_strategy->setCurrentDataContext(d_current);
+    patch_strategy->setNewDataContext(d_new);
+
     d_plot_context = d_current;
 }
 
@@ -255,8 +262,6 @@ void LagrangianEulerianIntegrator::initializeLevelData (
     }
 
 
-    d_patch_strategy->setDataContext(d_current);
-
     for (hier::PatchLevel::Iterator p(level); p; p++) {
         tbox::Pointer<hier::Patch> patch(*p);
 
@@ -268,9 +273,6 @@ void LagrangianEulerianIntegrator::initializeLevelData (
 
         patch->deallocatePatchData(d_temp_var_scratch_data);
     }
-
-    d_patch_strategy->clearDataContext();
-
 }
 
 void LagrangianEulerianIntegrator::resetHierarchyConfiguration (
