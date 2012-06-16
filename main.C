@@ -221,13 +221,13 @@ int main(int argc, char* argv[]) {
          tbox::pout << "++++++++++++++++++++++++++++++++++++++++++++" << endl;
 
          if ((vis_dump_interval > 0)
-             && (iteration_num % vis_dump_interval) == 0) {
-            visit_data_writer->writePlotData(patch_hierarchy,
-               iteration_num,
-               loop_time);
+                 && (iteration_num % vis_dump_interval) == 0) {
+             visit_data_writer->writePlotData(patch_hierarchy,
+                     iteration_num,
+                     loop_time);
          }
       }
-        /*
+      /*
          * Deallocate objects
          */
 
