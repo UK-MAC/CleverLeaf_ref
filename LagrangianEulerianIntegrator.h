@@ -148,7 +148,7 @@ class LagrangianEulerianIntegrator:
         tbox::Pointer<hier::VariableContext> d_plot_context;
 
         hier::ComponentSelector d_temp_var_scratch_data;
-        hier::ComponentSelector d_temp_var_curr_data;
+        hier::ComponentSelector d_temp_var_cur_data;
         hier::ComponentSelector d_temp_var_new_data;
 };
 

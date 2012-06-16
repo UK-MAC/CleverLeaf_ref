@@ -34,7 +34,6 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
     d_scratch = hier::VariableDatabase::getDatabase()->getContext("SCRATCH");
 
     d_plot_context = d_current;
-
 }
 
 LagrangianEulerianIntegrator::~LagrangianEulerianIntegrator()
@@ -188,6 +187,8 @@ double LagrangianEulerianIntegrator::advanceLevel(
      */
 
 
+
+
     /*
      * reset_field is used to copy density, energy and velocity
      * timelevel 1 values back to timelevel 0.
@@ -244,13 +245,13 @@ void LagrangianEulerianIntegrator::initializeLevelData (
    for (hier::PatchLevel::Iterator p(level); p; p++) {
       tbox::Pointer<hier::Patch> patch(*p);
 
-      patch->allocatePatchData(d_temp_var_scratch_data, init_data_time);
+      patch->allocatePatchData(d_temp_var_cur_data, init_data_time);
 
       d_patch_strategy->initializeDataOnPatch(*patch,
          init_data_time,
          initial_time);
 
-      patch->deallocatePatchData(d_temp_var_scratch_data);
+      patch->deallocatePatchData(d_temp_var_cur_data);
    }
 
    d_patch_strategy->clearDataContext();
@@ -301,8 +302,8 @@ void LagrangianEulerianIntegrator::registerVariable(
            ghosts);
 
    d_temp_var_scratch_data.setFlag(scr_id);
-   d_temp_var_curr_data.setFlag(scr_id);
-   d_temp_var_new_data.setFlag(scr_id);
+   d_temp_var_cur_data.setFlag(cur_id);
+   d_temp_var_new_data.setFlag(new_id);
 }
 
 tbox::Pointer<hier::VariableContext> LagrangianEulerianIntegrator::getPlotContext()
