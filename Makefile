@@ -17,7 +17,7 @@ MATH_LIB=-L$(LAPACK_DIR)/lib -llapack -lblas
 
 CXX=mpiCC
 
-CPPFLAGS=-g -O0 -Wall -Wextra -Wconversion -lz $(HYPRE_INC) $(HDF_INC) $(SAMRAI_INC) $(MATH_INC)
+CPPFLAGS=-g -DDEBUG -lz $(HYPRE_INC) $(HDF_INC) $(SAMRAI_INC) $(MATH_INC)
 LDFLAGS=-g -lz $(SAMRAI_LIB) $(HYPRE_LIB) $(HDF_LIB) $(MATH_LIB)
 
 all: cleverleaf
