@@ -3,23 +3,24 @@ Main {
 }
 
 CartesianGeometry {
-    domain_boxes = [ (0,0), (9,9) ]
+    domain_boxes = [ (0,0), (24,24) ]
     x_lo         = 0e0, 0e0
     x_up         = 1.e0, 1.e0
 }
 
 PatchHierarchy {
     max_levels = 1
+
     ratio_to_coarser {
         level_1 = 2,2
     }
     
     largest_patch_size {
-        level_0 = 10,10
+        level_0 = 24,24
     }
 
     smallest_patch_size {
-        level_0 = 8,8
+        level_0 = 23,23
     }
 }
 
