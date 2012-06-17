@@ -29,7 +29,6 @@ class Cleverleaf:
                 tbox::Pointer<geom::CartesianGridGeometry> grid_geometry);
 
         void registerVisItDataWriter(tbox::Pointer<appu::VisItDataWriter>);
-
         void registerModelVariables(LagrangianEulerianIntegrator* integrator);
 
         void initializeDataOnPatch(
@@ -41,6 +40,10 @@ class Cleverleaf:
             hier::Patch& patch,
             const bool initial_time,
             const double dt_time);
+
+        void accelerate(
+            hier::Patch& patch,
+            double dt);
     private:
 
         tbox::Pointer<hier::PatchHierarchy> d_hierarchy;
@@ -63,6 +66,7 @@ class Cleverleaf:
         tbox::Pointer<pdat::CellVariable<double> > d_soundspeed;
         tbox::Pointer<pdat::CellVariable<double> > d_density;
         tbox::Pointer<pdat::CellVariable<double> > d_energy;
+        tbox::Pointer<pdat::CellVariable<double> > d_volume;
 
         /*
          * Variable contexts

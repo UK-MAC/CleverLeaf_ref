@@ -34,7 +34,6 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
     /*
      * Pass these contexts up to the patch strategy
      */
-
     patch_strategy->setCurrentDataContext(d_current);
     patch_strategy->setNewDataContext(d_new);
 
@@ -74,9 +73,10 @@ double LagrangianEulerianIntegrator::getLevelDt(
 {
     //   tbox::Pointer<hier::PatchLevel> patch_level(level);
     //
-    //   const tbox::SAMRAI_MPI& mpi(patch_level->getBoxLevel()->getMPI());
+       const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
     //
-    //   double dt = tbox::MathUtilities<double>::getMax();
+       double dt = tbox::MathUtilities<double>::getMax();
+       double patch_dt;
     //
     //   if (!d_use_ghosts_for_dt) {
     //
@@ -117,21 +117,20 @@ double LagrangianEulerianIntegrator::getLevelDt(
     //
     //      d_bdry_sched_advance[patch_level->getLevelNumber()]->fillData(dt_time);
     //
-    //      for (hier::PatchLevel::Iterator ip(patch_level); ip; ip++) {
-    //         tbox::Pointer<hier::Patch> patch = *ip;
-    //
-    //         patch->allocatePatchData(d_temp_var_scratch_data, dt_time);
-    //
-    //         double patch_dt;
-    //         patch_dt = d_patch_strategy->
-    //            computeStableDtOnPatch(*patch,
-    //               initial_time,
-    //               dt_time);
-    //
-    //         dt = tbox::MathUtilities<double>::Min(dt, patch_dt);
-    //
-    //         patch->deallocatePatchData(d_temp_var_scratch_data);
-    //      }
+          for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
+             tbox::Pointer<hier::Patch> patch = *ip;
+    
+             patch->allocatePatchData(d_temp_var_scratch_data, dt_time);
+    
+             patch_dt = d_patch_strategy->
+                computeStableDtOnPatch(*patch,
+                   initial_time,
+                   dt_time);
+    
+             dt = tbox::MathUtilities<double>::Min(dt, patch_dt);
+    
+             patch->deallocatePatchData(d_temp_var_scratch_data);
+          }
     //
     //      d_patch_strategy->clearDataContext();
     //
@@ -152,17 +151,15 @@ double LagrangianEulerianIntegrator::getLevelDt(
     //    * The level time increment is a global min over all patches.
     //    */
     //
-    //   double global_dt = dt;
-    //
-    //   if (mpi.getSize() > 1) {
-    //      mpi.AllReduce(&global_dt, 1, MPI_MIN);
-    //   }
-    //
-    //   global_dt *= tbox::MathUtilities<double>::Min(d_cfl_init, d_cfl);
-    //
-    //   return global_dt;
-
-    return 0.004;
+       double global_dt = dt;
+    
+       if (mpi.getSize() > 1) {
+          mpi.AllReduce(&global_dt, 1, MPI_MIN);
+       }
+    
+       //global_dt *= tbox::MathUtilities<double>::Min(d_cfl_init, d_cfl);
+    
+       return global_dt;
 }
 
 double LagrangianEulerianIntegrator::advanceLevel(
@@ -192,22 +189,21 @@ double LagrangianEulerianIntegrator::advanceLevel(
      * All halo exchanges are handled by this routine, as well as ensuring correcting
      * stepping over all levels of the AMR hierarchy.
      */
+    level->allocatePatchData(d_temp_var_new_data, new_time);
+    level->allocatePatchData(d_temp_var_cur_data, current_time);
 
 
     /*
      * TODO: Acceleration kernel.
      */
-    for(hier::PatchLevel::Iteratorp(patch_level);p;p++){
+    for(hier::PatchLevel::Iterator p(level);p;p++){
+
         tbox::Pointer<hier::Patch>patch=*p;
 
-        patch->allocatePatchData(d_temp_var_new_data ,new_time);
-        patch->allocatePatchData(d_temp_var_current_data ,current_time);
-
-        patch_strategy->accelerate(p,dt);
-
-        patch->deallocatePatchData(d_temp_var_current_data);
-        patch->deallocatePatchData(d_temp_var_new_data);
+        d_patch_strategy->accelerate(*patch,dt);
     }
+
+    level->setTime(new_time);
 
     /*
      * reset_field is used to copy density, energy and velocity
@@ -277,13 +273,9 @@ void LagrangianEulerianIntegrator::initializeLevelData (
     for (hier::PatchLevel::Iterator p(level); p; p++) {
         tbox::Pointer<hier::Patch> patch(*p);
 
-        patch->allocatePatchData(d_temp_var_scratch_data, init_data_time);
-
         d_patch_strategy->initializeDataOnPatch(*patch,
                 init_data_time,
                 initial_time);
-
-        patch->deallocatePatchData(d_temp_var_scratch_data);
     }
 }
 

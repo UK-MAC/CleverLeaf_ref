@@ -1,6 +1,7 @@
 #include "Cleverleaf.h"
 
 #include "SAMRAI/hier/VariableDatabase.h"
+#include "SAMRAI/geom/CartesianPatchGeometry.h"
 
 #include <iostream>
 
@@ -31,6 +32,7 @@ Cleverleaf::Cleverleaf(
     d_soundspeed  = new pdat::CellVariable<double>(d_dim, "soundspeed", 1);
     d_density  = new pdat::CellVariable<double>(d_dim, "density", 1);
     d_energy  = new pdat::CellVariable<double>(d_dim, "energy", 1);
+    d_volume  = new pdat::CellVariable<double>(d_dim, "volume", 1);
 }
 
 void Cleverleaf::registerModelVariables(LagrangianEulerianIntegrator* integrator) 
@@ -39,11 +41,13 @@ void Cleverleaf::registerModelVariables(LagrangianEulerianIntegrator* integrator
     integrator->registerVariable(d_velocity, d_nghosts, d_grid_geometry);
     integrator->registerVariable(d_massflux, d_nghosts, d_grid_geometry);
     integrator->registerVariable(d_volflux, d_nghosts, d_grid_geometry);
+
     integrator->registerVariable(d_pressure, d_nghosts, d_grid_geometry);
     integrator->registerVariable(d_viscosity, d_nghosts, d_grid_geometry);
     integrator->registerVariable(d_soundspeed, d_nghosts, d_grid_geometry);
     integrator->registerVariable(d_density, d_nghosts, d_grid_geometry);
     integrator->registerVariable(d_energy, d_nghosts, d_grid_geometry);
+    integrator->registerVariable(d_volume, d_nghosts, d_grid_geometry);
 
     hier::VariableDatabase* vardb = hier::VariableDatabase::getDatabase();
 
@@ -77,6 +81,11 @@ void Cleverleaf::registerModelVariables(LagrangianEulerianIntegrator* integrator
                 "SCALAR",
                 vardb->mapVariableAndContextToIndex(
                     d_energy, d_plot_context));
+
+        d_visit_writer->registerPlotQuantity("Volume",
+                "SCALAR",
+                vardb->mapVariableAndContextToIndex(
+                    d_volume, d_plot_context));
 
         /*
          * Register vectors with the VisIt writer.
@@ -115,6 +124,7 @@ void Cleverleaf::initializeDataOnPatch(
     tbox::Pointer<pdat::CellData<double> > soundspeed = patch.getPatchData(d_soundspeed, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > density = patch.getPatchData(d_density, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > energy = patch.getPatchData(d_energy, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > volume = patch.getPatchData(d_volume, getCurrentDataContext());
 
     /*
      * Fill pressure with some data
@@ -153,6 +163,22 @@ void Cleverleaf::initializeDataOnPatch(
     }
 
     /*
+     * Fill in the volume array...
+     */
+#ifdef DEBUG
+    std::cout << "Allocating pgeom pointer..." << std::endl;
+#endif
+    const tbox::Pointer<geom::CartesianPatchGeometry> pgeom = patch.getPatchGeometry();
+    const double* dxs = pgeom->getDx();
+    double dx = dxs[0];
+    double dy = dxs[1];
+    double vol = dx*dy;
+
+#ifdef DEBUG
+    std::cout << "Filling volume with dx = " << dx << " and dy = " << dy << std::endl;
+#endif
+
+    /*
      * Use the fillAll() methods to initialise other variables for now...
      */
      velocity->fillAll(0.0);
@@ -162,6 +188,7 @@ void Cleverleaf::initializeDataOnPatch(
      soundspeed->fillAll(0.0);
      density->fillAll(0.0);
      energy->fillAll(0.0);
+     volume->fillAll(vol);
 }
 
 double Cleverleaf::computeStableDtOnPatch(
