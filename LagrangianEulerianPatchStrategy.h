@@ -23,6 +23,10 @@ class LagrangianEulerianPatchStrategy
                 double init_data_time,
                 bool initial_time) = 0;
 
+        virtual void accelerate(
+                hier::Patch& patch,
+                double dt) = 0;
+
         virtual double computeStableDtOnPatch(
                 hier::Patch& patch,
                 const bool initial_time,

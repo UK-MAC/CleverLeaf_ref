@@ -175,6 +175,8 @@ double LagrangianEulerianIntegrator::advanceLevel(
         const bool regrid_advance)
 {
 
+    double dt = new_time - current_time;
+
     /*
      * This routine performs the required steps for the predictor and corrector,
      * and the advection. It mirrors the following routines occuring in Cloverleaf
@@ -195,7 +197,17 @@ double LagrangianEulerianIntegrator::advanceLevel(
     /*
      * TODO: Acceleration kernel.
      */
+    for(hier::PatchLevel::Iteratorp(patch_level);p;p++){
+        tbox::Pointer<hier::Patch>patch=*p;
 
+        patch->allocatePatchData(d_temp_var_new_data ,new_time);
+        patch->allocatePatchData(d_temp_var_current_data ,current_time);
+
+        patch_strategy->accelerate(p,dt);
+
+        patch->deallocatePatchData(d_temp_var_current_data);
+        patch->deallocatePatchData(d_temp_var_new_data);
+    }
 
     /*
      * reset_field is used to copy density, energy and velocity
