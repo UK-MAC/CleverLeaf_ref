@@ -45,7 +45,7 @@ class Cleverleaf:
             hier::Patch& patch,
             double dt);
 
-        void ideal_gas(
+        void ideal_gas_knl(
                 int xmin,
                 int xmax,
                 int ymin,
@@ -54,6 +54,19 @@ class Cleverleaf:
                 double* energy,
                 double* pressure,
                 double* soundspeed);
+
+        void viscosity_knl(
+                int xmin,
+                int xmax,
+                int ymin,
+                int ymax,
+                double* density,
+                double* pressure,
+                double* viscosity,
+                double* xvel0,
+                double* yvel0,
+                double* celldx,
+                double* celldy);
 
     private:
 
@@ -78,6 +91,7 @@ class Cleverleaf:
         tbox::Pointer<pdat::CellVariable<double> > d_density;
         tbox::Pointer<pdat::CellVariable<double> > d_energy;
         tbox::Pointer<pdat::CellVariable<double> > d_volume;
+        tbox::Pointer<pdat::CellVariable<double> > d_deltas;
 
         /*
          * Variable contexts

@@ -34,6 +34,8 @@ Cleverleaf::Cleverleaf(
     d_density  = new pdat::CellVariable<double>(d_dim, "density", 1);
     d_energy  = new pdat::CellVariable<double>(d_dim, "energy", 1);
     d_volume  = new pdat::CellVariable<double>(d_dim, "volume", 1);
+    d_deltas = new pdat::CellVariable<double>(d_dim, "deltas", d_dim.getValue());
+
 }
 
 void Cleverleaf::registerModelVariables(LagrangianEulerianIntegrator* integrator) 
@@ -42,6 +44,7 @@ void Cleverleaf::registerModelVariables(LagrangianEulerianIntegrator* integrator
     integrator->registerVariable(d_velocity, d_nghosts, d_grid_geometry);
     integrator->registerVariable(d_massflux, d_nghosts, d_grid_geometry);
     integrator->registerVariable(d_volflux, d_nghosts, d_grid_geometry);
+    integrator->registerVariable(d_deltas, d_nghosts, d_grid_geometry);
 
     integrator->registerVariable(d_pressure, d_nghosts, d_grid_geometry);
     integrator->registerVariable(d_viscosity, d_nghosts, d_grid_geometry);
@@ -127,6 +130,7 @@ void Cleverleaf::initializeDataOnPatch(
         tbox::Pointer<pdat::CellData<double> > density = patch.getPatchData(d_density, getCurrentDataContext());
         tbox::Pointer<pdat::CellData<double> > energy = patch.getPatchData(d_energy, getCurrentDataContext());
         tbox::Pointer<pdat::CellData<double> > volume = patch.getPatchData(d_volume, getCurrentDataContext());
+        tbox::Pointer<pdat::CellData<double> > deltas = patch.getPatchData(d_deltas, getCurrentDataContext());
 
         /*
          * Fill density and energy with some data, these are our initial conditions.
@@ -174,12 +178,15 @@ void Cleverleaf::initializeDataOnPatch(
         /*
          * Use the fillAll() methods to initialise other variables for now...
          */
-        velocity->fillAll(0.0);
+        velocity->fillAll(1.0);
         massflux->fillAll(0.0);
         volflux->fillAll(0.0);
         viscosity->fillAll(0.0);
         soundspeed->fillAll(0.0);
         volume->fillAll(vol);
+
+        deltas->fill(dx, 0);
+        deltas->fill(dy, 1);
     }
 }
 
@@ -199,6 +206,10 @@ double Cleverleaf::computeStableDtOnPatch(
     tbox::Pointer<pdat::CellData<double> > pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
 
     tbox::Pointer<pdat::CellData<double> > soundspeed = patch.getPatchData(d_soundspeed, getCurrentDataContext());
+
+    tbox::Pointer<pdat::CellData<double> > viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > deltas = patch.getPatchData(d_deltas, getCurrentDataContext());
 
     const hier::Index ifirst = patch.getBox().lower();
     const hier::Index ilast = patch.getBox().upper();
@@ -222,9 +233,22 @@ double Cleverleaf::computeStableDtOnPatch(
 
     /* 
      * update_halos pressure, energy, density, velocity0
-     *
-     * viscosity
-     *
+     */
+
+     viscosity_knl(
+        xmin,
+        xmax,
+        ymin,
+        ymax,
+        density0->getPointer(),
+        pressure->getPointer(),
+        viscosity->getPointer(),
+        vel0->getPointer(0),
+        vel0->getPointer(1),
+        deltas->getPointer(0),
+        deltas->getPointer(1));
+
+    /*
      * update_halos viscosity
      *
      * calc_dt()
@@ -240,7 +264,7 @@ void Cleverleaf::accelerate(
 {
 }
 
-void Cleverleaf::ideal_gas(
+void Cleverleaf::ideal_gas_knl(
         int xmin,
         int xmax,
         int ymin,
@@ -275,7 +299,7 @@ void Cleverleaf::ideal_gas(
     }
 }
 
-void Cleverleaf::viscosity(
+void Cleverleaf::viscosity_knl(
         int xmin,
         int xmax,
         int ymin,
@@ -284,55 +308,64 @@ void Cleverleaf::viscosity(
         double* pressure,
         double* viscosity,
         double* xvel0,
-        double* yvel0)
+        double* yvel0,
+        double* celldx,
+        double* celldy)
 {
 
   double ugrad,vgrad,grad2,pgradx,pgrady,
          pgradx2,pgrady2,grad,ygrad,pgrad,
          xgrad,div,strain2,limiter;
 
-  for(int j = ymin; j <= ymax; j++) {
-      for(int i = xmin; i <= xmax; i++){
+  for(int k = ymin; k <= ymax; k++) {
+      for(int j = xmin; j <= xmax; j++){
 
-          int n1 = POLY2(i,j,imin,jmin, (xmax-xmin+1));
-          int n2 = POLY2(i+1,j,imin,jmin, (xmax-xmin+1));
-          int n3 = POLY2(i,j-1,imin,jmin, (xmax-xmin+1));
-          int n4 = POLY2(i-1,j,imin,jmin, (xmax-xmin+1));
-          int n5 = POLY2(i,j+1,imin,jmin, (xmax-xmin+1));
-          int n6 = POLY2(i+1,j+1,imin,jmin, (xmax-xmin+1));
-          int n7 = POLY2(i+1,j-1,imin,jmin, (xmax-xmin+1));
+          int n1 = POLY2(j,k,xmin,ymin, (xmax-xmin+1));
+          int n2 = POLY2(j+1,k,xmin,ymin, (xmax-xmin+1));
+          int n3 = POLY2(j,k-1,xmin,ymin, (xmax-xmin+1));
+          int n4 = POLY2(j-1,k,xmin,ymin, (xmax-xmin+1));
+          int n5 = POLY2(j,k+1,xmin,ymin, (xmax-xmin+1));
+          int n6 = POLY2(j+1,k+1,xmin,ymin, (xmax-xmin+1));
+          int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
 
-          ugrad=(xvel0(j+1,k)+xvel0(j+1,k+1))-(xvel0(j,k)+xvel0(j,k+1));
+          ugrad=(xvel0[n2]+xvel0[n6])-(xvel0[n1]+xvel0[n5]);
 
-          vgrad=(yvel0(j,k+1)+yvel0(j+1,k+1))-(yvel0(j,k)+yvel0(j+1,k));
+          vgrad=(yvel0[n5]+yvel0[n6])-(yvel0[n1]+yvel0[n2]);
 
-          div=(celldx(j)*(ugrad)+celldy(k)*(vgrad));
-          strain2=0.5*(xvel0(j,k+1)+xvel0(j+1,k+1)-xvel0(j,k)-xvel0(j+1,k))/celldy(k)&
-                  +0.5*(yvel0(j+1,k)+yvel0(j+1,k+1)-yvel0(j,k)-yvel0(j,k+1))/celldx(j)
+          div=(celldx[n1]*(ugrad)+celldy[n1]*(vgrad));
+          strain2=0.5*(xvel0[n5]+xvel0[n6]-xvel0[n1]-xvel0[n2])/celldy[n1]+0.5*(yvel0[n2]+yvel0[n6]-yvel0[n1]-yvel0[n5])/celldx[n1];
 
-              pgradx=(pressure(j+1,k)-pressure(j-1,k))/(celldx(j)+celldx(j+1))
-              pgrady=(pressure(j,k+1)-pressure(j,k-1))/(celldy(k)+celldy(k+1))
+          pgradx=(pressure[n2]-pressure[n4])/(celldx[n1]+celldx[n2]);
+          pgrady=(pressure[n5]-pressure[n3])/(celldy[n1]+celldy[n5]);
 
-              pgradx2 = pgradx**2
-              pgrady2 = pgrady**2
+          pgradx2 = pgradx*pgradx;
+          pgrady2 = pgrady*pgrady;
 
-              limiter = ((0.5*(ugrad)/celldx(j))*pgradx2+(0.5*(vgrad)/celldy(k))*pgrady2+strain2*pgradx*pgrady)  &
-              /MAX(pgradx2+pgrady2,1.0e-16_8)
+          limiter = ((0.5*(ugrad)/celldx[n1])*pgradx2+(0.5*(vgrad)/celldy[n1])*pgrady2+strain2*pgradx*pgrady)/max(pgradx2+pgrady2,1.0e-16);
 
-              pgradx = SIGN(MAX(1.0e-16_8,ABS(pgradx)),pgradx)
-              pgrady = SIGN(MAX(1.0e-16_8,ABS(pgrady)),pgrady)
-              pgrad = SQRT(pgradx**2+pgrady**2)
-              xgrad = ABS(celldx(j)*pgrad/pgradx)
-              ygrad = ABS(celldy(k)*pgrad/pgrady)
-              grad  = MIN(xgrad,ygrad)
-              grad2 = grad*grad
+          pgradx = copysign(max(1.0e-16,abs(pgradx)),pgradx);
+          pgrady = copysign(max(1.0e-16,abs(pgrady)),pgrady);
+          pgrad = sqrt((pgradx*pgradx)+(pgrady*pgrady));
+          xgrad = abs(celldx[n1]*pgrad/pgradx);
+          ygrad = abs(celldy[n1]*pgrad/pgrady);
+          grad  = min(xgrad,ygrad);
+          grad2 = grad*grad;
 
-              IF (.NOT.((limiter.GT.0.0).OR.(div.GE.0.0)))THEN
-              viscosity(j,k)=2.0_8*density0(j,k)*grad2*limiter**2
-              ELSE
-              viscosity(j,k) = 0.0
-              ENDIF
-
+#ifdef DEBUG
+          tbox::pout << "limiter = " << limiter << ",div = " << div << std::endl;
+#endif
+          if(!((limiter > 0.0) || (div >= 0.0))) {
+#ifdef DEBUG
+            tbox::pout << "Updating viscosity[" << n1 << "]=" << 2.0*density[n1]*grad2*(limiter*limiter) << std::endl;
+#endif
+              viscosity[n1]=2.0*density[n1]*grad2*(limiter*limiter);
+          } else {
+#ifdef DEBUG
+            tbox::pout << "[ZERO] Updating viscosity[" << n1 << "]=" << 0.0 << std::endl;
+#endif
+              viscosity[n1] = 0.0;
+          }
       }
   }
 }
+
