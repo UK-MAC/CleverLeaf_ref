@@ -44,6 +44,17 @@ class Cleverleaf:
         void accelerate(
             hier::Patch& patch,
             double dt);
+
+        void ideal_gas(
+                int xmin,
+                int xmax,
+                int ymin,
+                int ymax,
+                double* density,
+                double* energy,
+                double* pressure,
+                double* soundspeed);
+
     private:
 
         tbox::Pointer<hier::PatchHierarchy> d_hierarchy;

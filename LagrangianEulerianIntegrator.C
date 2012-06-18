@@ -111,16 +111,11 @@ double LagrangianEulerianIntegrator::getLevelDt(
     //
     //      //tbox::plog << "use ghosts for dt" << std::endl;
     //
-    //      patch_level->allocatePatchData(d_saved_var_scratch_data, dt_time);
-    //
-    //      d_patch_strategy->setDataContext(d_scratch);
-    //
-    //      d_bdry_sched_advance[patch_level->getLevelNumber()]->fillData(dt_time);
-    //
+          level->allocatePatchData(d_temp_var_cur_data, dt_time);
+          level->allocatePatchData(d_temp_var_new_data, dt_time);
+    
           for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
              tbox::Pointer<hier::Patch> patch = *ip;
-    
-             patch->allocatePatchData(d_temp_var_scratch_data, dt_time);
     
              patch_dt = d_patch_strategy->
                 computeStableDtOnPatch(*patch,
@@ -128,8 +123,6 @@ double LagrangianEulerianIntegrator::getLevelDt(
                    dt_time);
     
              dt = tbox::MathUtilities<double>::Min(dt, patch_dt);
-    
-             patch->deallocatePatchData(d_temp_var_scratch_data);
           }
     //
     //      d_patch_strategy->clearDataContext();
