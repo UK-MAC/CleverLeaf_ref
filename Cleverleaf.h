@@ -11,6 +11,7 @@
 #include "SAMRAI/hier/PatchLevel.h"
 #include "SAMRAI/hier/IntVector.h"
 #include "SAMRAI/pdat/CellVariable.h"
+#include "SAMRAI/pdat/NodeVariable.h"
 #include "SAMRAI/geom/CartesianGridGeometry.h"
 
 using namespace SAMRAI;
@@ -68,7 +69,7 @@ class Cleverleaf:
                 double* celldx,
                 double* celldy);
 
-        void calc_dt_knl(
+        double calc_dt_knl(
             int xmin,
             int xmax,
             int ymin,
@@ -81,7 +82,12 @@ class Cleverleaf:
             double* xvel0,
             double* yvel0,
             double* density,
-            double* energy);
+            double* energy,
+            double* xarea,
+            double* yarea,
+            double* volume,
+            double* cellx,
+            double* celly);
 
     private:
 
@@ -106,7 +112,12 @@ class Cleverleaf:
         tbox::Pointer<pdat::CellVariable<double> > d_density;
         tbox::Pointer<pdat::CellVariable<double> > d_energy;
         tbox::Pointer<pdat::CellVariable<double> > d_volume;
-        tbox::Pointer<pdat::CellVariable<double> > d_deltas;
+
+        tbox::Pointer<pdat::CellVariable<double> > d_celldeltas;
+        tbox::Pointer<pdat::CellVariable<double> > d_cellcoords;
+
+        tbox::Pointer<pdat::NodeVariable<double> > d_vertexdeltas;
+        tbox::Pointer<pdat::NodeVariable<double> > d_vertexcoords;
 
         /*
          * Variable contexts

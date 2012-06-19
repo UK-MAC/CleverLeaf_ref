@@ -71,6 +71,10 @@ double LagrangianEulerianIntegrator::getLevelDt(
         const double dt_time,
         const bool initial_time)
 {
+    if (initial_time) {
+        return 0.04;
+    }
+
     //   tbox::Pointer<hier::PatchLevel> patch_level(level);
     //
        const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
@@ -203,9 +207,28 @@ double LagrangianEulerianIntegrator::advanceLevel(
      * timelevel 1 values back to timelevel 0.
      */
 
-    return 0.03;
+    const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
+    double dt_next = tbox::MathUtilities<double>::getMax();
+    double patch_dt;
 
+    for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
+        tbox::Pointer<hier::Patch> patch = *ip;
 
+        patch_dt = d_patch_strategy->
+            computeStableDtOnPatch(*patch,
+                    false,
+                    new_time);
+
+        dt_next = tbox::MathUtilities<double>::Min(dt_next, patch_dt);
+    }
+
+    double next_dt = dt_next;
+
+    if (mpi.getSize() > 1) {
+        mpi.AllReduce(&next_dt, 1, MPI_MIN);
+    }
+
+    return next_dt;
 }
 
 void LagrangianEulerianIntegrator::standardLevelSynchronization(

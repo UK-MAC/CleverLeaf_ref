@@ -34,8 +34,12 @@ Cleverleaf::Cleverleaf(
     d_density  = new pdat::CellVariable<double>(d_dim, "density", 1);
     d_energy  = new pdat::CellVariable<double>(d_dim, "energy", 1);
     d_volume  = new pdat::CellVariable<double>(d_dim, "volume", 1);
-    d_deltas = new pdat::CellVariable<double>(d_dim, "deltas", d_dim.getValue());
 
+    d_celldeltas = new pdat::CellVariable<double>(d_dim, "celldelta", d_dim.getValue());
+    d_cellcoords = new pdat::CellVariable<double>(d_dim, "cellcoords", d_dim.getValue());
+
+    d_vertexdeltas = new pdat::NodeVariable<double>(d_dim, "vertexdeltas", d_dim.getValue());
+    d_vertexcoords = new pdat::NodeVariable<double>(d_dim, "vertexcoords", d_dim.getValue());
 }
 
 void Cleverleaf::registerModelVariables(LagrangianEulerianIntegrator* integrator) 
@@ -44,7 +48,6 @@ void Cleverleaf::registerModelVariables(LagrangianEulerianIntegrator* integrator
     integrator->registerVariable(d_velocity, d_nghosts, d_grid_geometry);
     integrator->registerVariable(d_massflux, d_nghosts, d_grid_geometry);
     integrator->registerVariable(d_volflux, d_nghosts, d_grid_geometry);
-    integrator->registerVariable(d_deltas, d_nghosts, d_grid_geometry);
 
     integrator->registerVariable(d_pressure, d_nghosts, d_grid_geometry);
     integrator->registerVariable(d_viscosity, d_nghosts, d_grid_geometry);
@@ -52,6 +55,12 @@ void Cleverleaf::registerModelVariables(LagrangianEulerianIntegrator* integrator
     integrator->registerVariable(d_density, d_nghosts, d_grid_geometry);
     integrator->registerVariable(d_energy, d_nghosts, d_grid_geometry);
     integrator->registerVariable(d_volume, d_nghosts, d_grid_geometry);
+
+    integrator->registerVariable(d_celldeltas, d_nghosts, d_grid_geometry);
+    integrator->registerVariable(d_cellcoords, d_nghosts, d_grid_geometry);
+
+    integrator->registerVariable(d_vertexdeltas, d_nghosts, d_grid_geometry);
+    integrator->registerVariable(d_vertexcoords, d_nghosts, d_grid_geometry);
 
     hier::VariableDatabase* vardb = hier::VariableDatabase::getDatabase();
 
@@ -108,6 +117,16 @@ void Cleverleaf::registerModelVariables(LagrangianEulerianIntegrator* integrator
                 "VECTOR",
                 vardb->mapVariableAndContextToIndex(
                     d_volflux, d_plot_context));
+
+        d_visit_writer->registerPlotQuantity("Vertexcoords",
+                "VECTOR",
+                vardb->mapVariableAndContextToIndex(
+                    d_vertexcoords, d_plot_context));
+
+        d_visit_writer->registerPlotQuantity("Cellcoords",
+                "VECTOR",
+                vardb->mapVariableAndContextToIndex(
+                    d_cellcoords, d_plot_context));
     }
 }
 
@@ -130,7 +149,20 @@ void Cleverleaf::initializeDataOnPatch(
         tbox::Pointer<pdat::CellData<double> > density = patch.getPatchData(d_density, getCurrentDataContext());
         tbox::Pointer<pdat::CellData<double> > energy = patch.getPatchData(d_energy, getCurrentDataContext());
         tbox::Pointer<pdat::CellData<double> > volume = patch.getPatchData(d_volume, getCurrentDataContext());
-        tbox::Pointer<pdat::CellData<double> > deltas = patch.getPatchData(d_deltas, getCurrentDataContext());
+
+        tbox::Pointer<pdat::CellData<double> > celldeltas = patch.getPatchData(
+                d_celldeltas,
+                getCurrentDataContext());
+        tbox::Pointer<pdat::CellData<double> > cellcoords = patch.getPatchData(
+                d_cellcoords,
+                getCurrentDataContext());
+
+        tbox::Pointer<pdat::NodeData<double> > vertexdeltas = patch.getPatchData(
+                d_vertexdeltas,
+                getCurrentDataContext());
+        tbox::Pointer<pdat::NodeData<double> > vertexcoords = patch.getPatchData(
+                d_vertexcoords,
+                getCurrentDataContext());
 
         /*
          * Fill density and energy with some data, these are our initial conditions.
@@ -171,6 +203,9 @@ void Cleverleaf::initializeDataOnPatch(
          */
         const tbox::Pointer<geom::CartesianPatchGeometry> pgeom = patch.getPatchGeometry();
         const double* dxs = pgeom->getDx();
+        const double* coords = pgeom->getXLower();
+        double xmin = coords[0];
+        double ymin = coords[1];
         double dx = dxs[0];
         double dy = dxs[1];
         double vol = dx*dy;
@@ -185,8 +220,64 @@ void Cleverleaf::initializeDataOnPatch(
         soundspeed->fillAll(0.0);
         volume->fillAll(vol);
 
-        deltas->fill(dx, 0);
-        deltas->fill(dy, 1);
+        /*
+         * Fill in arrays of dx/dy
+         */
+        celldeltas->fill(dx, 0);
+        celldeltas->fill(dy, 1);
+
+        vertexdeltas->fill(dx, 0);
+        vertexdeltas->fill(dy, 1);
+        
+        double* vertexx = vertexcoords->getPointer(0);
+        double* vertexy = vertexcoords->getPointer(1);
+
+        int xcount = 0;
+        int ycount = 0;
+
+        hier::IntVector vertex_ghosts = vertexcoords->getGhostCellWidth();
+
+        int vimin = ifirst(0) - vertex_ghosts(0);
+        int vimax = ilast(0) + vertex_ghosts(0);
+        int vjmin = ifirst(1) - vertex_ghosts(1);
+        int vjmax = ilast(1) + vertex_ghosts(1);
+
+        vimax+=1;
+        vjmax+=1;
+
+        int vnx = vimax - vimin + 1;
+
+        for(int j = vjmin; j <= vjmax; j++) {
+
+            xcount = 0;
+
+            for(int i = vimin; i <= vimax; i++) {
+                int ind = POLY2(i,j,vimin,vjmin,vnx);
+
+                vertexx[ind] = xmin + dx*(xcount-xmin);
+                vertexy[ind] = ymin + dy*(ycount-ymin);
+
+                xcount++;
+            }
+
+            ycount++;
+        }
+
+        double* cellx = cellcoords->getPointer(0);
+        double* celly = cellcoords->getPointer(1);
+
+        for(int j = jmin; j <= jmax; j++) {
+            for(int i = imin; i <= imax; i++) {
+                int vind = POLY2(i,j,vimin,vjmin,vnx);
+                int vind2 = POLY2(i+1,j,vimin,vjmin,vnx);
+                int vind3 = POLY2(i,j+1,vimin,vjmin,vnx);
+
+                int ind = POLY2(i,j,imin,jmin,nx);
+
+                cellx[ind] = 0.5*(vertexx[vind]+vertexx[vind2]);
+                celly[ind] = 0.5*(vertexy[vind]+vertexy[vind3]);
+            }
+        }
     }
 }
 
@@ -209,7 +300,11 @@ double Cleverleaf::computeStableDtOnPatch(
 
     tbox::Pointer<pdat::CellData<double> > viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > deltas = patch.getPatchData(d_deltas, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
+
+    tbox::Pointer<pdat::CellData<double> > volume = patch.getPatchData(d_volume, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > cellcoords = patch.getPatchData(d_cellcoords, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > energy = patch.getPatchData(d_energy, getCurrentDataContext());
 
     const hier::Index ifirst = patch.getBox().lower();
     const hier::Index ilast = patch.getBox().upper();
@@ -245,17 +340,33 @@ double Cleverleaf::computeStableDtOnPatch(
         viscosity->getPointer(),
         vel0->getPointer(0),
         vel0->getPointer(1),
-        deltas->getPointer(0),
-        deltas->getPointer(1));
+        celldeltas->getPointer(0),
+        celldeltas->getPointer(1));
 
     /*
      * update_halos viscosity
-     *
-     * calc_dt()
-     *
-     *
      */
-    return 0.04;
+     double dt = calc_dt_knl(
+             xmin,
+             xmax,
+             ymin,
+             ymax,
+             celldeltas->getPointer(0),
+             celldeltas->getPointer(1),
+             soundspeed->getPointer(),
+             viscosity->getPointer(),
+             pressure->getPointer(),
+             vel0->getPointer(0),
+             vel0->getPointer(1),
+             density0->getPointer(),
+             energy->getPointer(),
+             celldeltas->getPointer(1),
+             celldeltas->getPointer(0),
+             volume->getPointer(),
+             cellcoords->getPointer(0),
+             cellcoords->getPointer(1));
+
+    return dt;
 }
 
 void Cleverleaf::accelerate(
@@ -370,7 +481,7 @@ void Cleverleaf::viscosity_knl(
 }
 
 
-void Cleverleaf::calc_dt_knl(
+double Cleverleaf::calc_dt_knl(
         int xmin,
         int xmax,
         int ymin,
@@ -383,12 +494,24 @@ void Cleverleaf::calc_dt_knl(
         double* xvel0,
         double* yvel0,
         double* density0,
-        double* energy
+        double* energy,
+        double* xarea,
+        double* yarea,
+        double* volume,
+        double* cellx,
+        double* celly
         )
 {
-    double div,dsx,dsy,dtut,dtvt,dtct,dtdivt,cc,dv1,dv2;
+    double div,dsx,dsy,dtut,dtvt,dtct,dtdivt,cc,dv1,dv2,kldt,jldt;
+    double xl_pos,
+           yl_pos;
     double dt_min_val = 1.0e+21;
     double small=0;
+    double dtc_safe = 0.9;
+    int dtl_control;
+    double dtu_safe = 0.5;
+    double dtv_safe = 0.5;
+    double dtdiv_safe = 0.7;
 
     for(int k = ymin; k <= ymax; k++) {
         for(int j = xmin; j <= xmax; j++){
@@ -417,14 +540,14 @@ void Cleverleaf::calc_dt_knl(
 
             div=div+dv2-dv1;
 
-            dtut=2.0*volume[n1]/max(abs(dv1),abs(dv2),1.0e-16*volume[n1]);
+            dtut=2.0*volume[n1]/max(abs(dv1), max(abs(dv2),1.0e-16*volume[n1]));
 
             dv1=(yvel0[n1]+yvel0[n2])*yarea[n1];
             dv2=(yvel0[n5]+yvel0[n6])*yarea[n5];
 
             div=div+dv2-dv1;
 
-            dtvt=2.0*volume[n1]/max(abs(dv1),abs(dv2),1.0e-16*volume[n1]);
+            dtvt=2.0*volume[n1]/max(abs(dv1),max(abs(dv2),1.0e-16*volume[n1]));
 
             div=div/(2.0*volume[n1]);
 
@@ -444,25 +567,25 @@ void Cleverleaf::calc_dt_knl(
                 yl_pos=celly[n1];
             }
 
-            dtut=dtut*dtu_safe
-                if (dtut < dt_min_val) {
-                    jldt=j;
-                    kldt=k;
-                    dt_min_val=dtut;
-                    dtl_control=2;
-                    xl_pos=cellx[n1];
-                    yl_pos=celly[n1];
-                }
+            dtut=dtut*dtu_safe;
+            if (dtut < dt_min_val) {
+                jldt=j;
+                kldt=k;
+                dt_min_val=dtut;
+                dtl_control=2;
+                xl_pos=cellx[n1];
+                yl_pos=celly[n1];
+            }
 
-            dtvt=dtvt*dtv_safe
-                if (dtvt < dt_min_val) {
-                    jldt=j;
-                    kldt=k;
-                    dt_min_val=dtvt;
-                    dtl_control=3;
-                    xl_pos=cellx[n1];
-                    yl_pos=celly[n1];
-                }
+            dtvt=dtvt*dtv_safe;
+            if (dtvt < dt_min_val) {
+                jldt=j;
+                kldt=k;
+                dt_min_val=dtvt;
+                dtl_control=3;
+                xl_pos=cellx[n1];
+                yl_pos=celly[n1];
+            }
 
             dtdivt=dtdivt*dtdiv_safe;
             if (dtdivt < dt_min_val) {
@@ -476,5 +599,7 @@ void Cleverleaf::calc_dt_knl(
         }
 
     }
+
+    cout << "RETURNING " << dt_min_val << " FROM calc_dt_knl()" << endl;
     return dt_min_val;
 }
