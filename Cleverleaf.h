@@ -68,6 +68,21 @@ class Cleverleaf:
                 double* celldx,
                 double* celldy);
 
+        void calc_dt_knl(
+            int xmin,
+            int xmax,
+            int ymin,
+            int ymax,
+            double* celldx,
+            double* celldy,
+            double* soundspeed,
+            double* viscosity,
+            double* pressure,
+            double* xvel0,
+            double* yvel0,
+            double* density,
+            double* energy);
+
     private:
 
         tbox::Pointer<hier::PatchHierarchy> d_hierarchy;

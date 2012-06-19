@@ -222,7 +222,7 @@ double Cleverleaf::computeStableDtOnPatch(
     /*
      * ideal_gas() predictor
      */
-    ideal_gas(xmin,
+    ideal_gas_knl(xmin,
             xmax,
             ymin,
             ymax,
@@ -369,3 +369,112 @@ void Cleverleaf::viscosity_knl(
   }
 }
 
+
+void Cleverleaf::calc_dt_knl(
+        int xmin,
+        int xmax,
+        int ymin,
+        int ymax,
+        double* celldx,
+        double* celldy,
+        double* soundspeed,
+        double* viscosity,
+        double* pressure,
+        double* xvel0,
+        double* yvel0,
+        double* density0,
+        double* energy
+        )
+{
+    double div,dsx,dsy,dtut,dtvt,dtct,dtdivt,cc,dv1,dv2;
+    double dt_min_val = 1.0e+21;
+    double small=0;
+
+    for(int k = ymin; k <= ymax; k++) {
+        for(int j = xmin; j <= xmax; j++){
+
+            int n1 = POLY2(j,k,xmin,ymin, (xmax-xmin+1));
+            int n2 = POLY2(j+1,k,xmin,ymin, (xmax-xmin+1));
+            int n3 = POLY2(j,k-1,xmin,ymin, (xmax-xmin+1));
+            int n4 = POLY2(j-1,k,xmin,ymin, (xmax-xmin+1));
+            int n5 = POLY2(j,k+1,xmin,ymin, (xmax-xmin+1));
+            int n6 = POLY2(j+1,k+1,xmin,ymin, (xmax-xmin+1));
+            int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
+
+            dsx=celldx[n1];
+            dsy=celldy[n1];
+
+            cc=soundspeed[n1]*soundspeed[n1];
+            cc=cc+2.0*viscosity[n1]/density0[n1];
+            cc=max(sqrt(cc),1.0e-16);
+
+            dtct=min(dsx,dsy)/cc;
+
+            div=0.0;
+
+            dv1=(xvel0[n1]+xvel0[n5])*xarea[n1];
+            dv2=(xvel0[n2]+xvel0[n6])*xarea[n2];
+
+            div=div+dv2-dv1;
+
+            dtut=2.0*volume[n1]/max(abs(dv1),abs(dv2),1.0e-16*volume[n1]);
+
+            dv1=(yvel0[n1]+yvel0[n2])*yarea[n1];
+            dv2=(yvel0[n5]+yvel0[n6])*yarea[n5];
+
+            div=div+dv2-dv1;
+
+            dtvt=2.0*volume[n1]/max(abs(dv1),abs(dv2),1.0e-16*volume[n1]);
+
+            div=div/(2.0*volume[n1]);
+
+            if (div < -1.0e-16) {
+                dtdivt=-1.0/div;
+            } else {
+                dtdivt=1.0e+21;
+            }
+
+            dtct=dtct*dtc_safe;
+            if (dtct < dt_min_val) {
+                jldt=j;
+                kldt=k;
+                dt_min_val=dtct;
+                dtl_control=1;
+                xl_pos=cellx[n1];
+                yl_pos=celly[n1];
+            }
+
+            dtut=dtut*dtu_safe
+                if (dtut < dt_min_val) {
+                    jldt=j;
+                    kldt=k;
+                    dt_min_val=dtut;
+                    dtl_control=2;
+                    xl_pos=cellx[n1];
+                    yl_pos=celly[n1];
+                }
+
+            dtvt=dtvt*dtv_safe
+                if (dtvt < dt_min_val) {
+                    jldt=j;
+                    kldt=k;
+                    dt_min_val=dtvt;
+                    dtl_control=3;
+                    xl_pos=cellx[n1];
+                    yl_pos=celly[n1];
+                }
+
+            dtdivt=dtdivt*dtdiv_safe;
+            if (dtdivt < dt_min_val) {
+                jldt=j;
+                kldt=k;
+                dt_min_val=dtdivt;
+                dtl_control=4;
+                xl_pos=cellx[n1];
+                yl_pos=celly[n1];
+            }
+        }
+
+    }
+    return dt_min_val;
+}
