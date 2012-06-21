@@ -187,8 +187,8 @@ void Cleverleaf::initializeDataOnPatch(
             for(int i = imin; i <= imax; i++) {
                 int n1 = POLY2(i,j,imin,jmin,nx);
 
-                if (((i >= imin + 2) && (i <= imax - 2)) &&
-                        ((j >= jmin + 2) && ( j <= jmax - 2))) {
+                if (((i >= imin + 32) && (i <= imax - 32)) &&
+                        ((j >= jmin + 32) && ( j <= jmax - 32))) {
                     density_data[n1] = 0.1;
                     energy_data[n1] = 1.0;
                 } else {
