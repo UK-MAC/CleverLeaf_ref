@@ -1,12 +1,10 @@
 #include "SAMRAI/SAMRAI_config.h"
 
-// Header for application-specific algorithm/data structure object
-
+// Header for application-specific algorithm/data structure objects
 #include "Cleverleaf.h"
 #include "LagrangianEulerianIntegrator.h"
 
-// Headers for major algorithm/data structure objects from SAMRAI
-
+// Headers for SAMRAI
 #include "SAMRAI/algs/TimeRefinementIntegrator.h"
 #include "SAMRAI/mesh/BergerRigoutsos.h"
 #include "SAMRAI/geom/CartesianGridGeometry.h"
@@ -16,13 +14,10 @@
 #include "SAMRAI/hier/VariableDatabase.h"
 #include "SAMRAI/mesh/StandardTagAndInitialize.h"
 #include "SAMRAI/appu/VisItDataWriter.h"
-
-// Headers for basic SAMRAI objects
-
 #include "SAMRAI/tbox/Pointer.h"
 #include "SAMRAI/tbox/InputManager.h"
 
-
+// Normal headers
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -88,7 +83,7 @@ int main(int argc, char* argv[]) {
                     input_db->getDatabase("PatchHierarchy")));
 
         /*
-         * Create the kamra model here to control the maths specific to this
+         * Create the Cleverleaf model here to control the maths specific to this
          * program.
          */
         tbox::Pointer<tbox::Database> cleverleaf_db = input_db->getDatabase("Cleverleaf");
@@ -104,6 +99,10 @@ int main(int argc, char* argv[]) {
         tbox::Pointer<LagrangianEulerianIntegrator> lagrangian_eulerian_integrator(
                 new LagrangianEulerianIntegrator("LagrangianEulerianIntegrator",
                     input_db->getDatabase("LagrangianEulerianIntegrator"),
+                    /*
+                     * Pass the Cleverleaf model to the integrator,
+                     * again following the Strategy pattern.
+                     */
                     cleverleaf));
 
         tbox::Pointer<mesh::StandardTagAndInitialize> error_detector(
@@ -148,9 +147,8 @@ int main(int argc, char* argv[]) {
          */
 
         /*
-         * TODO: Set up ViSiT writer here.
+         * Set up ViSiT writer here.
          */
-
         tbox::Pointer<appu::VisItDataWriter> visit_data_writer(
                 new appu::VisItDataWriter(dim,
                     "Kamra VisIt Writer",
@@ -160,77 +158,64 @@ int main(int argc, char* argv[]) {
         cleverleaf->registerVisItDataWriter(visit_data_writer);
 
         /*
-         * Write data file
-         */
-//        if(vis_me)
-//            visit_data_writer->writePlotData(
-//                    patch_hierarchy,
-//                    time_integrator->getIntegratorStep(),
-//                    time_integrator->getIntegratorTime());
-//
-        /*
          * Initialise the hierarchy config and data on all patches
          */
+        double dt_now = time_integrator->initializeHierarchy();
 
+        /*
+         * After creating all objects and initializing their state, we
+         * print the input database and variable database contents
+         * to the log file.
+         */
+        tbox::plog << "\nCheck input data and variables before simulation:"
+            << endl;
+        tbox::plog << "Input database..." << endl;
+        input_db->printClassData(tbox::plog);
+        tbox::plog << "\nVariable database..." << endl;
+        hier::VariableDatabase::getDatabase()->printClassData(tbox::plog);
 
-      double dt_now = time_integrator->initializeHierarchy();
-
-      /*
-       * After creating all objects and initializing their state, we
-       * print the input database and variable database contents
-       * to the log file.
-       */
-      tbox::plog << "\nCheck input data and variables before simulation:"
-                 << endl;
-      tbox::plog << "Input database..." << endl;
-      input_db->printClassData(tbox::plog);
-      tbox::plog << "\nVariable database..." << endl;
-      hier::VariableDatabase::getDatabase()->printClassData(tbox::plog);
-
-      //tbox::plog << "\nCheck Euler data... " << endl;
-      //euler_model->printClassData(tbox::plog);
-
-
-      double loop_time = time_integrator->getIntegratorTime();
-      double loop_time_end = time_integrator->getEndTime();
+        double loop_time = time_integrator->getIntegratorTime();
+        double loop_time_end = time_integrator->getEndTime();
 
         /*
          * MAIN LOOP
          *
          * Step count and integration time are maintained by algs::TimeRefinementIntegrator
          */
+        while ((loop_time < loop_time_end) &&
+                time_integrator->stepsRemaining()) {
 
-      while ((loop_time < loop_time_end) &&
-             time_integrator->stepsRemaining()) {
+            int iteration_num = time_integrator->getIntegratorStep() + 1;
 
-         int iteration_num = time_integrator->getIntegratorStep() + 1;
+            tbox::pout << "++++++++++++++++++++++++++++++++++++++++++++" << endl;
+            tbox::pout << "At begining of timestep # " << iteration_num - 1
+                << endl;
+            tbox::pout << "Simulation time is " << loop_time << endl;
+            tbox::pout << "Current dt is " << dt_now << endl;
 
-         tbox::pout << "++++++++++++++++++++++++++++++++++++++++++++" << endl;
-         tbox::pout << "At begining of timestep # " << iteration_num - 1
-                    << endl;
-         tbox::pout << "Simulation time is " << loop_time << endl;
-         tbox::pout << "Current dt is " << dt_now << endl;
+            double dt_new = time_integrator->advanceHierarchy(dt_now);
 
-         double dt_new = time_integrator->advanceHierarchy(dt_now);
+            loop_time += dt_now;
+            dt_now = dt_new;
 
-         loop_time += dt_now;
-         dt_now = dt_new;
+            tbox::pout << "At end of timestep # " << iteration_num - 1 << endl;
+            tbox::pout << "Simulation time is " << loop_time << endl;
+            tbox::pout << "++++++++++++++++++++++++++++++++++++++++++++" << endl;
 
-         tbox::pout << "At end of timestep # " << iteration_num - 1 << endl;
-         tbox::pout << "Simulation time is " << loop_time << endl;
-         tbox::pout << "++++++++++++++++++++++++++++++++++++++++++++" << endl;
+            /*
+             * Write out visualisation data
+             */
+            if ((vis_dump_interval > 0)
+                    && (iteration_num % vis_dump_interval) == 0) {
+                visit_data_writer->writePlotData(patch_hierarchy,
+                        iteration_num,
+                        loop_time);
+            }
+        }
 
-         if ((vis_dump_interval > 0)
-                 && (iteration_num % vis_dump_interval) == 0) {
-             visit_data_writer->writePlotData(patch_hierarchy,
-                     iteration_num,
-                     loop_time);
-         }
-      }
-      /*
+        /*
          * Deallocate objects
          */
-
         patch_hierarchy.setNull();
         grid_geometry.setNull();
         box_generator.setNull();
