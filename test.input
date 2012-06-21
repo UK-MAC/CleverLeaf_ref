@@ -3,9 +3,9 @@ Main {
 }
 
 CartesianGeometry {
-    domain_boxes = [ (0,0), (24,24) ]
-    x_lo         = 0e0, 0e0
-    x_up         = 1.e0, 1.e0
+    domain_boxes = [ (0,0), (128,128) ]
+    x_lo         = -50.e0, -50.e0
+    x_up         = 50.e0, 50.e0
 }
 
 PatchHierarchy {
@@ -16,11 +16,11 @@ PatchHierarchy {
     }
     
     largest_patch_size {
-        level_0 = 24,24
+        level_0 = 128,128
     }
 
     smallest_patch_size {
-        level_0 = 23,23
+        level_0 = 128,128
     }
 }
 
@@ -48,7 +48,7 @@ GriddingAlgorithm {
 
 TimeRefinementIntegrator {
     start_time = 0.e0
-    end_time = 5.e0
-    grow_dt = 1.1e0
-    max_integrator_steps = 4
+    end_time = 3.e0
+    grow_dt = 1.5e0
+    max_integrator_steps = 1000
 }
