@@ -207,6 +207,11 @@ double LagrangianEulerianIntegrator::advanceLevel(
      * timelevel 1 values back to timelevel 0.
      */
 
+    resetField(level);
+
+    /*
+     * Compute our next dt.
+     */
     const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
     double dt_next = tbox::MathUtilities<double>::getMax();
     double patch_dt;
@@ -318,6 +323,7 @@ void LagrangianEulerianIntegrator::putToDatabase(
 
 void LagrangianEulerianIntegrator::registerVariable(
         tbox::Pointer<hier::Variable> var,
+        const VAR_TYPE var_type,
         const hier::IntVector ghosts,
         const tbox::Pointer<hier::GridGeometry> transfer_geom)
 {
@@ -331,19 +337,46 @@ void LagrangianEulerianIntegrator::registerVariable(
 
     const hier::IntVector& zero_ghosts(hier::IntVector::getZero(dim));
 
-    int cur_id = variable_db->registerVariableAndContext(var,
-            d_current,
-            zero_ghosts);
+    switch (var_type) {
+        case FIELD: {
+                        d_field_vars.appendItem(var);
+                    }
 
-    int new_id = variable_db->registerVariableAndContext(var,
-            d_new,
-            zero_ghosts);
+                    int cur_id = variable_db->registerVariableAndContext(var,
+                            d_current,
+                            zero_ghosts);
 
-    d_temp_var_cur_data.setFlag(cur_id);
-    d_temp_var_new_data.setFlag(new_id);
+                    int new_id = variable_db->registerVariableAndContext(var,
+                            d_new,
+                            zero_ghosts);
+
+                    d_temp_var_cur_data.setFlag(cur_id);
+                    d_temp_var_new_data.setFlag(new_id);
+    }
 }
 
 tbox::Pointer<hier::VariableContext> LagrangianEulerianIntegrator::getPlotContext()
 {
     return d_plot_context;
+}
+
+
+void LagrangianEulerianIntegrator::resetField(
+   const tbox::Pointer<hier::PatchLevel> level)
+{
+   for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
+      tbox::Pointer<hier::Patch> patch = *ip;
+
+      tbox::List<tbox::Pointer<hier::Variable> >::Iterator
+         field_var = d_field_vars.listStart();
+      while (field_var) {
+         tbox::Pointer<hier::PatchData> src_data =
+            patch->getPatchData(field_var(), d_new);
+         tbox::Pointer<hier::PatchData> dst_data =
+            patch->getPatchData(field_var(), d_current);
+
+         dst_data->copy(*src_data);
+         field_var++;
+      }
+   }
 }
