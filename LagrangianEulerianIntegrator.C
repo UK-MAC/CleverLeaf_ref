@@ -337,22 +337,19 @@ void LagrangianEulerianIntegrator::registerVariable(
 
     const hier::IntVector& zero_ghosts(hier::IntVector::getZero(dim));
 
-    switch (var_type) {
-        case FIELD: {
-                        d_field_vars.appendItem(var);
-                    }
+    if(var_type == FIELD)
+        d_field_vars.appendItem(var);
 
-                    int cur_id = variable_db->registerVariableAndContext(var,
-                            d_current,
-                            zero_ghosts);
+    int cur_id = variable_db->registerVariableAndContext(var,
+            d_current,
+            zero_ghosts);
 
-                    int new_id = variable_db->registerVariableAndContext(var,
-                            d_new,
-                            zero_ghosts);
+    int new_id = variable_db->registerVariableAndContext(var,
+            d_new,
+            zero_ghosts);
 
-                    d_temp_var_cur_data.setFlag(cur_id);
-                    d_temp_var_new_data.setFlag(new_id);
-    }
+    d_temp_var_cur_data.setFlag(cur_id);
+    d_temp_var_new_data.setFlag(new_id);
 }
 
 tbox::Pointer<hier::VariableContext> LagrangianEulerianIntegrator::getPlotContext()
