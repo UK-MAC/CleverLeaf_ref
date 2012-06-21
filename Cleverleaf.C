@@ -189,11 +189,11 @@ void Cleverleaf::initializeDataOnPatch(
 
                 if (((i >= imin + 32) && (i <= imax - 32)) &&
                         ((j >= jmin + 32) && ( j <= jmax - 32))) {
-                    density_data[n1] = 0.1;
-                    energy_data[n1] = 1.0;
-                } else {
                     density_data[n1] = 1.0;
                     energy_data[n1] = 2.5;
+                } else {
+                    density_data[n1] = 0.1;
+                    energy_data[n1] = 1.0;
                 }
             }
         }
@@ -213,7 +213,7 @@ void Cleverleaf::initializeDataOnPatch(
         /*
          * Use the fillAll() methods to initialise other variables for now...
          */
-        velocity->fillAll(1.0);
+        velocity->fillAll(0.0);
         massflux->fillAll(0.0);
         volflux->fillAll(0.0);
         viscosity->fillAll(0.0);
@@ -465,12 +465,12 @@ void Cleverleaf::viscosity_knl(
 #endif
           if(!((limiter > 0.0) || (div >= 0.0))) {
 #ifdef DEBUG
-            tbox::pout << "Updating viscosity[" << n1 << "]=" << 2.0*density[n1]*grad2*(limiter*limiter) << std::endl;
+            tbox::pout << "Updating viscosity[" << j-xmin << "][" << k-ymin << "]=" << 2.0*density[n1]*grad2*(limiter*limiter) << std::endl;
 #endif
               viscosity[n1]=2.0*density[n1]*grad2*(limiter*limiter);
           } else {
 #ifdef DEBUG
-            tbox::pout << "[ZERO] Updating viscosity[" << n1 << "]=" << 0.0 << std::endl;
+            tbox::pout << "[ZERO] Updating viscosity[" << j-xmin << "][" << k-ymin << "]=" << 0.0 << std::endl;
 #endif
               viscosity[n1] = 0.0;
           }
