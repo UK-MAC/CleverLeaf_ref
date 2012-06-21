@@ -45,23 +45,22 @@ Cleverleaf::Cleverleaf(
 void Cleverleaf::registerModelVariables(
         LagrangianEulerianIntegrator* integrator) 
 {
+    integrator->registerVariable(d_velocity, LagrangianEulerianIntegrator::FIELD,  d_nghosts, d_grid_geometry);
+    integrator->registerVariable(d_massflux, LagrangianEulerianIntegrator::NORMAL,  d_nghosts, d_grid_geometry);
+    integrator->registerVariable(d_volflux, LagrangianEulerianIntegrator::NORMAL,  d_nghosts, d_grid_geometry);
 
-    integrator->registerVariable(d_velocity, d_nghosts, d_grid_geometry);
-    integrator->registerVariable(d_massflux, d_nghosts, d_grid_geometry);
-    integrator->registerVariable(d_volflux, d_nghosts, d_grid_geometry);
+    integrator->registerVariable(d_pressure, LagrangianEulerianIntegrator::NORMAL,  d_nghosts, d_grid_geometry);
+    integrator->registerVariable(d_viscosity, LagrangianEulerianIntegrator::NORMAL,  d_nghosts, d_grid_geometry);
+    integrator->registerVariable(d_soundspeed, LagrangianEulerianIntegrator::NORMAL,  d_nghosts, d_grid_geometry);
+    integrator->registerVariable(d_density, LagrangianEulerianIntegrator::FIELD,  d_nghosts, d_grid_geometry);
+    integrator->registerVariable(d_energy, LagrangianEulerianIntegrator::FIELD,  d_nghosts, d_grid_geometry);
+    integrator->registerVariable(d_volume, LagrangianEulerianIntegrator::NORMAL,  d_nghosts, d_grid_geometry);
 
-    integrator->registerVariable(d_pressure, d_nghosts, d_grid_geometry);
-    integrator->registerVariable(d_viscosity, d_nghosts, d_grid_geometry);
-    integrator->registerVariable(d_soundspeed, d_nghosts, d_grid_geometry);
-    integrator->registerVariable(d_density, d_nghosts, d_grid_geometry);
-    integrator->registerVariable(d_energy, d_nghosts, d_grid_geometry);
-    integrator->registerVariable(d_volume, d_nghosts, d_grid_geometry);
+    integrator->registerVariable(d_celldeltas, LagrangianEulerianIntegrator::NORMAL,  d_nghosts, d_grid_geometry);
+    integrator->registerVariable(d_cellcoords, LagrangianEulerianIntegrator::NORMAL,  d_nghosts, d_grid_geometry);
 
-    integrator->registerVariable(d_celldeltas, d_nghosts, d_grid_geometry);
-    integrator->registerVariable(d_cellcoords, d_nghosts, d_grid_geometry);
-
-    integrator->registerVariable(d_vertexdeltas, d_nghosts, d_grid_geometry);
-    integrator->registerVariable(d_vertexcoords, d_nghosts, d_grid_geometry);
+    integrator->registerVariable(d_vertexdeltas, LagrangianEulerianIntegrator::NORMAL,  d_nghosts, d_grid_geometry);
+    integrator->registerVariable(d_vertexcoords, LagrangianEulerianIntegrator::NORMAL,  d_nghosts, d_grid_geometry);
 
     hier::VariableDatabase* vardb = hier::VariableDatabase::getDatabase();
 

@@ -11,6 +11,7 @@
 #include "SAMRAI/tbox/Serializable.h"
 #include "SAMRAI/tbox/Pointer.h"
 #include "SAMRAI/tbox/Database.h"
+#include "SAMRAI/tbox/List.h"
 
 #include <string>
 
@@ -22,6 +23,12 @@ class LagrangianEulerianIntegrator:
     public tbox::Serializable
 {
     public:
+
+        enum VAR_TYPE {
+            FIELD = 0,
+            FLUX = 1,
+            NORMAL = 2 };
+
         LagrangianEulerianIntegrator(
                 const std::string& object_name,
                 tbox::Pointer<tbox::Database> input_db,
@@ -41,6 +48,7 @@ class LagrangianEulerianIntegrator:
          */
         void registerVariable(
                 tbox::Pointer<hier::Variable> var,
+                const VAR_TYPE var_type,
                 hier::IntVector nghosts,
                 const tbox::Pointer<hier::GridGeometry> transfer_geom);
 
@@ -122,6 +130,12 @@ class LagrangianEulerianIntegrator:
 
         void putToDatabase(tbox::Pointer<tbox::Database> database);
 
+        /*
+         * Copy new field variable values back to timelevel 0.
+         */
+        void resetField(
+                const tbox::Pointer<hier::PatchLevel> level);
+
     protected:
         /*
          * PatchStrategy contains user-specified methods needed for
@@ -150,6 +164,8 @@ class LagrangianEulerianIntegrator:
         hier::ComponentSelector d_temp_var_scratch_data;
         hier::ComponentSelector d_temp_var_cur_data;
         hier::ComponentSelector d_temp_var_new_data;
+
+        tbox::List<tbox::Pointer<hier::Variable> > d_field_vars;
 };
 
 #endif
