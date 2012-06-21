@@ -219,6 +219,7 @@ void Cleverleaf::initializeDataOnPatch(
         viscosity->fillAll(0.0);
         soundspeed->fillAll(0.0);
         volume->fillAll(vol);
+        pressure->fillAll(0.0);
 
         /*
          * Fill in arrays of dx/dy
@@ -677,29 +678,37 @@ void Cleverleaf::pdv_knl(
 
                   total_flux=right_flux-left_flux+top_flux-bottom_flux;
 
-                  volume_change[n1]=volume[n1]/(volume[n1]+total_flux);
+                  volume_change[POLY2(j-xmin,k-ymin,0,0,(xmax-xmin+1))]=volume[n1]/(volume[n1]+total_flux);
 
                   min_cell_volume=min(
                           volume[n1]+right_flux-left_flux+top_flux-bottom_flux,
                           min(volume[n1]+right_flux-left_flux,
                           volume[n1]+top_flux-bottom_flux));
 
-                  // IF(volume_change[n1].LE.0.0)THEN!Perhapstakethesetestsoutsoitwillvectorise;
-                  // error_condition=1;
-                  // ENDIF;
-                  // IF(min_cell_volume.LE.0.0)THEN;
-                  // error_condition=2;
-                  // ENDIF;
+                  //Perhaps take these tests out so it will vectorise;
+                  if (volume_change[POLY2(j-xmin,k-ymin,0,0,(xmax-xmin+1))] <= 0.0 ) { 
+                      cout << "HIT PDV ERROR COND 1 " << endl;
+                  }
+                  if (min_cell_volume <= 0.0) {
+                      cout << "HIT PDV ERROR COND 2" << endl;
+                  }
 
                   recip_volume=1.0/volume[n1];
 
+#ifdef DEBUG
+                  cout << pressure[n1] << ", " << density0[n1] << ", " << viscosity[n1] << endl;
+#endif
                   energy_change=(pressure[n1]/density0[n1]+viscosity[n1]/density0[n1])*total_flux*recip_volume;
 
+#ifdef DEBUG
+                  cout << "total flux=" << total_flux << ", n1=" << n1 << ", recip_volume=" << recip_volume << endl;
+                  cout << "energy change=" << energy_change << ", volume_change=" << volume_change[POLY2(j-xmin,k-ymin,0,0,(xmax-xmin+1))] << endl;
+#endif
                   energy1[n1]=energy0[n1]-energy_change;
 
-                  density1[n1]=density0[n1]*volume_change[n1];
+                  density1[n1]=density0[n1]*volume_change[POLY2(j-xmin,k-ymin,0,0,(xmax-xmin+1))];
 
-                  density1[n1]=density0[n1]*volume_change[n1];
+                  density1[n1]=density0[n1]*volume_change[POLY2(j-xmin,k-ymin,0,0,(xmax-xmin+1))];
               }
           }
 
