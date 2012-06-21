@@ -191,13 +191,13 @@ double LagrangianEulerianIntegrator::advanceLevel(
 
 
     /*
-     * TODO: Acceleration kernel.
+     * TODO: PdV kernel.
      */
     for(hier::PatchLevel::Iterator p(level);p;p++){
 
         tbox::Pointer<hier::Patch>patch=*p;
 
-        d_patch_strategy->accelerate(*patch,dt);
+        d_patch_strategy->pdv_knl(*patch,dt, true);
     }
 
     level->setTime(new_time);

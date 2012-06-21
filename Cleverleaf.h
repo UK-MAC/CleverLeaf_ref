@@ -89,6 +89,12 @@ class Cleverleaf:
             double* cellx,
             double* celly);
 
+
+        void pdv_knl(
+            hier::Patch& patch,
+            double dt,
+            bool predict);
+
     private:
 
         tbox::Pointer<hier::PatchHierarchy> d_hierarchy;

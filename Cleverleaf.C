@@ -42,7 +42,8 @@ Cleverleaf::Cleverleaf(
     d_vertexcoords = new pdat::NodeVariable<double>(d_dim, "vertexcoords", d_dim.getValue());
 }
 
-void Cleverleaf::registerModelVariables(LagrangianEulerianIntegrator* integrator) 
+void Cleverleaf::registerModelVariables(
+        LagrangianEulerianIntegrator* integrator) 
 {
 
     integrator->registerVariable(d_velocity, d_nghosts, d_grid_geometry);
@@ -599,4 +600,152 @@ double Cleverleaf::calc_dt_knl(
 
     cout << "RETURNING " << dt_min_val << " FROM calc_dt_knl()" << endl;
     return dt_min_val;
+}
+
+void Cleverleaf::pdv_knl(
+        hier::Patch& patch,
+        double dt,
+        bool predict)
+{
+    double left_flux, right_flux, bottom_flux, top_flux, total_flux;
+    double recip_volume, energy_change, min_cell_volume;
+
+    /*
+     * Sort out x and y bounds of patch
+     */
+    const hier::Index ifirst = patch.getBox().lower();
+    const hier::Index ilast = patch.getBox().upper();
+
+    int xmin = ifirst(0); 
+    int xmax = ilast(0); 
+    int ymin = ifirst(1); 
+    int ymax = ilast(1); 
+
+    /*
+     * Get necessary variables
+     */
+    tbox::Pointer<pdat::CellData<double> > area = patch.getPatchData(d_celldeltas, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > vol = patch.getPatchData(d_volume, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > dens0 = patch.getPatchData(d_density, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > dens1 = patch.getPatchData(d_density, getNewDataContext());
+    tbox::Pointer<pdat::CellData<double> > en0 = patch.getPatchData(d_energy, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > en1 = patch.getPatchData(d_energy, getNewDataContext());
+    tbox::Pointer<pdat::CellData<double> > pres = patch.getPatchData(d_pressure, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > visc = patch.getPatchData(d_viscosity, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v0 = patch.getPatchData(d_velocity, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v1 = patch.getPatchData(d_velocity, getNewDataContext());
+
+    double* xarea = area->getPointer(1);   
+    double* yarea = area->getPointer(0);   
+    double* volume = vol->getPointer(); 
+    double* density0 = dens0->getPointer();
+    double* density1  = dens1->getPointer();
+    double* energy0 = en0->getPointer();
+    double* energy1 = en1->getPointer();
+    double* pressure = pres->getPointer();
+    double* viscosity= visc->getPointer();
+    double* xvel0 = v0->getPointer(0);
+    double* xvel1 = v1->getPointer(0);
+    double* yvel0 = v0->getPointer(1);
+    double* yvel1 = v1->getPointer(1);
+
+    double* volume_change = (double*) malloc(((xmax-xmin+1)*(ymax-ymin+1))*sizeof(double));
+
+      if ( predict ) {
+
+          for (int k = ymin; k <= ymax; k++) {
+              for (int j = xmin; j <= xmax; j++) { 
+
+                  int n1 = POLY2(j,k,xmin,ymin, (xmax-xmin+1));
+                  int n2 = POLY2(j+1,k,xmin,ymin, (xmax-xmin+1));
+                  int n3 = POLY2(j,k-1,xmin,ymin, (xmax-xmin+1));
+                  int n4 = POLY2(j-1,k,xmin,ymin, (xmax-xmin+1));
+                  int n5 = POLY2(j,k+1,xmin,ymin, (xmax-xmin+1));
+                  int n6 = POLY2(j+1,k+1,xmin,ymin, (xmax-xmin+1));
+                  int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
+
+                  left_flux=(xarea[n1]*(xvel0[n1]+xvel0[n5]
+                              +xvel0[n1]+xvel0[n5]))*0.25*dt*0.5;
+
+                  right_flux=(xarea[n2]*(xvel0[n2]+xvel0[n6]
+                              +xvel0[n2]+xvel0[n6]))*0.25*dt*0.5;
+
+                  bottom_flux=(yarea[n1]*(yvel0[n1]+yvel0[n2]
+                              +yvel0[n1]+yvel0[n2]))*0.25*dt*0.5;
+
+                  top_flux=(yarea[n5]*(yvel0[n5]+yvel0[n6]
+                              +yvel0[n5]+yvel0[n6]))*0.25*dt*0.5;
+
+                  total_flux=right_flux-left_flux+top_flux-bottom_flux;
+
+                  volume_change[n1]=volume[n1]/(volume[n1]+total_flux);
+
+                  min_cell_volume=min(
+                          volume[n1]+right_flux-left_flux+top_flux-bottom_flux,
+                          min(volume[n1]+right_flux-left_flux,
+                          volume[n1]+top_flux-bottom_flux));
+
+                  // IF(volume_change[n1].LE.0.0)THEN!Perhapstakethesetestsoutsoitwillvectorise;
+                  // error_condition=1;
+                  // ENDIF;
+                  // IF(min_cell_volume.LE.0.0)THEN;
+                  // error_condition=2;
+                  // ENDIF;
+
+                  recip_volume=1.0/volume[n1];
+
+                  energy_change=(pressure[n1]/density0[n1]+viscosity[n1]/density0[n1])*total_flux*recip_volume;
+
+                  energy1[n1]=energy0[n1]-energy_change;
+
+                  density1[n1]=density0[n1]*volume_change[n1];
+
+                  density1[n1]=density0[n1]*volume_change[n1];
+              }
+          }
+
+  } else {
+
+//    DO k=y_min,y_max
+//      DO j=x_min,x_max
+//
+//        left_flux=  (xarea(j  ,k  )*(xvel0(j  ,k  )+xvel0(j  ,k+1)                     &
+//                                    +xvel1(j  ,k  )+xvel1(j  ,k+1)))*0.25_8*dt
+//        right_flux= (xarea(j+1,k  )*(xvel0(j+1,k  )+xvel0(j+1,k+1)                     &
+//                                    +xvel1(j+1,k  )+xvel1(j+1,k+1)))*0.25_8*dt
+//        bottom_flux=(yarea(j  ,k  )*(yvel0(j  ,k  )+yvel0(j+1,k  )                     &
+//                                    +yvel1(j  ,k  )+yvel1(j+1,k  )))*0.25_8*dt
+//        top_flux=   (yarea(j  ,k+1)*(yvel0(j  ,k+1)+yvel0(j+1,k+1)                     &
+//                                    +yvel1(j  ,k+1)+yvel1(j+1,k+1)))*0.25_8*dt
+//        total_flux=right_flux-left_flux+top_flux-bottom_flux
+//
+//        volume_change(j,k)=volume(j,k)/(volume(j,k)+total_flux)
+//
+//        min_cell_volume=MIN(volume(j,k)+right_flux-left_flux+top_flux-bottom_flux &
+//                           ,volume(j,k)+right_flux-left_flux                      &
+//                           ,volume(j,k)+top_flux-bottom_flux)
+// 
+//        IF(volume_change(j,k).LE.0.0) THEN ! Perhaps take these tests out so it will vectorise
+//          error_condition=1 ! Do I need atomic for OpenMP?
+//        ENDIF
+//        IF(min_cell_volume.LE.0.0) THEN
+//          error_condition=2
+//        ENDIF
+//
+//        recip_volume=1.0/volume(j,k) 
+//
+//        energy_change=(pressure(j,k)/density0(j,k)+viscosity(j,k)/density0(j,k))*total_flux*recip_volume
+//
+//        energy1(j,k)=energy0(j,k)-energy_change
+//
+//        density1(j,k)=density0(j,k)*volume_change(j,k)
+//
+//        density1(j,k)=density0(j,k)*volume_change(j,k)
+//
+//      ENDDO
+//    ENDDO
+
+  }
+
+      delete volume_change;
 }

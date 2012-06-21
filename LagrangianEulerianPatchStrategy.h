@@ -32,6 +32,11 @@ class LagrangianEulerianPatchStrategy
                 const bool initial_time,
                 const double dt_time) = 0;
 
+        virtual void pdv_knl(
+                hier::Patch& patch,
+                double dt,
+                bool predict) = 0;
+
         virtual void tagGradientDetectorCells(
                 hier::Patch& patch,
                 const double regrid_time,
