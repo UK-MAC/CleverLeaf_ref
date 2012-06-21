@@ -314,9 +314,6 @@ double Cleverleaf::computeStableDtOnPatch(
     int ymin = ifirst(1); 
     int ymax = ilast(1); 
 
-    /*
-     * ideal_gas() predictor
-     */
     ideal_gas_knl(xmin,
             xmax,
             ymin,
@@ -327,7 +324,7 @@ double Cleverleaf::computeStableDtOnPatch(
             soundspeed->getPointer());
 
     /* 
-     * update_halos pressure, energy, density, velocity0
+     * TODO: update_halos pressure, energy, density, velocity0
      */
 
      viscosity_knl(
@@ -344,8 +341,9 @@ double Cleverleaf::computeStableDtOnPatch(
         celldeltas->getPointer(1));
 
     /*
-     * update_halos viscosity
+     * TODO: update_halos viscosity
      */
+
      double dt = calc_dt_knl(
              xmin,
              xmax,
@@ -479,7 +477,6 @@ void Cleverleaf::viscosity_knl(
       }
   }
 }
-
 
 double Cleverleaf::calc_dt_knl(
         int xmin,
