@@ -290,7 +290,8 @@ void Cleverleaf::accelerate(
 }
 
 void Cleverleaf::ideal_gas_knl(
-        hier::Patch& patch)
+        hier::Patch& patch,
+        bool predict)
 {
 
     const hier::Index ifirst = patch.getBox().lower();
@@ -301,16 +302,27 @@ void Cleverleaf::ideal_gas_knl(
     int ymin = ifirst(1); 
     int ymax = ilast(1); 
 
-    tbox::Pointer<pdat::CellData<double> > v_density0 = patch.getPatchData(d_density, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v_density;
+    tbox::Pointer<pdat::CellData<double> > v_energy;
 
-    tbox::Pointer<pdat::CellData<double> > v_energy0 = patch.getPatchData(d_energy, getCurrentDataContext());
+    if (predict) {
+        v_density = patch.getPatchData(d_density, getNewDataContext());
+    } else {
+        v_density = patch.getPatchData(d_density, getCurrentDataContext());
+    }
+
+    if (predict) {
+        v_energy = patch.getPatchData(d_energy, getNewDataContext());
+    } else {
+        v_energy = patch.getPatchData(d_energy, getCurrentDataContext());
+    }
 
     tbox::Pointer<pdat::CellData<double> > v_pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
 
     tbox::Pointer<pdat::CellData<double> > v_soundspeed = patch.getPatchData(d_soundspeed, getCurrentDataContext());
 
-    double* density = v_density0->getPointer();
-    double* energy = v_energy0->getPointer();
+    double* density = v_density->getPointer();
+    double* energy = v_energy->getPointer();
     double* pressure = v_pressure->getPointer();
     double* soundspeed = v_soundspeed->getPointer();
 

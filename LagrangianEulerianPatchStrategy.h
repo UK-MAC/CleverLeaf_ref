@@ -31,7 +31,8 @@ class LagrangianEulerianPatchStrategy
                 hier::Patch& patch) = 0;
 
         virtual void ideal_gas_knl(
-                hier::Patch& patch) = 0;
+                hier::Patch& patch,
+                bool predict) = 0;
 
         virtual void viscosity_knl(
                 hier::Patch& patch) = 0;

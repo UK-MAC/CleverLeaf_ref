@@ -42,7 +42,8 @@ class Cleverleaf:
             double dt);
 
         void ideal_gas_knl(
-                hier::Patch& patch);
+                hier::Patch& patch,
+                bool predict);
 
         void viscosity_knl(
                 hier::Patch& patch);

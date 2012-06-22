@@ -86,7 +86,7 @@ double LagrangianEulerianIntegrator::getLevelDt(
     for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
         tbox::Pointer<hier::Patch> patch = *ip;
 
-        d_patch_strategy->ideal_gas_knl(*patch);
+        d_patch_strategy->ideal_gas_knl(*patch, false);
     }
     
     /* 
