@@ -75,88 +75,53 @@ double LagrangianEulerianIntegrator::getLevelDt(
         return 0.04;
     }
 
-    //   tbox::Pointer<hier::PatchLevel> patch_level(level);
-    //
-       const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
-    //
-       double dt = tbox::MathUtilities<double>::getMax();
-       double patch_dt;
-    //
-    //   if (!d_use_ghosts_for_dt) {
-    //
-    //      d_patch_strategy->setDataContext(d_current);
-    //
-    //      for (hier::PatchLevel::Iterator p(patch_level); p; p++) {
-    //         tbox::Pointer<hier::Patch> patch = *p;
-    //
-    //         patch->allocatePatchData(d_temp_var_scratch_data, dt_time);
-    //
-    //         double patch_dt;
-    //         patch_dt = d_patch_strategy->
-    //            computeStableDtOnPatch(*patch,
-    //               initial_time,
-    //               dt_time);
-    //
-    //         dt = tbox::MathUtilities<double>::Min(dt, patch_dt);
-    //         //tbox::plog.precision(12);
-    //         //tbox::plog << "Level " << patch_level->getLevelNumber()
-    //         //           << " Patch " << p()
-    //         //           << " box " << patch->getBox()
-    //         //           << " has patch_dt " << patch_dt
-    //         //           << " dt " << dt
-    //         //           << std::endl;
-    //
-    //         patch->deallocatePatchData(d_temp_var_scratch_data);
-    //      }
-    //
-    //      d_patch_strategy->clearDataContext();
-    //
-    //   } else {
-    //
-    //      //tbox::plog << "use ghosts for dt" << std::endl;
-    //
-          level->allocatePatchData(d_temp_var_cur_data, dt_time);
-          level->allocatePatchData(d_temp_var_new_data, dt_time);
+    const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
+
+    double dt = tbox::MathUtilities<double>::getMax();
+    double patch_dt;
+
+    level->allocatePatchData(d_temp_var_cur_data, dt_time);
+    level->allocatePatchData(d_temp_var_new_data, dt_time);
+
+    for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
+        tbox::Pointer<hier::Patch> patch = *ip;
+
+        d_patch_strategy->ideal_gas_knl(*patch);
+    }
     
-          for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
-             tbox::Pointer<hier::Patch> patch = *ip;
-    
-             patch_dt = d_patch_strategy->
-                computeStableDtOnPatch(*patch,
-                   initial_time,
-                   dt_time);
-    
-             dt = tbox::MathUtilities<double>::Min(dt, patch_dt);
-          }
-    //
-    //      d_patch_strategy->clearDataContext();
-    //
-    //      /*
-    //       * Copy data from scratch to current and de-allocate scratch storage.
-    //       * This may be excessive here, but seems necessary if the
-    //       * computation of dt affects the state of the problem solution.
-    //       * Also, this getLevelDt() routine is called at initialization only
-    //       * in most cases.
-    //       */
-    //
-    //      copyTimeDependentData(patch_level, d_scratch, d_current);
-    //
-    //      patch_level->deallocatePatchData(d_saved_var_scratch_data);
-    //   }
-    //
-    //   /*
-    //    * The level time increment is a global min over all patches.
-    //    */
-    //
-       double global_dt = dt;
-    
-       if (mpi.getSize() > 1) {
-          mpi.AllReduce(&global_dt, 1, MPI_MIN);
-       }
-    
-       //global_dt *= tbox::MathUtilities<double>::Min(d_cfl_init, d_cfl);
-    
-       return global_dt;
+    /* 
+     * TODO: update_halos pressure, energy, density, velocity0
+     */
+
+    for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
+        tbox::Pointer<hier::Patch> patch = *ip;
+
+        d_patch_strategy->viscosity_knl(*patch);
+    }
+
+    /*
+     * TODO: update_halos viscosity
+     */
+
+    for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
+        tbox::Pointer<hier::Patch> patch = *ip;
+
+        patch_dt = d_patch_strategy->
+            calc_dt_knl(*patch);
+
+        dt = tbox::MathUtilities<double>::Min(dt, patch_dt);
+    }
+
+
+
+
+    double global_dt = dt;
+
+    if (mpi.getSize() > 1) {
+        mpi.AllReduce(&global_dt, 1, MPI_MIN);
+    }
+
+    return global_dt;
 }
 
 double LagrangianEulerianIntegrator::advanceLevel(
@@ -213,28 +178,28 @@ double LagrangianEulerianIntegrator::advanceLevel(
     /*
      * Compute our next dt.
      */
-    const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
-    double dt_next = tbox::MathUtilities<double>::getMax();
-    double patch_dt;
+//    const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
+//    double dt_next = tbox::MathUtilities<double>::getMax();
+//    double patch_dt;
+//
+//    for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
+//        tbox::Pointer<hier::Patch> patch = *ip;
+//
+//        patch_dt = d_patch_strategy->
+//            computeStableDtOnPatch(*patch,
+//                    false,
+//                    new_time);
+//
+//        dt_next = tbox::MathUtilities<double>::Min(dt_next, patch_dt);
+//    }
+//
+//    double next_dt = dt_next;
+//
+//    if (mpi.getSize() > 1) {
+//        mpi.AllReduce(&next_dt, 1, MPI_MIN);
+//    }
 
-    for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
-        tbox::Pointer<hier::Patch> patch = *ip;
-
-        patch_dt = d_patch_strategy->
-            computeStableDtOnPatch(*patch,
-                    false,
-                    new_time);
-
-        dt_next = tbox::MathUtilities<double>::Min(dt_next, patch_dt);
-    }
-
-    double next_dt = dt_next;
-
-    if (mpi.getSize() > 1) {
-        mpi.AllReduce(&next_dt, 1, MPI_MIN);
-    }
-
-    return next_dt;
+    return getLevelDt(level,dt,false);
 }
 
 void LagrangianEulerianIntegrator::standardLevelSynchronization(

@@ -283,30 +283,15 @@ void Cleverleaf::initializeDataOnPatch(
     }
 }
 
-double Cleverleaf::computeStableDtOnPatch(
+void Cleverleaf::accelerate(
         hier::Patch& patch,
-        const bool initial_time,
-        const double dt_time)
+        double dt)
 {
+}
 
-    tbox::Pointer<pdat::CellData<double> > density0 = patch.getPatchData(d_density, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > density1 = patch.getPatchData(d_density, getNewDataContext());
-
-
-    tbox::Pointer<pdat::CellData<double> > energy0 = patch.getPatchData(d_energy, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > energy1 = patch.getPatchData(d_energy, getNewDataContext());
-
-    tbox::Pointer<pdat::CellData<double> > pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
-
-    tbox::Pointer<pdat::CellData<double> > soundspeed = patch.getPatchData(d_soundspeed, getCurrentDataContext());
-
-    tbox::Pointer<pdat::CellData<double> > viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
-
-    tbox::Pointer<pdat::CellData<double> > volume = patch.getPatchData(d_volume, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > cellcoords = patch.getPatchData(d_cellcoords, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > energy = patch.getPatchData(d_energy, getCurrentDataContext());
+void Cleverleaf::ideal_gas_knl(
+        hier::Patch& patch)
+{
 
     const hier::Index ifirst = patch.getBox().lower();
     const hier::Index ilast = patch.getBox().upper();
@@ -316,75 +301,19 @@ double Cleverleaf::computeStableDtOnPatch(
     int ymin = ifirst(1); 
     int ymax = ilast(1); 
 
-    ideal_gas_knl(xmin,
-            xmax,
-            ymin,
-            ymax,
-            density0->getPointer(),
-            energy0->getPointer(),
-            pressure->getPointer(),
-            soundspeed->getPointer());
+    tbox::Pointer<pdat::CellData<double> > v_density0 = patch.getPatchData(d_density, getCurrentDataContext());
 
-    /* 
-     * TODO: update_halos pressure, energy, density, velocity0
-     */
+    tbox::Pointer<pdat::CellData<double> > v_energy0 = patch.getPatchData(d_energy, getCurrentDataContext());
 
-     viscosity_knl(
-        xmin,
-        xmax,
-        ymin,
-        ymax,
-        density0->getPointer(),
-        pressure->getPointer(),
-        viscosity->getPointer(),
-        vel0->getPointer(0),
-        vel0->getPointer(1),
-        celldeltas->getPointer(0),
-        celldeltas->getPointer(1));
+    tbox::Pointer<pdat::CellData<double> > v_pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
 
-    /*
-     * TODO: update_halos viscosity
-     */
+    tbox::Pointer<pdat::CellData<double> > v_soundspeed = patch.getPatchData(d_soundspeed, getCurrentDataContext());
 
-     double dt = calc_dt_knl(
-             xmin,
-             xmax,
-             ymin,
-             ymax,
-             celldeltas->getPointer(0),
-             celldeltas->getPointer(1),
-             soundspeed->getPointer(),
-             viscosity->getPointer(),
-             pressure->getPointer(),
-             vel0->getPointer(0),
-             vel0->getPointer(1),
-             density0->getPointer(),
-             energy->getPointer(),
-             celldeltas->getPointer(1),
-             celldeltas->getPointer(0),
-             volume->getPointer(),
-             cellcoords->getPointer(0),
-             cellcoords->getPointer(1));
+    double* density = v_density0->getPointer();
+    double* energy = v_energy0->getPointer();
+    double* pressure = v_pressure->getPointer();
+    double* soundspeed = v_soundspeed->getPointer();
 
-    return dt;
-}
-
-void Cleverleaf::accelerate(
-        hier::Patch& patch,
-        double dt)
-{
-}
-
-void Cleverleaf::ideal_gas_knl(
-        int xmin,
-        int xmax,
-        int ymin,
-        int ymax,
-        double* density,
-        double* energy,
-        double* pressure,
-        double* soundspeed)
-{
     double pressurebyenergy = 0;
     double pressurebyvolume = 0;
     double sound_speed_squared = 0;
@@ -411,22 +340,36 @@ void Cleverleaf::ideal_gas_knl(
 }
 
 void Cleverleaf::viscosity_knl(
-        int xmin,
-        int xmax,
-        int ymin,
-        int ymax,
-        double* density,
-        double* pressure,
-        double* viscosity,
-        double* xvel0,
-        double* yvel0,
-        double* celldx,
-        double* celldy)
+        hier::Patch& patch)
 {
 
   double ugrad,vgrad,grad2,pgradx,pgrady,
          pgradx2,pgrady2,grad,ygrad,pgrad,
          xgrad,div,strain2,limiter;
+
+    const hier::Index ifirst = patch.getBox().lower();
+    const hier::Index ilast = patch.getBox().upper();
+
+    int xmin = ifirst(0); 
+    int xmax = ilast(0); 
+    int ymin = ifirst(1); 
+    int ymax = ilast(1); 
+
+    tbox::Pointer<pdat::CellData<double> > v_density0 = patch.getPatchData(d_density, getCurrentDataContext());
+
+    tbox::Pointer<pdat::CellData<double> > v_pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
+
+    tbox::Pointer<pdat::CellData<double> > v_viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
+
+    double* density = v_density0->getPointer();
+    double* pressure = v_pressure->getPointer();
+    double* viscosity = v_viscosity->getPointer();
+    double* xvel0 = v_vel0->getPointer(0);
+    double* yvel0 = v_vel0->getPointer(1);
+    double* celldx = v_celldeltas->getPointer(0);
+    double* celldy = v_celldeltas->getPointer(1);
 
   for(int k = ymin; k <= ymax; k++) {
       for(int j = xmin; j <= xmax; j++){
@@ -481,29 +424,54 @@ void Cleverleaf::viscosity_knl(
 }
 
 double Cleverleaf::calc_dt_knl(
-        int xmin,
-        int xmax,
-        int ymin,
-        int ymax,
-        double* celldx,
-        double* celldy,
-        double* soundspeed,
-        double* viscosity,
-        double* pressure,
-        double* xvel0,
-        double* yvel0,
-        double* density0,
-        double* energy,
-        double* xarea,
-        double* yarea,
-        double* volume,
-        double* cellx,
-        double* celly
-        )
+        hier::Patch& patch)
 {
     double div,dsx,dsy,dtut,dtvt,dtct,dtdivt,cc,dv1,dv2,kldt,jldt;
     double xl_pos,
            yl_pos;
+
+    const hier::Index ifirst = patch.getBox().lower();
+    const hier::Index ilast = patch.getBox().upper();
+
+    int xmin = ifirst(0); 
+    int xmax = ilast(0); 
+    int ymin = ifirst(1); 
+    int ymax = ilast(1); 
+
+    tbox::Pointer<pdat::CellData<double> > v_density0 = patch.getPatchData(d_density, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v_density1 = patch.getPatchData(d_density, getNewDataContext());
+
+
+    tbox::Pointer<pdat::CellData<double> > v_energy0 = patch.getPatchData(d_energy, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v_energy1 = patch.getPatchData(d_energy, getNewDataContext());
+
+    tbox::Pointer<pdat::CellData<double> > v_pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
+
+    tbox::Pointer<pdat::CellData<double> > v_soundspeed = patch.getPatchData(d_soundspeed, getCurrentDataContext());
+
+    tbox::Pointer<pdat::CellData<double> > v_viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
+
+    tbox::Pointer<pdat::CellData<double> > v_volume = patch.getPatchData(d_volume, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v_cellcoords = patch.getPatchData(d_cellcoords, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v_energy = patch.getPatchData(d_energy, getCurrentDataContext());
+
+    double* celldx = v_celldeltas->getPointer(0);
+    double* celldy = v_celldeltas->getPointer(1);
+    double* soundspeed = v_soundspeed->getPointer();
+    double* viscosity = v_viscosity->getPointer();
+    double* pressure = v_pressure->getPointer();
+    double* xvel0 = v_vel0->getPointer(0);
+    double* yvel0 = v_vel0->getPointer(1);
+    double* density0 = v_density0->getPointer();
+    double* energy = v_energy->getPointer();
+    double* xarea = v_celldeltas->getPointer(1);
+    double* yarea = v_celldeltas->getPointer(0);
+    double* volume = v_volume->getPointer();
+    double* cellx = v_cellcoords->getPointer(0);
+    double* celly = v_cellcoords->getPointer(1);
+
     double dt_min_val = 1.0e+21;
     double small=0;
     double dtc_safe = 0.9;

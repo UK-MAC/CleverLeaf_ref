@@ -37,58 +37,18 @@ class Cleverleaf:
                 double init_data_time,
                 bool initial_time);
 
-        double computeStableDtOnPatch(
-            hier::Patch& patch,
-            const bool initial_time,
-            const double dt_time);
-
         void accelerate(
             hier::Patch& patch,
             double dt);
 
         void ideal_gas_knl(
-                int xmin,
-                int xmax,
-                int ymin,
-                int ymax,
-                double* density,
-                double* energy,
-                double* pressure,
-                double* soundspeed);
+                hier::Patch& patch);
 
         void viscosity_knl(
-                int xmin,
-                int xmax,
-                int ymin,
-                int ymax,
-                double* density,
-                double* pressure,
-                double* viscosity,
-                double* xvel0,
-                double* yvel0,
-                double* celldx,
-                double* celldy);
+                hier::Patch& patch);
 
         double calc_dt_knl(
-            int xmin,
-            int xmax,
-            int ymin,
-            int ymax,
-            double* celldx,
-            double* celldy,
-            double* soundspeed,
-            double* viscosity,
-            double* pressure,
-            double* xvel0,
-            double* yvel0,
-            double* density,
-            double* energy,
-            double* xarea,
-            double* yarea,
-            double* volume,
-            double* cellx,
-            double* celly);
-
+                hier::Patch& patch);
 
         void pdv_knl(
             hier::Patch& patch,

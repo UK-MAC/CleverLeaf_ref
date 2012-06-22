@@ -27,10 +27,14 @@ class LagrangianEulerianPatchStrategy
                 hier::Patch& patch,
                 double dt) = 0;
 
-        virtual double computeStableDtOnPatch(
-                hier::Patch& patch,
-                const bool initial_time,
-                const double dt_time) = 0;
+        virtual double calc_dt_knl(
+                hier::Patch& patch) = 0;
+
+        virtual void ideal_gas_knl(
+                hier::Patch& patch) = 0;
+
+        virtual void viscosity_knl(
+                hier::Patch& patch) = 0;
 
         virtual void pdv_knl(
                 hier::Patch& patch,
