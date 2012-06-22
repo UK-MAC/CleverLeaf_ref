@@ -189,7 +189,6 @@ double LagrangianEulerianIntegrator::advanceLevel(
     level->allocatePatchData(d_temp_var_new_data, new_time);
     level->allocatePatchData(d_temp_var_cur_data, current_time);
 
-
     /*
      * TODO: PdV kernel.
      */
@@ -200,14 +199,16 @@ double LagrangianEulerianIntegrator::advanceLevel(
         d_patch_strategy->pdv_knl(*patch,dt, true);
     }
 
-    level->setTime(new_time);
 
     /*
      * reset_field is used to copy density, energy and velocity
      * timelevel 1 values back to timelevel 0.
      */
 
+    level->setTime(new_time, d_temp_var_cur_data);
+
     resetField(level);
+
 
     /*
      * Compute our next dt.
@@ -367,6 +368,9 @@ void LagrangianEulerianIntegrator::resetField(
       tbox::List<tbox::Pointer<hier::Variable> >::Iterator
          field_var = d_field_vars.listStart();
       while (field_var) {
+#ifdef DEBUG
+          tbox::pout << "Copying " << field_var()->getName() << " back to tl0" << std::endl;
+#endif
          tbox::Pointer<hier::PatchData> src_data =
             patch->getPatchData(field_var(), d_new);
          tbox::Pointer<hier::PatchData> dst_data =

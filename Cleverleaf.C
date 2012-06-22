@@ -45,7 +45,8 @@ Cleverleaf::Cleverleaf(
 void Cleverleaf::registerModelVariables(
         LagrangianEulerianIntegrator* integrator) 
 {
-    integrator->registerVariable(d_velocity, LagrangianEulerianIntegrator::FIELD,  d_nghosts, d_grid_geometry);
+    // TODO: Change velocity back to field variable!
+    integrator->registerVariable(d_velocity, LagrangianEulerianIntegrator::NORMAL,  d_nghosts, d_grid_geometry);
     integrator->registerVariable(d_massflux, LagrangianEulerianIntegrator::NORMAL,  d_nghosts, d_grid_geometry);
     integrator->registerVariable(d_volflux, LagrangianEulerianIntegrator::NORMAL,  d_nghosts, d_grid_geometry);
 
@@ -705,8 +706,6 @@ void Cleverleaf::pdv_knl(
                   cout << "energy change=" << energy_change << ", volume_change=" << volume_change[POLY2(j-xmin,k-ymin,0,0,(xmax-xmin+1))] << endl;
 #endif
                   energy1[n1]=energy0[n1]-energy_change;
-
-                  density1[n1]=density0[n1]*volume_change[POLY2(j-xmin,k-ymin,0,0,(xmax-xmin+1))];
 
                   density1[n1]=density0[n1]*volume_change[POLY2(j-xmin,k-ymin,0,0,(xmax-xmin+1))];
               }
