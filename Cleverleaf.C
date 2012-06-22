@@ -45,8 +45,7 @@ Cleverleaf::Cleverleaf(
 void Cleverleaf::registerModelVariables(
         LagrangianEulerianIntegrator* integrator) 
 {
-    // TODO: Change velocity back to field variable!
-    integrator->registerVariable(d_velocity, LagrangianEulerianIntegrator::NORMAL,  d_nghosts, d_grid_geometry);
+    integrator->registerVariable(d_velocity, LagrangianEulerianIntegrator::FIELD,  d_nghosts, d_grid_geometry);
     integrator->registerVariable(d_massflux, LagrangianEulerianIntegrator::NORMAL,  d_nghosts, d_grid_geometry);
     integrator->registerVariable(d_volflux, LagrangianEulerianIntegrator::NORMAL,  d_nghosts, d_grid_geometry);
 
@@ -287,6 +286,126 @@ void Cleverleaf::accelerate(
         hier::Patch& patch,
         double dt)
 {
+    double nodal_mass;
+
+    const hier::Index ifirst = patch.getBox().lower();
+    const hier::Index ilast = patch.getBox().upper();
+
+    int xmin = ifirst(0); 
+    int xmax = ilast(0); 
+    int ymin = ifirst(1); 
+    int ymax = ilast(1); 
+
+    tbox::Pointer<pdat::CellData<double> > v_density = patch.getPatchData(d_density, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v_volume = patch.getPatchData(d_volume, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v_pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v_viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v_vel1 = patch.getPatchData(d_velocity, getNewDataContext());
+
+    double* xarea = v_celldeltas->getPointer(1);
+    double* yarea = v_celldeltas->getPointer(0);
+    double* volume = v_volume->getPointer();
+    double* density0 = v_density->getPointer();
+    double* pressure = v_pressure->getPointer();
+    double* viscosity = v_viscosity->getPointer();
+    double* xvel0 = v_vel0->getPointer(0);
+    double* yvel0 = v_vel0->getPointer(1);
+    double* xvel1 = v_vel1->getPointer(0);
+    double* yvel1 = v_vel1->getPointer(1);
+
+    double* stepbymass = (double*) malloc(((xmax-xmin+1)*(ymax-ymin+1))*sizeof(double));
+
+    for(int k = ymin; k <= ymax; k++) {
+        for(int j = xmin; j <= xmax; j++ ) {
+            int n1 = POLY2(j,k,xmin,ymin, (xmax-xmin+1));
+            int n2 = POLY2(j+1,k,xmin,ymin, (xmax-xmin+1));
+            int n3 = POLY2(j,k-1,xmin,ymin, (xmax-xmin+1));
+            int n4 = POLY2(j-1,k,xmin,ymin, (xmax-xmin+1));
+            int n5 = POLY2(j,k+1,xmin,ymin, (xmax-xmin+1));
+            int n6 = POLY2(j+1,k+1,xmin,ymin, (xmax-xmin+1));
+            int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
+            int n8 = POLY2(j-1,k-1,xmin,ymin, (xmax-xmin+1));
+
+            nodal_mass=(density0[n8]*volume[n8]
+                    +density0[n3]*volume[n3]
+                    +density0[n1]*volume[n1]
+                    +density0[n4]*volume[n4])*0.25;
+
+                stepbymass[n1]=0.5*dt/nodal_mass;
+        }
+    }
+
+    for(int k = ymin; k <= ymax; k++) {
+        for(int j = xmin; j <= xmax; j++ ) {
+
+            int n1 = POLY2(j,k,xmin,ymin, (xmax-xmin+1));
+            int n2 = POLY2(j+1,k,xmin,ymin, (xmax-xmin+1));
+            int n3 = POLY2(j,k-1,xmin,ymin, (xmax-xmin+1));
+            int n4 = POLY2(j-1,k,xmin,ymin, (xmax-xmin+1));
+            int n5 = POLY2(j,k+1,xmin,ymin, (xmax-xmin+1));
+            int n6 = POLY2(j+1,k+1,xmin,ymin, (xmax-xmin+1));
+            int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
+            int n8 = POLY2(j-1,k-1,xmin,ymin, (xmax-xmin+1));
+
+            xvel1[n1]=xvel0[n1]-stepbymass[n1]*(xarea[n1]*(pressure[n1]-pressure[n4])
+                    +xarea[n3]*(pressure[n3]-pressure[n8]));
+        }
+    }
+
+    for(int k = ymin; k <= ymax; k++) {
+        for(int j = xmin; j <= xmax; j++ ) {
+
+            int n1 = POLY2(j,k,xmin,ymin, (xmax-xmin+1));
+            int n2 = POLY2(j+1,k,xmin,ymin, (xmax-xmin+1));
+            int n3 = POLY2(j,k-1,xmin,ymin, (xmax-xmin+1));
+            int n4 = POLY2(j-1,k,xmin,ymin, (xmax-xmin+1));
+            int n5 = POLY2(j,k+1,xmin,ymin, (xmax-xmin+1));
+            int n6 = POLY2(j+1,k+1,xmin,ymin, (xmax-xmin+1));
+            int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
+            int n8 = POLY2(j-1,k-1,xmin,ymin, (xmax-xmin+1));
+
+            yvel1[n1]=yvel0[n1]-stepbymass[n1]*(yarea[n1]*(pressure[n1]-pressure[n3])
+                    +yarea[n4]*(pressure[n4]-pressure[n8]));
+
+        }
+    }
+
+    for(int k = ymin; k <= ymax; k++) {
+        for(int j = xmin; j <= xmax; j++ ) {
+
+            int n1 = POLY2(j,k,xmin,ymin, (xmax-xmin+1));
+            int n2 = POLY2(j+1,k,xmin,ymin, (xmax-xmin+1));
+            int n3 = POLY2(j,k-1,xmin,ymin, (xmax-xmin+1));
+            int n4 = POLY2(j-1,k,xmin,ymin, (xmax-xmin+1));
+            int n5 = POLY2(j,k+1,xmin,ymin, (xmax-xmin+1));
+            int n6 = POLY2(j+1,k+1,xmin,ymin, (xmax-xmin+1));
+            int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
+            int n8 = POLY2(j-1,k-1,xmin,ymin, (xmax-xmin+1));
+
+            xvel1[n1]=xvel1[n1]-stepbymass[n1]*(xarea[n1]*(viscosity[n1]-viscosity[n4])
+                    +xarea[n3]*(viscosity[n3]-viscosity[n8]));
+
+        }
+    }
+
+    for(int k = ymin; k <= ymax; k++) {
+        for(int j = xmin; j <= xmax; j++ ) {
+
+            int n1 = POLY2(j,k,xmin,ymin, (xmax-xmin+1));
+            int n2 = POLY2(j+1,k,xmin,ymin, (xmax-xmin+1));
+            int n3 = POLY2(j,k-1,xmin,ymin, (xmax-xmin+1));
+            int n4 = POLY2(j-1,k,xmin,ymin, (xmax-xmin+1));
+            int n5 = POLY2(j,k+1,xmin,ymin, (xmax-xmin+1));
+            int n6 = POLY2(j+1,k+1,xmin,ymin, (xmax-xmin+1));
+            int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
+            int n8 = POLY2(j-1,k-1,xmin,ymin, (xmax-xmin+1));
+
+            yvel1[n1]=yvel1[n1]-stepbymass[n1]*(yarea[n1]*(viscosity[n1]-viscosity[n3])
+                    +yarea[n4]*(viscosity[n4]-viscosity[n8]));
+        }
+    }
 }
 
 void Cleverleaf::ideal_gas_knl(

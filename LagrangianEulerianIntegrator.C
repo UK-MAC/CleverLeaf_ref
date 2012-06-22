@@ -165,6 +165,20 @@ double LagrangianEulerianIntegrator::advanceLevel(
     }
 
 
+    for(hier::PatchLevel::Iterator p(level);p;p++){
+
+        tbox::Pointer<hier::Patch>patch=*p;
+
+        d_patch_strategy->accelerate(*patch,dt);
+    }
+
+    for(hier::PatchLevel::Iterator p(level);p;p++){
+
+        tbox::Pointer<hier::Patch>patch=*p;
+
+        d_patch_strategy->pdv_knl(*patch,dt, false);
+    }
+
     /*
      * reset_field is used to copy density, energy and velocity
      * timelevel 1 values back to timelevel 0.
