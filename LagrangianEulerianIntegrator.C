@@ -164,6 +164,24 @@ double LagrangianEulerianIntegrator::advanceLevel(
         d_patch_strategy->pdv_knl(*patch,dt, true);
     }
 
+    /*
+     * PdV kernel, predictor needs ideal gas call.
+     */
+    for(hier::PatchLevel::Iterator p(level);p;p++){
+
+        tbox::Pointer<hier::Patch>patch=*p;
+
+        d_patch_strategy->ideal_gas(*patch,true);
+    }
+
+    /*
+     * TODO: Update pressure halos!
+     */
+
+    /*
+     * Call revert to reset density and energy
+     */
+    revert(level);
 
     /*
      * Acceleration due to pressure/velocity
