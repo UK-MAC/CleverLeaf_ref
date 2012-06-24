@@ -155,7 +155,7 @@ double LagrangianEulerianIntegrator::advanceLevel(
     level->allocatePatchData(d_temp_var_cur_data, current_time);
 
     /*
-     * TODO: PdV kernel.
+     * PdV kernel, predictor.
      */
     for(hier::PatchLevel::Iterator p(level);p;p++){
 
@@ -165,6 +165,9 @@ double LagrangianEulerianIntegrator::advanceLevel(
     }
 
 
+    /*
+     * Acceleration due to pressure/velocity
+     */ 
     for(hier::PatchLevel::Iterator p(level);p;p++){
 
         tbox::Pointer<hier::Patch>patch=*p;
@@ -172,6 +175,9 @@ double LagrangianEulerianIntegrator::advanceLevel(
         d_patch_strategy->accelerate(*patch,dt);
     }
 
+    /*
+     * PdV kernel, corrector.
+     */
     for(hier::PatchLevel::Iterator p(level);p;p++){
 
         tbox::Pointer<hier::Patch>patch=*p;
