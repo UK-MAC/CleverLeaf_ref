@@ -25,7 +25,7 @@ Cleverleaf::Cleverleaf(
     /*
      * Register variables
      */
-    d_velocity = new pdat::CellVariable<double>(d_dim, "velocity", d_dim.getValue());
+    d_velocity = new pdat::NodeVariable<double>(d_dim, "velocity", d_dim.getValue());
     d_massflux  = new pdat::CellVariable<double>(d_dim, "massflux", d_dim.getValue());
     d_volflux   = new pdat::CellVariable<double>(d_dim, "volflux", d_dim.getValue());
     d_pressure  = new pdat::CellVariable<double>(d_dim, "pressure", 1);
@@ -140,7 +140,7 @@ void Cleverleaf::initializeDataOnPatch(
         bool initial_time)
 {
     if (initial_time) {
-        tbox::Pointer<pdat::CellData<double> > velocity = patch.getPatchData(d_velocity, getCurrentDataContext());
+        tbox::Pointer<pdat::NodeData<double> > velocity = patch.getPatchData(d_velocity, getCurrentDataContext());
         tbox::Pointer<pdat::CellData<double> > massflux = patch.getPatchData(d_massflux, getCurrentDataContext());
         tbox::Pointer<pdat::CellData<double> > volflux = patch.getPatchData(d_volflux, getCurrentDataContext());
         tbox::Pointer<pdat::CellData<double> > pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
@@ -301,8 +301,8 @@ void Cleverleaf::accelerate(
     tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > v_pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > v_viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_vel1 = patch.getPatchData(d_velocity, getNewDataContext());
+    tbox::Pointer<pdat::NodeData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
+    tbox::Pointer<pdat::NodeData<double> > v_vel1 = patch.getPatchData(d_velocity, getNewDataContext());
 
     double* xarea = v_celldeltas->getPointer(1);
     double* yarea = v_celldeltas->getPointer(0);
@@ -491,7 +491,7 @@ void Cleverleaf::viscosity_knl(
     tbox::Pointer<pdat::CellData<double> > v_pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
 
     tbox::Pointer<pdat::CellData<double> > v_viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
+    tbox::Pointer<pdat::NodeData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
 
     double* density = v_density0->getPointer();
@@ -581,7 +581,7 @@ double Cleverleaf::calc_dt_knl(
     tbox::Pointer<pdat::CellData<double> > v_soundspeed = patch.getPatchData(d_soundspeed, getCurrentDataContext());
 
     tbox::Pointer<pdat::CellData<double> > v_viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
+    tbox::Pointer<pdat::NodeData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
 
     tbox::Pointer<pdat::CellData<double> > v_volume = patch.getPatchData(d_volume, getCurrentDataContext());
@@ -732,8 +732,8 @@ void Cleverleaf::pdv_knl(
     tbox::Pointer<pdat::CellData<double> > en1 = patch.getPatchData(d_energy, getNewDataContext());
     tbox::Pointer<pdat::CellData<double> > pres = patch.getPatchData(d_pressure, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > visc = patch.getPatchData(d_viscosity, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v0 = patch.getPatchData(d_velocity, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v1 = patch.getPatchData(d_velocity, getNewDataContext());
+    tbox::Pointer<pdat::NodeData<double> > v0 = patch.getPatchData(d_velocity, getCurrentDataContext());
+    tbox::Pointer<pdat::NodeData<double> > v1 = patch.getPatchData(d_velocity, getNewDataContext());
 
     double* xarea = area->getPointer(1);   
     double* yarea = area->getPointer(0);   
