@@ -8,6 +8,20 @@
 
 #define POLY2(i, j, imin, jmin, nx) ((i - imin) + (j-jmin) * nx)
 
+// Arrays are defined up here so we can access them with fortran notation
+#define density(i,j) density[((i-imin)) + (j-jmin)*nx]
+#define energy(i,j) energy[((i-imin)) + (j-jmin)*nx]
+#define xarea(i,j) xarea[((i-imin)) + (j-jmin)*nx]
+#define yarea(i,j) yarea[((i-imin)) + (j-jmin)*nx]
+#define volume(i,j) volume[((i-imin)) + (j-jmin)*nx]
+#define density0(i,j) density0[((i-imin)) + (j-jmin)*nx]
+#define pressure(i,j) pressure[((i-imin)) + (j-jmin)*nx]
+#define viscosity(i,j) viscosity[((i-imin)) + (j-jmin)*nx]
+#define xvel0(i,j) xvel0[((i-imin)) + (j-jmin)*nx]
+#define yvel0(i,j) yvel0[((i-imin)) + (j-jmin)*nx]
+#define xvel1(i,j) xvel1[((i-imin)) + (j-jmin)*nx]
+#define yvel1(i,j) yvel1[((i-imin)) + (j-jmin)*nx]
+
 Cleverleaf::Cleverleaf(
         tbox::Pointer<hier::PatchHierarchy> hierarchy,
         const tbox::Dimension& dim,
@@ -146,8 +160,8 @@ void Cleverleaf::initializeDataOnPatch(
         tbox::Pointer<pdat::CellData<double> > pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
         tbox::Pointer<pdat::CellData<double> > viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
         tbox::Pointer<pdat::CellData<double> > soundspeed = patch.getPatchData(d_soundspeed, getCurrentDataContext());
-        tbox::Pointer<pdat::CellData<double> > density = patch.getPatchData(d_density, getCurrentDataContext());
-        tbox::Pointer<pdat::CellData<double> > energy = patch.getPatchData(d_energy, getCurrentDataContext());
+        tbox::Pointer<pdat::CellData<double> > v_density = patch.getPatchData(d_density, getCurrentDataContext());
+        tbox::Pointer<pdat::CellData<double> > v_energy = patch.getPatchData(d_energy, getCurrentDataContext());
         tbox::Pointer<pdat::CellData<double> > volume = patch.getPatchData(d_volume, getCurrentDataContext());
 
         tbox::Pointer<pdat::CellData<double> > celldeltas = patch.getPatchData(
@@ -167,13 +181,13 @@ void Cleverleaf::initializeDataOnPatch(
         /*
          * Fill density and energy with some data, these are our initial conditions.
          */
-        double* density_data = density->getPointer();
-        double* energy_data = energy->getPointer();
+        double* density = v_density->getPointer();
+        double* energy = v_energy->getPointer();
 
         const hier::Index ifirst = patch.getBox().lower();
         const hier::Index ilast = patch.getBox().upper();
 
-        hier::IntVector density_ghosts = density->getGhostCellWidth();
+        hier::IntVector density_ghosts = v_density->getGhostCellWidth();
 
         int imin = ifirst(0) - density_ghosts(0);
         int imax = ilast(0) + density_ghosts(0);
@@ -185,15 +199,15 @@ void Cleverleaf::initializeDataOnPatch(
 
         for(int j = jmin; j <= jmax; j++) {
             for(int i = imin; i <= imax; i++) {
-                int n1 = POLY2(i,j,imin,jmin,nx);
+                //int n1 = POLY2(i,j,imin,jmin,nx);
 
                 if (((i >= imin + 32) && (i <= imax - 32)) &&
                         ((j >= jmin + 32) && ( j <= jmax - 32))) {
-                    density_data[n1] = 1.0;
-                    energy_data[n1] = 2.5;
+                    density(i,j) = 1.0;
+                    energy(i,j) = 2.5;
                 } else {
-                    density_data[n1] = 0.1;
-                    energy_data[n1] = 1.0;
+                    density(i,j) = 0.1;
+                    energy(i,j) = 1.0;
                 }
             }
         }
