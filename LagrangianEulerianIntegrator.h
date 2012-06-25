@@ -136,6 +136,9 @@ class LagrangianEulerianIntegrator:
         void resetField(
                 const tbox::Pointer<hier::PatchLevel> level);
 
+        void revert(
+                const tbox::Pointer<hier::PatchLevel> level);
+
     protected:
         /*
          * PatchStrategy contains user-specified methods needed for
@@ -166,6 +169,7 @@ class LagrangianEulerianIntegrator:
         hier::ComponentSelector d_temp_var_new_data;
 
         tbox::List<tbox::Pointer<hier::Variable> > d_field_vars;
+        tbox::List<tbox::Pointer<hier::Variable> > d_revert_vars;
 };
 
 #endif

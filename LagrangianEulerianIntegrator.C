@@ -171,7 +171,7 @@ double LagrangianEulerianIntegrator::advanceLevel(
 
         tbox::Pointer<hier::Patch>patch=*p;
 
-        d_patch_strategy->ideal_gas(*patch,true);
+        d_patch_strategy->ideal_gas_knl(*patch,true);
     }
 
     /*
@@ -193,10 +193,10 @@ double LagrangianEulerianIntegrator::advanceLevel(
         d_patch_strategy->accelerate(*patch,dt);
     }
 
-    /*
-     * PdV kernel, corrector.
-     */
-    for(hier::PatchLevel::Iterator p(level);p;p++){
+   /*
+    * PdV kernel, corrector.
+    */
+   for(hier::PatchLevel::Iterator p(level);p;p++){
 
         tbox::Pointer<hier::Patch>patch=*p;
 
@@ -344,6 +344,10 @@ void LagrangianEulerianIntegrator::registerVariable(
     if(var_type == FIELD)
         d_field_vars.appendItem(var);
 
+    if((var->getName() == "density") || (var->getName() == "energy")) {
+        d_revert_vars.appendItem(var);
+    }
+
     int cur_id = variable_db->registerVariableAndContext(var,
             d_current,
             zero_ghosts);
@@ -381,6 +385,29 @@ void LagrangianEulerianIntegrator::resetField(
 
          dst_data->copy(*src_data);
          field_var++;
+      }
+   }
+}
+
+void LagrangianEulerianIntegrator::revert(
+   const tbox::Pointer<hier::PatchLevel> level)
+{
+   for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
+      tbox::Pointer<hier::Patch> patch = *ip;
+
+      tbox::List<tbox::Pointer<hier::Variable> >::Iterator
+         revert_var = d_revert_vars.listStart();
+      while (revert_var) {
+#ifdef DEBUG
+          tbox::pout << "Copying " << revert_var()->getName() << " back to tl0" << std::endl;
+#endif
+         tbox::Pointer<hier::PatchData> src_data =
+            patch->getPatchData(revert_var(), d_new);
+         tbox::Pointer<hier::PatchData> dst_data =
+            patch->getPatchData(revert_var(), d_current);
+
+        dst_data->copy(*src_data);
+         revert_var++;
       }
    }
 }
