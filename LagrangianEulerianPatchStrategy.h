@@ -42,6 +42,11 @@ class LagrangianEulerianPatchStrategy
                 double dt,
                 bool predict) = 0;
 
+        virtual void flux_calc_knl(
+                hier::Patch& patch,
+                double dt,
+                bool predict) = 0;
+
         virtual void tagGradientDetectorCells(
                 hier::Patch& patch,
                 const double regrid_time,
