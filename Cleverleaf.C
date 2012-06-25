@@ -17,10 +17,11 @@
 #define density0(i,j) density0[((i-imin)) + (j-jmin)*nx]
 #define pressure(i,j) pressure[((i-imin)) + (j-jmin)*nx]
 #define viscosity(i,j) viscosity[((i-imin)) + (j-jmin)*nx]
-#define xvel0(i,j) xvel0[((i-imin)) + (j-jmin)*nx]
-#define yvel0(i,j) yvel0[((i-imin)) + (j-jmin)*nx]
-#define xvel1(i,j) xvel1[((i-imin)) + (j-jmin)*nx]
-#define yvel1(i,j) yvel1[((i-imin)) + (j-jmin)*nx]
+
+#define xvel0(j,k) xvel0[((j-xmin)) + (k-ymin)*(nx+1)]
+#define yvel0(j,k) yvel0[((j-xmin)) + (k-ymin)*(nx+1)]
+#define xvel1(j,k) xvel1[((j-xmin)) + (k-ymin)*(nx+1)]
+#define yvel1(j,k) yvel1[((j-xmin)) + (k-ymin)*(nx+1)]
 
 Cleverleaf::Cleverleaf(
         tbox::Pointer<hier::PatchHierarchy> hierarchy,
@@ -40,6 +41,7 @@ Cleverleaf::Cleverleaf(
      * Register variables
      */
     d_velocity = new pdat::NodeVariable<double>(d_dim, "velocity", d_dim.getValue());
+
     d_massflux  = new pdat::CellVariable<double>(d_dim, "massflux", d_dim.getValue());
     d_volflux   = new pdat::CellVariable<double>(d_dim, "volflux", d_dim.getValue());
     d_pressure  = new pdat::CellVariable<double>(d_dim, "pressure", 1);
@@ -310,6 +312,8 @@ void Cleverleaf::accelerate(
     int ymin = ifirst(1); 
     int ymax = ilast(1); 
 
+    int nx = xmax - xmin + 1;
+
     tbox::Pointer<pdat::CellData<double> > v_density = patch.getPatchData(d_density, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > v_volume = patch.getPatchData(d_volume, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
@@ -363,7 +367,7 @@ void Cleverleaf::accelerate(
             int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
             int n8 = POLY2(j-1,k-1,xmin,ymin, (xmax-xmin+1));
 
-            xvel1[n1]=xvel0[n1]-stepbymass[n1]*(xarea[n1]*(pressure[n1]-pressure[n4])
+            xvel1(j,k)=xvel0(j,k)-stepbymass[n1]*(xarea[n1]*(pressure[n1]-pressure[n4])
                     +xarea[n3]*(pressure[n3]-pressure[n8]));
         }
     }
@@ -380,7 +384,7 @@ void Cleverleaf::accelerate(
             int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
             int n8 = POLY2(j-1,k-1,xmin,ymin, (xmax-xmin+1));
 
-            yvel1[n1]=yvel0[n1]-stepbymass[n1]*(yarea[n1]*(pressure[n1]-pressure[n3])
+            yvel1(j,k)=yvel0(j,k)-stepbymass[n1]*(yarea[n1]*(pressure[n1]-pressure[n3])
                     +yarea[n4]*(pressure[n4]-pressure[n8]));
 
         }
@@ -398,7 +402,7 @@ void Cleverleaf::accelerate(
             int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
             int n8 = POLY2(j-1,k-1,xmin,ymin, (xmax-xmin+1));
 
-            xvel1[n1]=xvel1[n1]-stepbymass[n1]*(xarea[n1]*(viscosity[n1]-viscosity[n4])
+            xvel1(j,k)=xvel1(j,k)-stepbymass[n1]*(xarea[n1]*(viscosity[n1]-viscosity[n4])
                     +xarea[n3]*(viscosity[n3]-viscosity[n8]));
 
         }
@@ -416,7 +420,7 @@ void Cleverleaf::accelerate(
             int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
             int n8 = POLY2(j-1,k-1,xmin,ymin, (xmax-xmin+1));
 
-            yvel1[n1]=yvel1[n1]-stepbymass[n1]*(yarea[n1]*(viscosity[n1]-viscosity[n3])
+            yvel1(j,k)=yvel1(j,k)-stepbymass[n1]*(yarea[n1]*(viscosity[n1]-viscosity[n3])
                     +yarea[n4]*(viscosity[n4]-viscosity[n8]));
         }
     }
