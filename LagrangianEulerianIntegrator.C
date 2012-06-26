@@ -4,6 +4,8 @@
 #include "SAMRAI/hier/VariableDatabase.h"
 #include "SAMRAI/hier/Patch.h"
 
+#define LOOPPRINT 1
+
 LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
         const std::string& object_name,
         tbox::Pointer<tbox::Database> input_db,
@@ -71,10 +73,6 @@ double LagrangianEulerianIntegrator::getLevelDt(
         const double dt_time,
         const bool initial_time)
 {
-    if (initial_time) {
-        return 0.04;
-    }
-
     const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
 
     double dt = tbox::MathUtilities<double>::getMax();
@@ -83,6 +81,9 @@ double LagrangianEulerianIntegrator::getLevelDt(
     level->allocatePatchData(d_temp_var_cur_data, dt_time);
     level->allocatePatchData(d_temp_var_new_data, dt_time);
 
+#ifdef LOOPPRINT
+    tbox::pout << "LagrangianEulerianIntegrator: getLevelDt: ideal_gas" << std::endl;
+#endif
     for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
         tbox::Pointer<hier::Patch> patch = *ip;
 
@@ -93,6 +94,9 @@ double LagrangianEulerianIntegrator::getLevelDt(
      * TODO: update_halos pressure, energy, density, velocity0
      */
 
+#ifdef LOOPPRINT
+    tbox::pout << "LagrangianEulerianIntegrator: getLevelDt: viscosity" << std::endl;
+#endif
     for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
         tbox::Pointer<hier::Patch> patch = *ip;
 
@@ -103,6 +107,9 @@ double LagrangianEulerianIntegrator::getLevelDt(
      * TODO: update_halos viscosity
      */
 
+#ifdef LOOPPRINT
+    tbox::pout << "LagrangianEulerianIntegrator: getLevelDt: calc_dt" << std::endl;
+#endif
     for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
         tbox::Pointer<hier::Patch> patch = *ip;
 
@@ -119,6 +126,11 @@ double LagrangianEulerianIntegrator::getLevelDt(
 
     if (mpi.getSize() > 1) {
         mpi.AllReduce(&global_dt, 1, MPI_MIN);
+    }
+
+
+    if (initial_time) {
+        return 0.04;
     }
 
     return global_dt;
@@ -157,6 +169,9 @@ double LagrangianEulerianIntegrator::advanceLevel(
     /*
      * PdV kernel, predictor.
      */
+#ifdef LOOPPRINT
+    tbox::pout << "LagrangianEulerianIntegrator: advanceLevel: PdV predictor" << std::endl;
+#endif
     for(hier::PatchLevel::Iterator p(level);p;p++){
 
         tbox::Pointer<hier::Patch>patch=*p;
@@ -167,6 +182,9 @@ double LagrangianEulerianIntegrator::advanceLevel(
     /*
      * PdV kernel, predictor needs ideal gas call.
      */
+#ifdef LOOPPRINT
+    tbox::pout << "LagrangianEulerianIntegrator: advanceLevel: ideal gas predictor" << std::endl;
+#endif
     for(hier::PatchLevel::Iterator p(level);p;p++){
 
         tbox::Pointer<hier::Patch>patch=*p;
@@ -186,6 +204,9 @@ double LagrangianEulerianIntegrator::advanceLevel(
     /*
      * Acceleration due to pressure/velocity
      */ 
+#ifdef LOOPPRINT
+    tbox::pout << "LagrangianEulerianIntegrator: advanceLevel: acceleration" << std::endl;
+#endif
     for(hier::PatchLevel::Iterator p(level);p;p++){
 
         tbox::Pointer<hier::Patch>patch=*p;
@@ -196,6 +217,9 @@ double LagrangianEulerianIntegrator::advanceLevel(
    /*
     * PdV kernel, corrector.
     */
+#ifdef LOOPPRINT
+    tbox::pout << "LagrangianEulerianIntegrator: advanceLevel: PdV corrector" << std::endl;
+#endif
    for(hier::PatchLevel::Iterator p(level);p;p++){
 
         tbox::Pointer<hier::Patch>patch=*p;
@@ -216,27 +240,6 @@ double LagrangianEulerianIntegrator::advanceLevel(
     /*
      * Compute our next dt.
      */
-//    const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
-//    double dt_next = tbox::MathUtilities<double>::getMax();
-//    double patch_dt;
-//
-//    for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
-//        tbox::Pointer<hier::Patch> patch = *ip;
-//
-//        patch_dt = d_patch_strategy->
-//            computeStableDtOnPatch(*patch,
-//                    false,
-//                    new_time);
-//
-//        dt_next = tbox::MathUtilities<double>::Min(dt_next, patch_dt);
-//    }
-//
-//    double next_dt = dt_next;
-//
-//    if (mpi.getSize() > 1) {
-//        mpi.AllReduce(&next_dt, 1, MPI_MIN);
-//    }
-
     return getLevelDt(level,dt,false);
 }
 
