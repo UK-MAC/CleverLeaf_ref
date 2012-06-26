@@ -29,6 +29,7 @@ class LagrangianEulerianIntegrator:
             FLUX = 1,
             NORMAL = 2 };
 
+
         LagrangianEulerianIntegrator(
                 const std::string& object_name,
                 tbox::Pointer<tbox::Database> input_db,
@@ -139,6 +140,9 @@ class LagrangianEulerianIntegrator:
         void revert(
                 const tbox::Pointer<hier::PatchLevel> level);
 
+        void advection(
+                const tbox::Pointer<hier::PatchLevel> level);
+
     protected:
         /*
          * PatchStrategy contains user-specified methods needed for
@@ -170,6 +174,8 @@ class LagrangianEulerianIntegrator:
 
         tbox::List<tbox::Pointer<hier::Variable> > d_field_vars;
         tbox::List<tbox::Pointer<hier::Variable> > d_revert_vars;
+
+        bool advect_x;
 };
 
 #endif

@@ -894,6 +894,217 @@ void Cleverleaf::flux_calc_knl(
         for (int j = xmin; j <= xmax; j++) {
             vol_flux_y(j,k)=0.25*dt*yarea(j,k)
                 *(yvel0(j,k)+yvel0(j+1,k)+yvel1(j,k)+yvel1(j+1,k));
+
+            tbox::pout << "vol_flux_y(" << j << "," << k << ") = " << vol_flux_y(j,k) << std::endl;
         }
     }
+}
+
+void Cleverleaf::advec_cell(hier::Patch& patch,
+        int sweep_number,
+        ADVEC_DIR direction)
+{
+  double* volume
+  double* density1
+  double* energy1
+  double* vol_flux_x
+  double* vol_flux_y
+  double* mass_flux_x
+  double* mass_flux_y
+
+  double* vertexdx
+  double* vertexdy
+
+  int upwind,donor,downwind,dif;
+
+  double sigma,sigmat,sigmav,sigmam,sigma3,sigma4;
+  double diffuw,diffdw,limiter;
+  double one_by_six;
+
+  ALLOCATE(pre_vol(x_min-2:x_max+2,y_min-2:y_max+2))
+  ALLOCATE(post_vol(x_min-2:x_max+2,y_min-2:y_max+2))
+  ALLOCATE(pre_mass(x_min-2:x_max+2,y_min-2:y_max+2))
+  ALLOCATE(post_mass(x_min-2:x_max+2,y_min-2:y_max+2))
+  ALLOCATE(advec_vol(x_min-2:x_max+2,y_min-2:y_max+2))
+  ALLOCATE(post_ener(x_min-2:x_max+2,y_min-2:y_max+2))
+  ALLOCATE(ener_flux(x_min-2:x_max+2,y_min-2:y_max+2))
+
+  double* stepbymass = (double*) malloc(((xmax-xmin+4)*(ymax-ymin+4))*sizeof(double));
+
+  one_by_six=1.0/6.0;
+
+  IF(dir.EQ.g_xdir) THEN
+
+    IF(sweep_number.EQ.1)THEN
+      DO k=y_min-2,y_max+2
+        DO j=x_min-2,x_max+2
+          pre_vol(j,k)=volume(j,k)+(vol_flux_x(j+1,k  )-vol_flux_x(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k))
+          post_vol(j,k)=pre_vol(j,k)-(vol_flux_x(j+1,k  )-vol_flux_x(j,k))
+        ENDDO
+      ENDDO 
+    ELSE
+      DO k=y_min-2,y_max+2
+        DO j=x_min-2,x_max+2
+          pre_vol(j,k)=volume(j,k)+vol_flux_x(j+1,k)-vol_flux_x(j,k)
+          post_vol(j,k)=volume(j,k)
+        ENDDO
+      ENDDO 
+    ENDIF
+
+    DO k=y_min,y_max
+      DO j=x_min,x_max+2
+
+        IF(vol_flux_x(j,k).GT.0.0)THEN
+          upwind   =j-2
+          donor    =j-1
+          downwind =j
+          dif      =donor
+        ELSE
+          upwind   =MIN(j+1,x_max+2)
+          donor    =j
+          downwind =j-1
+          dif      =upwind
+        ENDIF
+
+        sigmat=ABS(vol_flux_x(j,k))/pre_vol(donor,k)
+        sigma3=(1.0+sigmat)*(vertexdx(j)/vertexdx(dif))
+        sigma4=2.0-sigmat
+
+        sigma=sigmat
+        sigmav=sigmat
+
+        diffuw=density1(donor,k)-density1(upwind,k)
+        diffdw=density1(downwind,k)-density1(donor,k)
+        IF(diffuw*diffdw.GT.0.0)THEN
+          limiter=(1.0-sigmav)*SIGN(1.0_8,diffdw)*MIN(ABS(diffuw),ABS(diffdw)&
+              ,one_by_six*(sigma3*ABS(diffuw)+sigma4*ABS(diffdw)))
+        ELSE
+          limiter=0.0
+        ENDIF
+        mass_flux_x(j,k)=vol_flux_x(j,k)*(density1(donor,k)+limiter)
+
+        sigmam=ABS(mass_flux_x(j,k))/(density1(donor,k)*pre_vol(donor,k))
+        diffuw=energy1(donor,k)-energy1(upwind,k)
+        diffdw=energy1(downwind,k)-energy1(donor,k)
+        IF(diffuw*diffdw.GT.0.0)THEN
+          limiter=(1.0-sigmam)*SIGN(1.0_8,diffdw)*MIN(ABS(diffuw),ABS(diffdw)&
+              ,one_by_six*(sigma3*ABS(diffuw)+sigma4*ABS(diffdw)))
+        ELSE
+          limiter=0.0
+        ENDIF
+
+        ener_flux(j,k)=mass_flux_x(j,k)*(energy1(donor,k)+limiter)
+
+        pre_mass(j-2,k)=density1(j-2,k)*pre_vol(j-2,k)
+        post_mass(j-2,k)=pre_mass(j-2,k)+mass_flux_x(j-2,k)-mass_flux_x(j-1,k)
+        post_ener(j-2,k)=(energy1(j-2,k)*pre_mass(j-2,k)+ener_flux(j-2,k)-ener_flux(j-1,k))/post_mass(j-2,k)
+        advec_vol(j-2,k)=pre_vol(j-2,k)+vol_flux_x(j-2,k)-vol_flux_x(j-1,k)
+
+      ENDDO
+    ENDDO
+
+    DO k=y_min,y_max
+      DO j=x_min,x_max
+        density1(j,k)=post_mass(j,k)/advec_vol(j,k)
+        energy1(j,k)=post_ener(j,k)
+      ENDDO
+    ENDDO
+
+  ELSEIF(dir.EQ.g_ydir) THEN
+
+    IF(sweep_number.EQ.1)THEN
+      DO k=y_min-2,y_max+2
+        DO j=x_min-2,x_max+2
+          pre_vol(j,k)=volume(j,k)+(vol_flux_y(j  ,k+1)-vol_flux_y(j,k)+vol_flux_x(j+1,k  )-vol_flux_x(j,k))
+          post_vol(j,k)=pre_vol(j,k)-(vol_flux_y(j  ,k+1)-vol_flux_y(j,k))
+        ENDDO
+      ENDDO
+    ELSE
+      DO k=y_min-2,y_max+2
+        DO j=x_min-2,x_max+2
+          pre_vol(j,k)=volume(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k)
+          post_vol(j,k)=volume(j,k)
+        ENDDO
+      ENDDO
+    ENDIF
+
+    DO j=x_min,x_max
+      DO k=y_min,y_max+2
+
+        IF(vol_flux_y(j,k).GT.0.0)THEN
+          upwind   =k-2
+          donor    =k-1
+          downwind =k
+          dif      =donor
+        ELSE
+          upwind   =MIN(k+1,y_max+2)
+          donor    =k
+          downwind =k-1
+          dif      =upwind
+        ENDIF
+
+        sigmat=ABS(vol_flux_y(j,k))/pre_vol(j,donor)
+        sigma3=(1.0+sigmat)*(vertexdy(k)/vertexdy(dif))
+        sigma4=2.0-sigmat
+
+        sigma=sigmat
+        sigmav=sigmat
+
+        diffuw=density1(j,donor)-density1(j,upwind)
+        diffdw=density1(j,downwind)-density1(j,donor)
+        IF(diffuw*diffdw.GT.0.0)THEN
+          limiter=(1.0-sigmav)*SIGN(1.0_8,diffdw)*MIN(ABS(diffuw),ABS(diffdw)&
+              ,one_by_six*(sigma3*ABS(diffuw)+sigma4*ABS(diffdw)))
+        ELSE
+          limiter=0.0
+        ENDIF
+        mass_flux_y(j,k)=vol_flux_y(j,k)*(density1(j,donor)+limiter)
+
+        sigmam=ABS(mass_flux_y(j,k))/(density1(j,donor)*pre_vol(j,donor))
+        diffuw=energy1(j,donor)-energy1(j,upwind)
+        diffdw=energy1(j,downwind)-energy1(j,donor)
+        IF(diffuw*diffdw.GT.0.0)THEN
+          limiter=(1.0-sigmam)*SIGN(1.0_8,diffdw)*MIN(ABS(diffuw),ABS(diffdw)&
+              ,one_by_six*(sigma3*ABS(diffuw)+sigma4*ABS(diffdw)))
+        ELSE
+          limiter=0.0
+        ENDIF
+        ener_flux(j,k)=mass_flux_y(j,k)*(energy1(j,donor)+limiter)
+
+        pre_mass(j,k-2)=density1(j,k-2)*pre_vol(j,k-2)
+        post_mass(j,k-2)=pre_mass(j,k-2)+mass_flux_y(j,k-2)-mass_flux_y(j,k-1)
+        post_ener(j,k-2)=(energy1(j,k-2)*pre_mass(j,k-2)+ener_flux(j,k-2)-ener_flux(j,k-1))/post_mass(j,k-2)
+        advec_vol(j,k-2)=pre_vol(j,k-2)+vol_flux_y(j,k-2)-vol_flux_y(j,k-1)
+
+      ENDDO
+    ENDDO
+
+    DO k=y_min,y_max
+      DO j=x_min,x_max
+        density1(j,k)=post_mass(j,k)/advec_vol(j,k)
+        energy1(j,k)=post_ener(j,k)
+      ENDDO
+    ENDDO
+
+  ENDIF
+
+
+  DEALLOCATE(pre_vol)
+  DEALLOCATE(post_vol)
+  DEALLOCATE(pre_mass)
+  DEALLOCATE(post_mass)
+  DEALLOCATE(advec_vol)
+  DEALLOCATE(post_ener)
+  DEALLOCATE(ener_flux)
+
+END SUBROUTINE advec_cell_kernel
+
+END MODULE advec_cell_kernel_module
+
+}
+
+void Cleverleaf::advec_mom(hier::Patch& patch,
+        int sweep_number,
+        ADVEC_DIR direction)
+{
 }

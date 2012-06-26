@@ -60,6 +60,14 @@ class Cleverleaf:
         void flux_calc_knl(
                 hier::Patch& patch,
                 double dt);
+
+        void advec_cell(hier::Patch& patch,
+                int sweep_number,
+                ADVEC_DIR direction);
+
+        void advec_mom(hier::Patch& patch,
+                int sweep_number,
+                ADVEC_DIR direction);
  
     private:
 

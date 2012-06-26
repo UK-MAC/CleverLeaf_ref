@@ -13,6 +13,10 @@ class LagrangianEulerianIntegrator;
 class LagrangianEulerianPatchStrategy
 {
     public:
+        enum ADVEC_DIR {
+            X = 1,
+            Y = 2 };
+
         LagrangianEulerianPatchStrategy(const tbox::Dimension& dim);
 
         virtual void registerModelVariables(
@@ -45,6 +49,14 @@ class LagrangianEulerianPatchStrategy
         virtual void flux_calc_knl(
                 hier::Patch& patch,
                 double dt) = 0;
+
+        virtual void advec_cell(hier::Patch& patch,
+                int sweep_number,
+                ADVEC_DIR direction) = 0;
+
+        virtual void advec_mom(hier::Patch& patch,
+                int sweep_number,
+                ADVEC_DIR direction) = 0;
 
         virtual void tagGradientDetectorCells(
                 hier::Patch& patch,
