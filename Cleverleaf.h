@@ -12,6 +12,7 @@
 #include "SAMRAI/hier/IntVector.h"
 #include "SAMRAI/pdat/CellVariable.h"
 #include "SAMRAI/pdat/NodeVariable.h"
+#include "SAMRAI/pdat/EdgeVariable.h"
 #include "SAMRAI/geom/CartesianGridGeometry.h"
 
 using namespace SAMRAI;
@@ -56,6 +57,10 @@ class Cleverleaf:
             double dt,
             bool predict);
 
+        void flux_calc_knl(
+                hier::Patch& patch,
+                double dt);
+ 
     private:
 
         tbox::Pointer<hier::PatchHierarchy> d_hierarchy;
@@ -71,8 +76,8 @@ class Cleverleaf:
          * Variables
          */
         tbox::Pointer<pdat::NodeVariable<double> > d_velocity;
-        tbox::Pointer<pdat::CellVariable<double> > d_massflux;
-        tbox::Pointer<pdat::CellVariable<double> > d_volflux;
+        tbox::Pointer<pdat::EdgeVariable<double> > d_massflux;
+        tbox::Pointer<pdat::EdgeVariable<double> > d_volflux;
         tbox::Pointer<pdat::CellVariable<double> > d_pressure;
         tbox::Pointer<pdat::CellVariable<double> > d_viscosity;
         tbox::Pointer<pdat::CellVariable<double> > d_soundspeed;

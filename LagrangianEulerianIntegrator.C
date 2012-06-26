@@ -234,7 +234,7 @@ double LagrangianEulerianIntegrator::advanceLevel(
 
         tbox::Pointer<hier::Patch>patch=*p;
 
-        d_patch_strategy->flux_calc_knl(*patch,dt, false);
+        d_patch_strategy->flux_calc_knl(*patch,dt);
     }
 
     /*

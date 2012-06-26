@@ -44,8 +44,7 @@ class LagrangianEulerianPatchStrategy
 
         virtual void flux_calc_knl(
                 hier::Patch& patch,
-                double dt,
-                bool predict) = 0;
+                double dt) = 0;
 
         virtual void tagGradientDetectorCells(
                 hier::Patch& patch,

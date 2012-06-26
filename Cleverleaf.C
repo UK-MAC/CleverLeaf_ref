@@ -32,6 +32,9 @@
 #define yvel1(j,k) yvel1[((j-xmin)) + (k-ymin)*(nx+1)]
 #define stepbymass(j,k) stepbymass[((j)) + (k)*(nx+1)]
 
+#define vol_flux_x(j,k) vol_flux_x[((j-xmin)) + (k-ymin)*(nx+1)]
+#define vol_flux_y(j,k) vol_flux_y[((j-xmin)) + (k-ymin)*(nx+1)]
+
 #define volume_change(i,j) volume_change[((i)) + (j)*nx]
 
 Cleverleaf::Cleverleaf(
@@ -53,8 +56,9 @@ Cleverleaf::Cleverleaf(
      */
     d_velocity = new pdat::NodeVariable<double>(d_dim, "velocity", d_dim.getValue());
 
-    d_massflux  = new pdat::CellVariable<double>(d_dim, "massflux", d_dim.getValue());
-    d_volflux   = new pdat::CellVariable<double>(d_dim, "volflux", d_dim.getValue());
+    d_massflux  = new pdat::EdgeVariable<double>(d_dim, "massflux", d_dim.getValue());
+    d_volflux   = new pdat::EdgeVariable<double>(d_dim, "volflux", d_dim.getValue());
+
     d_pressure  = new pdat::CellVariable<double>(d_dim, "pressure", 1);
     d_viscosity  = new pdat::CellVariable<double>(d_dim, "viscosity", 1);
     d_soundspeed  = new pdat::CellVariable<double>(d_dim, "soundspeed", 1);
@@ -168,8 +172,8 @@ void Cleverleaf::initializeDataOnPatch(
 {
     if (initial_time) {
         tbox::Pointer<pdat::NodeData<double> > velocity = patch.getPatchData(d_velocity, getCurrentDataContext());
-        tbox::Pointer<pdat::CellData<double> > massflux = patch.getPatchData(d_massflux, getCurrentDataContext());
-        tbox::Pointer<pdat::CellData<double> > volflux = patch.getPatchData(d_volflux, getCurrentDataContext());
+        tbox::Pointer<pdat::EdgeData<double> > massflux = patch.getPatchData(d_massflux, getCurrentDataContext());
+        tbox::Pointer<pdat::EdgeData<double> > volflux = patch.getPatchData(d_volflux, getCurrentDataContext());
         tbox::Pointer<pdat::CellData<double> > pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
         tbox::Pointer<pdat::CellData<double> > viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
         tbox::Pointer<pdat::CellData<double> > soundspeed = patch.getPatchData(d_soundspeed, getCurrentDataContext());
@@ -841,24 +845,50 @@ void Cleverleaf::pdv_knl(
     delete volume_change;
 }
 
-
 void Cleverleaf::flux_calc_knl(
         hier::Patch& patch,
-        double dt,
-        bool predict)
+        double dt)
 {
 
-  DO k=y_min,y_max
-    DO j=x_min,x_max+1 
-      vol_flux_x(j,k)=0.25*dt*xarea(j,k)                  &
-                     *(xvel0(j,k)+xvel0(j,k+1)+xvel1(j,k)+xvel1(j,k+1))
-    ENDDO
-  ENDDO
+    const hier::Index ifirst = patch.getBox().lower();
+    const hier::Index ilast = patch.getBox().upper();
 
-  DO k=y_min,y_max+1
-    DO j=x_min,x_max
-      vol_flux_y(j,k)=0.25*dt*yarea(j,k)                  &
-                     *(yvel0(j,k)+yvel0(j+1,k)+yvel1(j,k)+yvel1(j+1,k))
-    ENDDO
-  ENDDO
+    int xmin = ifirst(0); 
+    int xmax = ilast(0); 
+    int ymin = ifirst(1); 
+    int ymax = ilast(1); 
+
+    int nx = xmax - xmin + 1;
+
+    tbox::Pointer<pdat::CellData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v_vel1 = patch.getPatchData(d_velocity, getNewDataContext());
+
+    tbox::Pointer<pdat::EdgeData<double> > v_volflux = patch.getPatchData(d_volflux, getCurrentDataContext());
+
+    tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
+
+
+    double* xvel0 = v_vel0->getPointer(0);
+    double* xvel1 = v_vel1->getPointer(0);
+    double* xarea = v_celldeltas->getPointer(1);
+    double* vol_flux_x = v_volflux->getPointer(0);
+
+    double* yvel0 = v_vel0->getPointer(1);
+    double* yvel1 = v_vel1->getPointer(1);
+    double* yarea = v_celldeltas->getPointer(0);
+    double* vol_flux_y = v_volflux->getPointer(1);
+
+    for (int k = ymin; k <= ymax; k++) {
+        for (int j = xmin; j <= xmax+1; j++) {
+            vol_flux_x(j,k)=0.25*dt*xarea(j,k)
+                *(xvel0(j,k)+xvel0(j,k+1)+xvel1(j,k)+xvel1(j,k+1));
+        }
+    }
+
+    for (int k = ymin; k <= ymax+1; k++) {
+        for (int j = xmin; j <= xmax; j++) {
+            vol_flux_y(j,k)=0.25*dt*yarea(j,k)
+                *(yvel0(j,k)+yvel0(j+1,k)+yvel1(j,k)+yvel1(j+1,k));
+        }
+    }
 }
