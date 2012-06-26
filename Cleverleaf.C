@@ -8,6 +8,32 @@
 
 #define POLY2(i, j, imin, jmin, nx) ((i - imin) + (j-jmin) * nx)
 
+// Arrays are defined up here so we can access them with fortran notation
+#define density(i,j) density[((i-xmin)) + (j-ymin)*nx]
+
+#define energy(i,j) energy[((i-xmin)) + (j-ymin)*nx]
+
+#define xarea(i,j) xarea[((i-xmin)) + (j-ymin)*nx]
+#define yarea(i,j) yarea[((i-xmin)) + (j-ymin)*nx]
+#define volume(i,j) volume[((i-xmin)) + (j-ymin)*nx]
+#define density0(i,j) density0[((i-xmin)) + (j-ymin)*nx]
+#define density1(i,j) density1[((i-xmin)) + (j-ymin)*nx]
+#define energy0(i,j) energy0[((i-xmin)) + (j-ymin)*nx]
+#define energy1(i,j) energy1[((i-xmin)) + (j-ymin)*nx]
+#define pressure(i,j) pressure[((i-xmin)) + (j-ymin)*nx]
+#define viscosity(i,j) viscosity[((i-xmin)) + (j-ymin)*nx]
+#define celldx(i,j) celldx[((i-xmin)) + (j-ymin)*nx]
+#define celldy(i,j) celldy[((i-xmin)) + (j-ymin)*nx]
+#define soundspeed(i,j) soundspeed[((i-xmin)) + (j-ymin)*nx]
+
+#define xvel0(j,k) xvel0[((j-xmin)) + (k-ymin)*(nx+1)]
+#define yvel0(j,k) yvel0[((j-xmin)) + (k-ymin)*(nx+1)]
+#define xvel1(j,k) xvel1[((j-xmin)) + (k-ymin)*(nx+1)]
+#define yvel1(j,k) yvel1[((j-xmin)) + (k-ymin)*(nx+1)]
+#define stepbymass(j,k) stepbymass[((j)) + (k)*(nx+1)]
+
+#define volume_change(i,j) volume_change[((i)) + (j)*nx]
+
 Cleverleaf::Cleverleaf(
         tbox::Pointer<hier::PatchHierarchy> hierarchy,
         const tbox::Dimension& dim,
@@ -25,7 +51,8 @@ Cleverleaf::Cleverleaf(
     /*
      * Register variables
      */
-    d_velocity = new pdat::CellVariable<double>(d_dim, "velocity", d_dim.getValue());
+    d_velocity = new pdat::NodeVariable<double>(d_dim, "velocity", d_dim.getValue());
+
     d_massflux  = new pdat::CellVariable<double>(d_dim, "massflux", d_dim.getValue());
     d_volflux   = new pdat::CellVariable<double>(d_dim, "volflux", d_dim.getValue());
     d_pressure  = new pdat::CellVariable<double>(d_dim, "pressure", 1);
@@ -140,14 +167,14 @@ void Cleverleaf::initializeDataOnPatch(
         bool initial_time)
 {
     if (initial_time) {
-        tbox::Pointer<pdat::CellData<double> > velocity = patch.getPatchData(d_velocity, getCurrentDataContext());
+        tbox::Pointer<pdat::NodeData<double> > velocity = patch.getPatchData(d_velocity, getCurrentDataContext());
         tbox::Pointer<pdat::CellData<double> > massflux = patch.getPatchData(d_massflux, getCurrentDataContext());
         tbox::Pointer<pdat::CellData<double> > volflux = patch.getPatchData(d_volflux, getCurrentDataContext());
         tbox::Pointer<pdat::CellData<double> > pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
         tbox::Pointer<pdat::CellData<double> > viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
         tbox::Pointer<pdat::CellData<double> > soundspeed = patch.getPatchData(d_soundspeed, getCurrentDataContext());
-        tbox::Pointer<pdat::CellData<double> > density = patch.getPatchData(d_density, getCurrentDataContext());
-        tbox::Pointer<pdat::CellData<double> > energy = patch.getPatchData(d_energy, getCurrentDataContext());
+        tbox::Pointer<pdat::CellData<double> > v_density = patch.getPatchData(d_density, getCurrentDataContext());
+        tbox::Pointer<pdat::CellData<double> > v_energy = patch.getPatchData(d_energy, getCurrentDataContext());
         tbox::Pointer<pdat::CellData<double> > volume = patch.getPatchData(d_volume, getCurrentDataContext());
 
         tbox::Pointer<pdat::CellData<double> > celldeltas = patch.getPatchData(
@@ -167,33 +194,33 @@ void Cleverleaf::initializeDataOnPatch(
         /*
          * Fill density and energy with some data, these are our initial conditions.
          */
-        double* density_data = density->getPointer();
-        double* energy_data = energy->getPointer();
+        double* density = v_density->getPointer();
+        double* energy = v_energy->getPointer();
 
         const hier::Index ifirst = patch.getBox().lower();
         const hier::Index ilast = patch.getBox().upper();
 
-        hier::IntVector density_ghosts = density->getGhostCellWidth();
+        hier::IntVector density_ghosts = v_density->getGhostCellWidth();
 
-        int imin = ifirst(0) - density_ghosts(0);
-        int imax = ilast(0) + density_ghosts(0);
-        int jmin = ifirst(1) - density_ghosts(1);
-        int jmax = ilast(1) + density_ghosts(1);
+        int xmin = ifirst(0) - density_ghosts(0);
+        int xmax = ilast(0) + density_ghosts(0);
+        int ymin = ifirst(1) - density_ghosts(1);
+        int ymax = ilast(1) + density_ghosts(1);
 
-        int nx = imax - imin + 1;
-        int ny = jmax - jmin + 1;
+        int nx = xmax - xmin + 1;
+        int ny = ymax - ymin + 1;
 
-        for(int j = jmin; j <= jmax; j++) {
-            for(int i = imin; i <= imax; i++) {
-                int n1 = POLY2(i,j,imin,jmin,nx);
+        for(int j = ymin; j <= ymax; j++) {
+            for(int i = xmin; i <= xmax; i++) {
+                //int n1 = POLY2(i,j,imin,jmin,nx);
 
-                if (((i >= imin + 32) && (i <= imax - 32)) &&
-                        ((j >= jmin + 32) && ( j <= jmax - 32))) {
-                    density_data[n1] = 1.0;
-                    energy_data[n1] = 2.5;
+                if (((i >= xmin + 4) && (i <= xmax - 4)) &&
+                        ((j >= ymin + 4) && ( j <= ymax - 4))) {
+                    density(i,j) = 1.0;
+                    energy(i,j) = 2.5;
                 } else {
-                    density_data[n1] = 0.1;
-                    energy_data[n1] = 1.0;
+                    density(i,j) = 0.1;
+                    energy(i,j) = 1.0;
                 }
             }
         }
@@ -204,8 +231,8 @@ void Cleverleaf::initializeDataOnPatch(
         const tbox::Pointer<geom::CartesianPatchGeometry> pgeom = patch.getPatchGeometry();
         const double* dxs = pgeom->getDx();
         const double* coords = pgeom->getXLower();
-        double xmin = coords[0];
-        double ymin = coords[1];
+        double rxmin = coords[0];
+        double rymin = coords[1];
         double dx = dxs[0];
         double dy = dxs[1];
         double vol = dx*dy;
@@ -255,8 +282,8 @@ void Cleverleaf::initializeDataOnPatch(
             for(int i = vimin; i <= vimax; i++) {
                 int ind = POLY2(i,j,vimin,vjmin,vnx);
 
-                vertexx[ind] = xmin + dx*(xcount-xmin);
-                vertexy[ind] = ymin + dy*(ycount-ymin);
+                vertexx[ind] = rxmin + dx*(xcount-rxmin);
+                vertexy[ind] = rymin + dy*(ycount-rymin);
 
                 xcount++;
             }
@@ -267,13 +294,13 @@ void Cleverleaf::initializeDataOnPatch(
         double* cellx = cellcoords->getPointer(0);
         double* celly = cellcoords->getPointer(1);
 
-        for(int j = jmin; j <= jmax; j++) {
-            for(int i = imin; i <= imax; i++) {
+        for(int j = ymin; j <= ymax; j++) {
+            for(int i = xmin; i <= xmax; i++) {
                 int vind = POLY2(i,j,vimin,vjmin,vnx);
                 int vind2 = POLY2(i+1,j,vimin,vjmin,vnx);
                 int vind3 = POLY2(i,j+1,vimin,vjmin,vnx);
 
-                int ind = POLY2(i,j,imin,jmin,nx);
+                int ind = POLY2(i,j,xmin,ymin,nx);
 
                 cellx[ind] = 0.5*(vertexx[vind]+vertexx[vind2]);
                 celly[ind] = 0.5*(vertexy[vind]+vertexy[vind3]);
@@ -296,13 +323,15 @@ void Cleverleaf::accelerate(
     int ymin = ifirst(1); 
     int ymax = ilast(1); 
 
+    int nx = xmax - xmin + 1;
+
     tbox::Pointer<pdat::CellData<double> > v_density = patch.getPatchData(d_density, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > v_volume = patch.getPatchData(d_volume, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > v_pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > v_viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_vel1 = patch.getPatchData(d_velocity, getNewDataContext());
+    tbox::Pointer<pdat::NodeData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
+    tbox::Pointer<pdat::NodeData<double> > v_vel1 = patch.getPatchData(d_velocity, getNewDataContext());
 
     double* xarea = v_celldeltas->getPointer(1);
     double* yarea = v_celldeltas->getPointer(0);
@@ -315,97 +344,56 @@ void Cleverleaf::accelerate(
     double* xvel1 = v_vel1->getPointer(0);
     double* yvel1 = v_vel1->getPointer(1);
 
-    double* stepbymass = (double*) malloc(((xmax-xmin+1)*(ymax-ymin+1))*sizeof(double));
+    double* stepbymass;
+    stepbymass = (double*) malloc(((xmax-xmin+2)*(ymax-ymin+2))*sizeof(double));
 
-    for(int k = ymin; k <= ymax; k++) {
-        for(int j = xmin; j <= xmax; j++ ) {
-            int n1 = POLY2(j,k,xmin,ymin, (xmax-xmin+1));
-            int n2 = POLY2(j+1,k,xmin,ymin, (xmax-xmin+1));
-            int n3 = POLY2(j,k-1,xmin,ymin, (xmax-xmin+1));
-            int n4 = POLY2(j-1,k,xmin,ymin, (xmax-xmin+1));
-            int n5 = POLY2(j,k+1,xmin,ymin, (xmax-xmin+1));
-            int n6 = POLY2(j+1,k+1,xmin,ymin, (xmax-xmin+1));
-            int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
-            int n8 = POLY2(j-1,k-1,xmin,ymin, (xmax-xmin+1));
+    for(int k = ymin; k <= ymax+1; k++) {
+        for(int j = xmin; j <= xmax+1; j++ ) {
 
-            nodal_mass=(density0[n8]*volume[n8]
-                    +density0[n3]*volume[n3]
-                    +density0[n1]*volume[n1]
-                    +density0[n4]*volume[n4])*0.25;
+            nodal_mass=(density0(j-1,k-1)*volume(j-1,k-1)
+                    +density0(j,k-1)*volume(j,k-1)
+                    +density0(j,k)*volume(j,k)
+                    +density0(j-1,k)*volume(j-1,k))
+                    *0.25;
 
-                stepbymass[n1]=0.5*dt/nodal_mass;
+                stepbymass(j,k)=0.5*dt/nodal_mass;
         }
     }
 
-    for(int k = ymin; k <= ymax; k++) {
-        for(int j = xmin; j <= xmax; j++ ) {
+    for(int k = ymin; k <= ymax+1; k++) {
+        for(int j = xmin; j <= xmax+1; j++ ) {
 
-            int n1 = POLY2(j,k,xmin,ymin, (xmax-xmin+1));
-            int n2 = POLY2(j+1,k,xmin,ymin, (xmax-xmin+1));
-            int n3 = POLY2(j,k-1,xmin,ymin, (xmax-xmin+1));
-            int n4 = POLY2(j-1,k,xmin,ymin, (xmax-xmin+1));
-            int n5 = POLY2(j,k+1,xmin,ymin, (xmax-xmin+1));
-            int n6 = POLY2(j+1,k+1,xmin,ymin, (xmax-xmin+1));
-            int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
-            int n8 = POLY2(j-1,k-1,xmin,ymin, (xmax-xmin+1));
-
-            xvel1[n1]=xvel0[n1]-stepbymass[n1]*(xarea[n1]*(pressure[n1]-pressure[n4])
-                    +xarea[n3]*(pressure[n3]-pressure[n8]));
+            xvel1(j,k)=xvel0(j,k)-stepbymass(j,k)*(xarea(j,k)*(pressure(j,k)-pressure(j-1,k))
+                    +xarea(j,k-1)*(pressure(j,k-1)-pressure(j-1,k-1)));
         }
     }
 
-    for(int k = ymin; k <= ymax; k++) {
-        for(int j = xmin; j <= xmax; j++ ) {
+    for(int k = ymin; k <= ymax+1; k++) {
+        for(int j = xmin; j <= xmax+1; j++ ) {
 
-            int n1 = POLY2(j,k,xmin,ymin, (xmax-xmin+1));
-            int n2 = POLY2(j+1,k,xmin,ymin, (xmax-xmin+1));
-            int n3 = POLY2(j,k-1,xmin,ymin, (xmax-xmin+1));
-            int n4 = POLY2(j-1,k,xmin,ymin, (xmax-xmin+1));
-            int n5 = POLY2(j,k+1,xmin,ymin, (xmax-xmin+1));
-            int n6 = POLY2(j+1,k+1,xmin,ymin, (xmax-xmin+1));
-            int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
-            int n8 = POLY2(j-1,k-1,xmin,ymin, (xmax-xmin+1));
+            yvel1(j,k)=yvel0(j,k)-stepbymass(j,k)*(yarea(j,k)*(pressure(j,k)-pressure(j,k-1))
+                    +yarea(j-1,k)*(pressure(j-1,k)-pressure(j-1,k-1)));
+        }
+    }
 
-            yvel1[n1]=yvel0[n1]-stepbymass[n1]*(yarea[n1]*(pressure[n1]-pressure[n3])
-                    +yarea[n4]*(pressure[n4]-pressure[n8]));
+    for(int k = ymin; k <= ymax+1; k++) {
+        for(int j = xmin; j <= xmax+1; j++ ) {
+
+            xvel1(j,k)=xvel1(j,k)-stepbymass(j,k)*(xarea(j,k)*(viscosity(j,k)-viscosity(j-1,k))
+                    +xarea(j,k-1)*(viscosity(j,k-1)-viscosity(j-1,k-1)));
 
         }
     }
 
-    for(int k = ymin; k <= ymax; k++) {
-        for(int j = xmin; j <= xmax; j++ ) {
+    for(int k = ymin; k <= ymax+1; k++) {
+        for(int j = xmin; j <= xmax+1; j++ ) {
 
-            int n1 = POLY2(j,k,xmin,ymin, (xmax-xmin+1));
-            int n2 = POLY2(j+1,k,xmin,ymin, (xmax-xmin+1));
-            int n3 = POLY2(j,k-1,xmin,ymin, (xmax-xmin+1));
-            int n4 = POLY2(j-1,k,xmin,ymin, (xmax-xmin+1));
-            int n5 = POLY2(j,k+1,xmin,ymin, (xmax-xmin+1));
-            int n6 = POLY2(j+1,k+1,xmin,ymin, (xmax-xmin+1));
-            int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
-            int n8 = POLY2(j-1,k-1,xmin,ymin, (xmax-xmin+1));
-
-            xvel1[n1]=xvel1[n1]-stepbymass[n1]*(xarea[n1]*(viscosity[n1]-viscosity[n4])
-                    +xarea[n3]*(viscosity[n3]-viscosity[n8]));
-
+            yvel1(j,k)=yvel1(j,k)-stepbymass(j,k)*(yarea(j,k)*(viscosity(j,k)-viscosity(j,k-1))
+                    +yarea(j-1,k)*(viscosity(j-1,k)-viscosity(j-1,k-1)));
         }
     }
 
-    for(int k = ymin; k <= ymax; k++) {
-        for(int j = xmin; j <= xmax; j++ ) {
-
-            int n1 = POLY2(j,k,xmin,ymin, (xmax-xmin+1));
-            int n2 = POLY2(j+1,k,xmin,ymin, (xmax-xmin+1));
-            int n3 = POLY2(j,k-1,xmin,ymin, (xmax-xmin+1));
-            int n4 = POLY2(j-1,k,xmin,ymin, (xmax-xmin+1));
-            int n5 = POLY2(j,k+1,xmin,ymin, (xmax-xmin+1));
-            int n6 = POLY2(j+1,k+1,xmin,ymin, (xmax-xmin+1));
-            int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
-            int n8 = POLY2(j-1,k-1,xmin,ymin, (xmax-xmin+1));
-
-            yvel1[n1]=yvel1[n1]-stepbymass[n1]*(yarea[n1]*(viscosity[n1]-viscosity[n3])
-                    +yarea[n4]*(viscosity[n4]-viscosity[n8]));
-        }
-    }
+    delete stepbymass;
 }
 
 void Cleverleaf::ideal_gas_knl(
@@ -420,6 +408,8 @@ void Cleverleaf::ideal_gas_knl(
     int xmax = ilast(0); 
     int ymin = ifirst(1); 
     int ymax = ilast(1); 
+
+    int nx = xmax - xmin + 1;
 
     tbox::Pointer<pdat::CellData<double> > v_density;
     tbox::Pointer<pdat::CellData<double> > v_energy;
@@ -438,6 +428,7 @@ void Cleverleaf::ideal_gas_knl(
 
     tbox::Pointer<pdat::CellData<double> > v_pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
 
+
     tbox::Pointer<pdat::CellData<double> > v_soundspeed = patch.getPatchData(d_soundspeed, getCurrentDataContext());
 
     double* density = v_density->getPointer();
@@ -450,22 +441,25 @@ void Cleverleaf::ideal_gas_knl(
     double sound_speed_squared = 0;
     double v = 0;
 
-    for(int j = ymin; j <= ymax; j++) {
-        for(int i = xmin; i <= xmax; i++){
-            int ind = POLY2(i,j,xmin,ymin,(xmax-xmin +1));
+    for(int k = ymin; k <= ymax; k++) {
+        for(int j = xmin; j <= xmax; j++){
 
-            v=1.0/density[ind];
+            v=1.0/density(j,k);
 
-            pressure[ind]=(1.4-1.0)*density[ind]*energy[ind];
-            pressurebyenergy=(1.4-1.0)*density[ind];
-            pressurebyvolume=-density[ind]*pressure[ind];
+            tbox::pout << "density: " << density(j,k) << std::endl;
+            tbox::pout << "energy: " << energy(j,k) << std::endl;
 
-            sound_speed_squared=v*v*(pressure[ind]*pressurebyenergy-pressurebyvolume);
+            pressure(j,k)=(1.4-1.0)*density(j,k)*energy(j,k);
 
-            soundspeed[ind]=sqrt(sound_speed_squared);
-#ifdef DEBUG
-            tbox::pout << "Updating pressure[" << ind << "]=" << pressure[ind] << ", soundspeed[" << ind << "]=" << soundspeed[ind] << std::endl;
-#endif
+            pressurebyenergy=(1.4-1.0)*density(j,k);
+
+            pressurebyvolume=-density(j,k)*pressure(j,k);
+
+            sound_speed_squared=v*v*(pressure(j,k)*pressurebyenergy-pressurebyvolume);
+
+            soundspeed(j,k)=sqrt(sound_speed_squared);
+
+            tbox::pout << "Updating pressure[" << j << "][" << k << "]=" << pressure(j,k) << ", soundspeed[" << j << "][" << k << "]=" << soundspeed(j,k) << std::endl;
         }
     }
 }
@@ -486,12 +480,14 @@ void Cleverleaf::viscosity_knl(
     int ymin = ifirst(1); 
     int ymax = ilast(1); 
 
+    int nx = xmax - xmin + 1;
+
     tbox::Pointer<pdat::CellData<double> > v_density0 = patch.getPatchData(d_density, getCurrentDataContext());
 
     tbox::Pointer<pdat::CellData<double> > v_pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
 
     tbox::Pointer<pdat::CellData<double> > v_viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
+    tbox::Pointer<pdat::NodeData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
 
     double* density = v_density0->getPointer();
@@ -502,55 +498,56 @@ void Cleverleaf::viscosity_knl(
     double* celldx = v_celldeltas->getPointer(0);
     double* celldy = v_celldeltas->getPointer(1);
 
-  for(int k = ymin; k <= ymax; k++) {
-      for(int j = xmin; j <= xmax; j++){
+    for(int k = ymin; k <= ymax; k++) {
+        for(int j = xmin; j <= xmax; j++){
 
-          int n1 = POLY2(j,k,xmin,ymin, (xmax-xmin+1));
-          int n2 = POLY2(j+1,k,xmin,ymin, (xmax-xmin+1));
-          int n3 = POLY2(j,k-1,xmin,ymin, (xmax-xmin+1));
-          int n4 = POLY2(j-1,k,xmin,ymin, (xmax-xmin+1));
-          int n5 = POLY2(j,k+1,xmin,ymin, (xmax-xmin+1));
-          int n6 = POLY2(j+1,k+1,xmin,ymin, (xmax-xmin+1));
-          int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
-
-          ugrad=(xvel0[n2]+xvel0[n6])-(xvel0[n1]+xvel0[n5]);
-
-          vgrad=(yvel0[n5]+yvel0[n6])-(yvel0[n1]+yvel0[n2]);
-
-          div=(celldx[n1]*(ugrad)+celldy[n1]*(vgrad));
-          strain2=0.5*(xvel0[n5]+xvel0[n6]-xvel0[n1]-xvel0[n2])/celldy[n1]+0.5*(yvel0[n2]+yvel0[n6]-yvel0[n1]-yvel0[n5])/celldx[n1];
-
-          pgradx=(pressure[n2]-pressure[n4])/(celldx[n1]+celldx[n2]);
-          pgrady=(pressure[n5]-pressure[n3])/(celldy[n1]+celldy[n5]);
-
-          pgradx2 = pgradx*pgradx;
-          pgrady2 = pgrady*pgrady;
-
-          limiter = ((0.5*(ugrad)/celldx[n1])*pgradx2+(0.5*(vgrad)/celldy[n1])*pgrady2+strain2*pgradx*pgrady)/max(pgradx2+pgrady2,1.0e-16);
-
-          pgradx = copysign(max(1.0e-16,abs(pgradx)),pgradx);
-          pgrady = copysign(max(1.0e-16,abs(pgrady)),pgrady);
-          pgrad = sqrt((pgradx*pgradx)+(pgrady*pgrady));
-          xgrad = abs(celldx[n1]*pgrad/pgradx);
-          ygrad = abs(celldy[n1]*pgrad/pgrady);
-          grad  = min(xgrad,ygrad);
-          grad2 = grad*grad;
+            ugrad=(xvel0(j+1,k)+xvel0(j+1,k+1))-(xvel0(j,k)+xvel0(j,k+1));
 
 #ifdef DEBUG
-          tbox::pout << "limiter = " << limiter << ",div = " << div << std::endl;
+            tbox::pout << "xvel(j+1,k) = " << xvel0(j+1,k) << std::endl;
 #endif
-          if(!((limiter > 0.0) || (div >= 0.0))) {
+            vgrad=(yvel0(j,k+1)+yvel0(j+1,k+1))-(yvel0(j,k)+yvel0(j+1,k));
+
+            div=(celldx(j,k)*(ugrad)+celldy(j,k)*(vgrad));
+
 #ifdef DEBUG
-            tbox::pout << "Updating viscosity[" << j-xmin << "][" << k-ymin << "]=" << 2.0*density[n1]*grad2*(limiter*limiter) << std::endl;
+            tbox::pout << "ugrad = " << ugrad << ",vgrad = " << vgrad << std::endl;
 #endif
-              viscosity[n1]=2.0*density[n1]*grad2*(limiter*limiter);
-          } else {
+
+            strain2=0.5*(xvel0(j,k+1)+xvel0(j+1,k+1)-xvel0(j,k)-xvel0(j+1,k))/celldy(j,k)
+                +0.5*(yvel0(j+1,k)+yvel0(j+1,k+1)-yvel0(j,k)-yvel0(j,k+1))/celldx(j,k);
+
+            pgradx=(pressure(j+1,k)-pressure(j-1,k))/(celldx(j,k)+celldx(j+1,k));
+            pgrady=(pressure(j,k+1)-pressure(j,k-1))/(celldy(j,k)+celldy(j,k+1));
+
+            pgradx2=pgradx*pgradx;
+            pgrady2=pgrady*pgrady;
+
+            limiter=((0.5*(ugrad)/celldx(j,k))*pgradx2+(0.5*(vgrad)/celldy(j,k))*pgrady2+strain2*pgradx*pgrady)/max(pgradx2+pgrady2,1.0e-16);
+
+            pgradx = copysign(max(1.0e-16,abs(pgradx)),pgradx);
+            pgrady = copysign(max(1.0e-16,abs(pgrady)),pgrady);
+            pgrad = sqrt((pgradx*pgradx)+(pgrady*pgrady));
+            xgrad = abs(celldx(j,k)*pgrad/pgradx);
+            ygrad = abs(celldy(j,k)*pgrad/pgrady);
+            grad  = min(xgrad,ygrad);
+            grad2 = grad*grad;
+
 #ifdef DEBUG
-            tbox::pout << "[ZERO] Updating viscosity[" << j-xmin << "][" << k-ymin << "]=" << 0.0 << std::endl;
+            tbox::pout << "limiter = " << limiter << ",div = " << div << std::endl;
 #endif
-              viscosity[n1] = 0.0;
-          }
-      }
+            if(!((limiter > 0.0) || (div >= 0.0))) {
+#ifdef DEBUG
+                tbox::pout << "Updating viscosity[" << j-xmin << "][" << k-ymin << "]=" << 2.0*density(j,k)*grad2*(limiter*limiter) << std::endl;
+#endif
+                viscosity(j,k)=2.0*density(j,k)*grad2*(limiter*limiter);
+            } else {
+#ifdef DEBUG
+                tbox::pout << "[ZERO] Updating viscosity[" << j-xmin << "][" << k-ymin << "]=" << 0.0 << std::endl;
+#endif
+                viscosity(j,k) = 0.0;
+            }
+        }
   }
 }
 
@@ -581,7 +578,7 @@ double Cleverleaf::calc_dt_knl(
     tbox::Pointer<pdat::CellData<double> > v_soundspeed = patch.getPatchData(d_soundspeed, getCurrentDataContext());
 
     tbox::Pointer<pdat::CellData<double> > v_viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
+    tbox::Pointer<pdat::NodeData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
 
     tbox::Pointer<pdat::CellData<double> > v_volume = patch.getPatchData(d_volume, getCurrentDataContext());
@@ -718,8 +715,11 @@ void Cleverleaf::pdv_knl(
 
     int xmin = ifirst(0); 
     int xmax = ilast(0); 
+
     int ymin = ifirst(1); 
     int ymax = ilast(1); 
+
+    int nx = xmax - xmin + 1;
 
     /*
      * Get necessary variables
@@ -732,8 +732,8 @@ void Cleverleaf::pdv_knl(
     tbox::Pointer<pdat::CellData<double> > en1 = patch.getPatchData(d_energy, getNewDataContext());
     tbox::Pointer<pdat::CellData<double> > pres = patch.getPatchData(d_pressure, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > visc = patch.getPatchData(d_viscosity, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v0 = patch.getPatchData(d_velocity, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v1 = patch.getPatchData(d_velocity, getNewDataContext());
+    tbox::Pointer<pdat::NodeData<double> > v0 = patch.getPatchData(d_velocity, getCurrentDataContext());
+    tbox::Pointer<pdat::NodeData<double> > v1 = patch.getPatchData(d_velocity, getNewDataContext());
 
     double* xarea = area->getPointer(1);   
     double* yarea = area->getPointer(0);   
@@ -751,119 +751,94 @@ void Cleverleaf::pdv_knl(
 
     double* volume_change = (double*) malloc(((xmax-xmin+1)*(ymax-ymin+1))*sizeof(double));
 
-      if ( predict ) {
+    if (predict) {
 
-          for (int k = ymin; k <= ymax; k++) {
-              for (int j = xmin; j <= xmax; j++) { 
+        for (int  k = ymin; k <= ymax; k++) {
+            for (int j = xmin; j <= xmax; j++) {
 
-                  int n1 = POLY2(j,k,xmin,ymin, (xmax-xmin+1));
-                  int n2 = POLY2(j+1,k,xmin,ymin, (xmax-xmin+1));
-                  int n3 = POLY2(j,k-1,xmin,ymin, (xmax-xmin+1));
-                  int n4 = POLY2(j-1,k,xmin,ymin, (xmax-xmin+1));
-                  int n5 = POLY2(j,k+1,xmin,ymin, (xmax-xmin+1));
-                  int n6 = POLY2(j+1,k+1,xmin,ymin, (xmax-xmin+1));
-                  int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
+                left_flux=(xarea(j,k)*(xvel0(j,k)+xvel0(j,k+1)
+                            +xvel0(j,k)+xvel0(j,k+1)))*0.25*dt*0.5;
 
-                  left_flux=(xarea[n1]*(xvel0[n1]+xvel0[n5]
-                              +xvel0[n1]+xvel0[n5]))*0.25*dt*0.5;
+                right_flux=(xarea(j+1,k)*(xvel0(j+1,k)+xvel0(j+1,k+1)
+                            +xvel0(j+1,k)+xvel0(j+1,k+1)))*0.25*dt*0.5;
 
-                  right_flux=(xarea[n2]*(xvel0[n2]+xvel0[n6]
-                              +xvel0[n2]+xvel0[n6]))*0.25*dt*0.5;
+                bottom_flux=(yarea(j,k)*(yvel0(j,k)+yvel0(j+1,k)
+                            +yvel0(j,k)+yvel0(j+1,k)))*0.25*dt*0.5;
 
-                  bottom_flux=(yarea[n1]*(yvel0[n1]+yvel0[n2]
-                              +yvel0[n1]+yvel0[n2]))*0.25*dt*0.5;
+                top_flux=(yarea(j,k+1)*(yvel0(j,k+1)+yvel0(j+1,k+1)
+                            +yvel0(j,k+1)+yvel0(j+1,k+1)))*0.25*dt*0.5;
 
-                  top_flux=(yarea[n5]*(yvel0[n5]+yvel0[n6]
-                              +yvel0[n5]+yvel0[n6]))*0.25*dt*0.5;
+                total_flux=right_flux-left_flux+top_flux-bottom_flux;
 
-                  total_flux=right_flux-left_flux+top_flux-bottom_flux;
+                volume_change(j,k)=volume(j,k)/(volume(j,k)+total_flux);
 
-                  volume_change[POLY2(j-xmin,k-ymin,0,0,(xmax-xmin+1))]=volume[n1]/(volume[n1]+total_flux);
+                min_cell_volume=min(volume(j,k)+right_flux-left_flux+top_flux-bottom_flux,
+                        min(volume(j,k)+right_flux-left_flux,volume(j,k)+top_flux-bottom_flux));
 
-                  min_cell_volume=min(
-                          volume[n1]+right_flux-left_flux+top_flux-bottom_flux,
-                          min(volume[n1]+right_flux-left_flux,
-                          volume[n1]+top_flux-bottom_flux));
+                //        IF(volume_change(j,k).LE.0.0) THEN ! Perhaps take these tests out so it will vectorise
+                //          error_condition=1 ! Do I need atomic for OpenMP?
+                //        ENDIF
+                //        IF(min_cell_volume.LE.0.0) THEN
+                //          error_condition=2
+                //        ENDIF
 
-                  //Perhaps take these tests out so it will vectorise
-                  if (volume_change[POLY2(j-xmin,k-ymin,0,0,(xmax-xmin+1))] <= 0.0 ) { 
-                      cout << "HIT PDV ERROR COND 1 " << endl;
-                  }
-                  if (min_cell_volume <= 0.0) {
-                      cout << "HIT PDV ERROR COND 2" << endl;
-                  }
+                recip_volume=1.0/volume(j,k) ;
 
-                  recip_volume=1.0/volume[n1];
+                energy_change=(pressure(j,k)/density0(j,k)+viscosity(j,k)/density0(j,k))*total_flux*recip_volume;
 
-#ifdef DEBUG
-                  cout << pressure[n1] << ", " << density0[n1] << ", " << viscosity[n1] << endl;
-#endif
-                  energy_change=(pressure[n1]/density0[n1]+viscosity[n1]/density0[n1])*total_flux*recip_volume;
+                tbox::pout << "energy change = " << energy_change << ", volume change = " << volume_change(j,k) << std::endl;
+                tbox::pout << "[" << j << "][" << k << "]" << std::endl;
 
-#ifdef DEBUG
-                  cout << "total flux=" << total_flux << ", n1=" << n1 << ", recip_volume=" << recip_volume << endl;
-                  cout << "energy change=" << energy_change << ", volume_change=" << volume_change[POLY2(j-xmin,k-ymin,0,0,(xmax-xmin+1))] << endl;
-#endif
-                  energy1[n1]=energy0[n1]-energy_change;
+                energy1(j,k)=energy0(j,k)-energy_change;
 
-                  density1[n1]=density0[n1]*volume_change[POLY2(j-xmin,k-ymin,0,0,(xmax-xmin+1))];
-              }
-          }
+                density1(j,k)=density0(j,k)*volume_change(j,k);
+            }
+        }
 
-  } else {
+    } else {
 
-          for (int k = ymin; k <= ymax; k++) {
-              for (int j = xmin; j <= xmax; j++) { 
+        for (int  k = ymin; k <= ymax; k++) {
+            for (int j = xmin; j <= xmax; j++) {
 
-                  int n1 = POLY2(j,k,xmin,ymin, (xmax-xmin+1));
-                  int n2 = POLY2(j+1,k,xmin,ymin, (xmax-xmin+1));
-                  int n3 = POLY2(j,k-1,xmin,ymin, (xmax-xmin+1));
-                  int n4 = POLY2(j-1,k,xmin,ymin, (xmax-xmin+1));
-                  int n5 = POLY2(j,k+1,xmin,ymin, (xmax-xmin+1));
-                  int n6 = POLY2(j+1,k+1,xmin,ymin, (xmax-xmin+1));
-                  int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
+                left_flux=(xarea(j,k)*(xvel0(j,k)+xvel0(j,k+1)
+                            +xvel1(j,k)+xvel1(j,k+1)))*0.25*dt;
 
-                  left_flux=(xarea[n1]*(xvel0[n1]+xvel0[n5]
-                              +xvel1[n1]+xvel1[n5]))*0.25*dt;
+                right_flux=(xarea(j+1,k)*(xvel0(j+1,k)+xvel0(j+1,k+1)
+                            +xvel1(j+1,k)+xvel1(j+1,k+1)))*0.25*dt;
 
-                  right_flux=(xarea[n2]*(xvel0[n2]+xvel0[n6]
-                                  +xvel1[n2]+xvel1[n6]))*0.25*dt;
+                bottom_flux=(yarea(j,k)*(yvel0(j,k)+yvel0(j+1,k)
+                            +yvel1(j,k)+yvel1(j+1,k)))*0.25*dt;
 
-                  bottom_flux=(yarea[n1]*(yvel0[n1]+yvel0[n2]
-                                  +yvel1[n1]+yvel1[n2]))*0.25*dt;
+                top_flux=(yarea(j,k+1)*(yvel0(j,k+1)+yvel0(j+1,k+1)
+                            +yvel1(j,k+1)+yvel1(j+1,k+1)))*0.25*dt;
 
-                  top_flux=(yarea[n5]*(yvel0[n5]+yvel0[n6]
-                                  +yvel1[n5]+yvel1[n6]))*0.25*dt;
+                total_flux=right_flux-left_flux+top_flux-bottom_flux;
 
-                  total_flux=right_flux-left_flux+top_flux-bottom_flux;
+                volume_change(j,k)=volume(j,k)/(volume(j,k)+total_flux);
 
-                  volume_change[POLY2(j-xmin,k-ymin,0,0,(xmax-xmin+1))]=volume[n1]/(volume[n1]+total_flux);
+                min_cell_volume=min(volume(j,k)+right_flux-left_flux+top_flux-bottom_flux,
+                        min(volume(j,k)+right_flux-left_flux,volume(j,k)+top_flux-bottom_flux));
 
-                  min_cell_volume=min(volume[n1]+right_flux-left_flux+top_flux-bottom_flux,
-                          min(volume[n1]+right_flux-left_flux,volume[n1]+top_flux-bottom_flux));
- 
-                  //Perhaps take these tests out so it will vectorise
-                  if (volume_change[POLY2(j-xmin,k-ymin,0,0,(xmax-xmin+1))] <= 0.0 ) { 
-                      cout << "HIT PDV ERROR COND 1 " << endl;
-                  }
-                  if (min_cell_volume <= 0.0) {
-                      cout << "HIT PDV ERROR COND 2" << endl;
-                  }
+                //        IF(volume_change(j,k).LE.0.0) THEN ! Perhaps take these tests out so it will vectorise
+                //          error_condition=1 ! Do I need atomic for OpenMP?
+                //        ENDIF
+                //        IF(min_cell_volume.LE.0.0) THEN
+                //          error_condition=2
+                //        ENDIF
 
-                  recip_volume=1.0/volume[n1];
+                recip_volume=1.0/volume(j,k);
 
-                  energy_change=(pressure[n1]/density0[n1]+viscosity[n1]/density0[n1])*total_flux*recip_volume;
+                energy_change=(pressure(j,k)/density0(j,k)+viscosity(j,k)/density0(j,k))*total_flux*recip_volume;
 
-                  energy1[n1]=energy0[n1]-energy_change;
+                energy1(j,k)=energy0(j,k)-energy_change;
 
-                  density1[n1]=density0[n1]*volume_change[POLY2(j-xmin,k-ymin,0,0,(xmax-xmin+1))];
+                density1(j,k)=density0(j,k)*volume_change(j,k);
+            }
+        }
 
-                  density1[n1]=density0[n1]*volume_change[POLY2(j-xmin,k-ymin,0,0,(xmax-xmin+1))];
-              }
-          }
-  }
+    }
 
-      delete volume_change;
+    delete volume_change;
 }
 
 

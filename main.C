@@ -162,6 +162,10 @@ int main(int argc, char* argv[]) {
          */
         double dt_now = time_integrator->initializeHierarchy();
 
+        visit_data_writer->writePlotData(patch_hierarchy,
+                0,
+                0.0);
+
         /*
          * After creating all objects and initializing their state, we
          * print the input database and variable database contents

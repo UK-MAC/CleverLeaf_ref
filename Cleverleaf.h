@@ -70,7 +70,7 @@ class Cleverleaf:
         /*
          * Variables
          */
-        tbox::Pointer<pdat::CellVariable<double> > d_velocity;
+        tbox::Pointer<pdat::NodeVariable<double> > d_velocity;
         tbox::Pointer<pdat::CellVariable<double> > d_massflux;
         tbox::Pointer<pdat::CellVariable<double> > d_volflux;
         tbox::Pointer<pdat::CellVariable<double> > d_pressure;
