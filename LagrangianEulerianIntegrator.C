@@ -363,11 +363,11 @@ void LagrangianEulerianIntegrator::registerVariable(
 
     int cur_id = variable_db->registerVariableAndContext(var,
             d_current,
-            zero_ghosts);
+            ghosts);
 
     int new_id = variable_db->registerVariableAndContext(var,
             d_new,
-            zero_ghosts);
+            ghosts);
 
     d_temp_var_cur_data.setFlag(cur_id);
     d_temp_var_new_data.setFlag(new_id);

@@ -3,6 +3,10 @@
 #include "SAMRAI/hier/VariableDatabase.h"
 #include "SAMRAI/geom/CartesianPatchGeometry.h"
 
+#include "SAMRAI/pdat/CellData.h"
+#include "SAMRAI/pdat/NodeData.h"
+#include "SAMRAI/pdat/EdgeData.h"
+
 #include <iostream>
 #include <cmath>
 
@@ -56,8 +60,8 @@ Cleverleaf::Cleverleaf(
      */
     d_velocity = new pdat::NodeVariable<double>(d_dim, "velocity", d_dim.getValue());
 
-    d_massflux  = new pdat::EdgeVariable<double>(d_dim, "massflux", d_dim.getValue());
-    d_volflux   = new pdat::EdgeVariable<double>(d_dim, "volflux", d_dim.getValue());
+    d_massflux  = new pdat::EdgeVariable<double>(d_dim, "massflux", 1);
+    d_volflux   = new pdat::EdgeVariable<double>(d_dim, "volflux", 1);
 
     d_pressure  = new pdat::CellVariable<double>(d_dim, "pressure", 1);
     d_viscosity  = new pdat::CellVariable<double>(d_dim, "viscosity", 1);
@@ -139,15 +143,15 @@ void Cleverleaf::registerModelVariables(
                 vardb->mapVariableAndContextToIndex(
                     d_velocity, d_plot_context));
 
-        d_visit_writer->registerPlotQuantity("Massflux",
-                "VECTOR",
-                vardb->mapVariableAndContextToIndex(
-                    d_massflux, d_plot_context));
+//        d_visit_writer->registerPlotQuantity("Massflux",
+//                "SCALAR",
+//                vardb->mapVariableAndContextToIndex(
+//                    d_massflux, d_plot_context));
 
-        d_visit_writer->registerPlotQuantity("Volflux",
-                "VECTOR",
-                vardb->mapVariableAndContextToIndex(
-                    d_volflux, d_plot_context));
+//        d_visit_writer->registerPlotQuantity("Volflux",
+//                "SCALAR",
+//                vardb->mapVariableAndContextToIndex(
+//                    d_volflux, d_plot_context));
 
         d_visit_writer->registerPlotQuantity("Vertexcoords",
                 "VECTOR",
@@ -860,28 +864,29 @@ void Cleverleaf::flux_calc_knl(
 
     int nx = xmax - xmin + 1;
 
-    tbox::Pointer<pdat::CellData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_vel1 = patch.getPatchData(d_velocity, getNewDataContext());
+    tbox::Pointer<pdat::NodeData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
+    tbox::Pointer<pdat::NodeData<double> > v_vel1 = patch.getPatchData(d_velocity, getNewDataContext());
 
     tbox::Pointer<pdat::EdgeData<double> > v_volflux = patch.getPatchData(d_volflux, getCurrentDataContext());
 
     tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
 
-
     double* xvel0 = v_vel0->getPointer(0);
     double* xvel1 = v_vel1->getPointer(0);
     double* xarea = v_celldeltas->getPointer(1);
-    double* vol_flux_x = v_volflux->getPointer(0);
+    double* vol_flux_x = v_volflux->getPointer(1);
 
     double* yvel0 = v_vel0->getPointer(1);
     double* yvel1 = v_vel1->getPointer(1);
     double* yarea = v_celldeltas->getPointer(0);
-    double* vol_flux_y = v_volflux->getPointer(1);
+    double* vol_flux_y = v_volflux->getPointer(0);
 
     for (int k = ymin; k <= ymax; k++) {
         for (int j = xmin; j <= xmax+1; j++) {
             vol_flux_x(j,k)=0.25*dt*xarea(j,k)
                 *(xvel0(j,k)+xvel0(j,k+1)+xvel1(j,k)+xvel1(j,k+1));
+
+            tbox::pout << "vol_flux_x(" << j << "," << k << ") = " << vol_flux_x(j,k) << std::endl;
         }
     }
 
