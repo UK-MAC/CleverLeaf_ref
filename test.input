@@ -3,7 +3,7 @@ Main {
 }
 
 CartesianGeometry {
-    domain_boxes = [ (0,0), (128,128) ]
+    domain_boxes = [ (0,0), (127,127) ]
     x_lo         = -50.e0, -50.e0
     x_up         = 50.e0, 50.e0
 }
@@ -16,11 +16,11 @@ PatchHierarchy {
     }
     
     largest_patch_size {
-        level_0 = 128,128
+        level_0 = 127,127
     }
 
     smallest_patch_size {
-        level_0 = 128,128
+        level_0 = 127,127
     }
 }
 
@@ -50,5 +50,5 @@ TimeRefinementIntegrator {
     start_time = 0.e0
     end_time = 3.e0
     grow_dt = 1.5e0
-    max_integrator_steps = 1000
+    max_integrator_steps = 100
 }

@@ -84,33 +84,39 @@ double LagrangianEulerianIntegrator::getLevelDt(
     level->allocatePatchData(d_temp_var_new_data, dt_time);
 
 #ifdef LOOPPRINT
-    tbox::pout << "LagrangianEulerianIntegrator: getLevelDt: ideal_gas" << std::endl;
+    tbox::pout << "LagrangianEulerianIntegrator: getLevelDt: ideal_gas corrector {{{" << std::endl;
 #endif
     for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
         tbox::Pointer<hier::Patch> patch = *ip;
 
         d_patch_strategy->ideal_gas_knl(*patch, false);
     }
-    
+#ifdef LOOPPRINT
+    tbox::pout << "}}}" << std::endl;
+#endif
+
     /* 
      * TODO: update_halos pressure, energy, density, velocity0
      */
 
 #ifdef LOOPPRINT
-    tbox::pout << "LagrangianEulerianIntegrator: getLevelDt: viscosity" << std::endl;
+    tbox::pout << "LagrangianEulerianIntegrator: getLevelDt: viscosity {{{" << std::endl;
 #endif
     for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
         tbox::Pointer<hier::Patch> patch = *ip;
 
         d_patch_strategy->viscosity_knl(*patch);
     }
+#ifdef LOOPPRINT
+    tbox::pout << "}}}" << std::endl;
+#endif
 
     /*
      * TODO: update_halos viscosity
      */
 
 #ifdef LOOPPRINT
-    tbox::pout << "LagrangianEulerianIntegrator: getLevelDt: calc_dt" << std::endl;
+    tbox::pout << "LagrangianEulerianIntegrator: getLevelDt: calc_dt {{{" << std::endl;
 #endif
     for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
         tbox::Pointer<hier::Patch> patch = *ip;
@@ -120,9 +126,9 @@ double LagrangianEulerianIntegrator::getLevelDt(
 
         dt = tbox::MathUtilities<double>::Min(dt, patch_dt);
     }
-
-
-
+#ifdef LOOPPRINT
+    tbox::pout << "}}}" << std::endl;
+#endif
 
     double global_dt = dt;
 
@@ -172,7 +178,7 @@ double LagrangianEulerianIntegrator::advanceLevel(
      * PdV kernel, predictor.
      */
 #ifdef LOOPPRINT
-    tbox::pout << "LagrangianEulerianIntegrator: advanceLevel: PdV predictor" << std::endl;
+    tbox::pout << "LagrangianEulerianIntegrator: advanceLevel: PdV predictor {{{" << std::endl;
 #endif
     for(hier::PatchLevel::Iterator p(level);p;p++){
 
@@ -180,12 +186,15 @@ double LagrangianEulerianIntegrator::advanceLevel(
 
         d_patch_strategy->pdv_knl(*patch,dt, true);
     }
+#ifdef LOOPPRINT
+    tbox::pout << "}}}" << std::endl;
+#endif
 
     /*
      * PdV kernel, predictor needs ideal gas call.
      */
 #ifdef LOOPPRINT
-    tbox::pout << "LagrangianEulerianIntegrator: advanceLevel: ideal gas predictor" << std::endl;
+    tbox::pout << "LagrangianEulerianIntegrator: advanceLevel: ideal_gas predictor {{{" << std::endl;
 #endif
     for(hier::PatchLevel::Iterator p(level);p;p++){
 
@@ -193,6 +202,9 @@ double LagrangianEulerianIntegrator::advanceLevel(
 
         d_patch_strategy->ideal_gas_knl(*patch,true);
     }
+#ifdef LOOPPRINT
+    tbox::pout << "}}}" << std::endl;
+#endif
 
     /*
      * TODO: Update pressure halos!
@@ -207,7 +219,7 @@ double LagrangianEulerianIntegrator::advanceLevel(
      * Acceleration due to pressure/velocity
      */ 
 #ifdef LOOPPRINT
-    tbox::pout << "LagrangianEulerianIntegrator: advanceLevel: acceleration" << std::endl;
+    tbox::pout << "LagrangianEulerianIntegrator: advanceLevel: acceleration {{{" << std::endl;
 #endif
     for(hier::PatchLevel::Iterator p(level);p;p++){
 
@@ -215,12 +227,15 @@ double LagrangianEulerianIntegrator::advanceLevel(
 
         d_patch_strategy->accelerate(*patch,dt);
     }
+#ifdef LOOPPRINT
+    tbox::pout << "}}}" << std::endl;
+#endif
 
    /*
     * PdV kernel, corrector.
     */
 #ifdef LOOPPRINT
-    tbox::pout << "LagrangianEulerianIntegrator: advanceLevel: PdV corrector" << std::endl;
+    tbox::pout << "LagrangianEulerianIntegrator: advanceLevel: PdV corrector {{{" << std::endl;
 #endif
    for(hier::PatchLevel::Iterator p(level);p;p++){
 
@@ -228,16 +243,19 @@ double LagrangianEulerianIntegrator::advanceLevel(
 
         d_patch_strategy->pdv_knl(*patch,dt, false);
     }
+#ifdef LOOPPRINT
+    tbox::pout << "}}}" << std::endl;
+#endif
 
    /*
     * flux calculations...
     */
-   for(hier::PatchLevel::Iterator p(level);p;p++){
-
-        tbox::Pointer<hier::Patch>patch=*p;
-
-        d_patch_strategy->flux_calc_knl(*patch,dt);
-    }
+//   for(hier::PatchLevel::Iterator p(level);p;p++){
+//
+//        tbox::Pointer<hier::Patch>patch=*p;
+//
+//        d_patch_strategy->flux_calc_knl(*patch,dt);
+//    }
 
    /*
     * advection here...
