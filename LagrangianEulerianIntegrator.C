@@ -248,12 +248,12 @@ double LagrangianEulerianIntegrator::advanceLevel(
    /*
     * flux calculations...
     */
-//   for(hier::PatchLevel::Iterator p(level);p;p++){
-//
-//        tbox::Pointer<hier::Patch>patch=*p;
-//
-//        d_patch_strategy->flux_calc_knl(*patch,dt);
-//    }
+   for(hier::PatchLevel::Iterator p(level);p;p++){
+
+        tbox::Pointer<hier::Patch>patch=*p;
+
+        d_patch_strategy->flux_calc_knl(*patch,dt);
+    }
 
     /*
      * reset_field is used to copy density, energy and velocity
