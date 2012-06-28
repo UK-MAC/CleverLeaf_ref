@@ -14,7 +14,6 @@
 
 // Arrays are defined up here so we can access them with fortran notation
 #define density(i,j) density[((i-xmin)) + (j-ymin)*nx]
-
 #define energy(i,j) energy[((i-xmin)) + (j-ymin)*nx]
 
 #define xarea(i,j) xarea[((i-xmin)) + (j-ymin)*nx]
@@ -29,17 +28,19 @@
 #define celldx(i,j) celldx[((i-xmin)) + (j-ymin)*nx]
 #define celldy(i,j) celldy[((i-xmin)) + (j-ymin)*nx]
 #define soundspeed(i,j) soundspeed[((i-xmin)) + (j-ymin)*nx]
+#define cellx(i,j) cellx[((i-xmin)) + (j-ymin)*nx]
+#define celly(i,j) celly[((i-xmin)) + (j-ymin)*nx]
 
 #define xvel0(j,k) xvel0[((j-xmin)) + (k-ymin)*(nx+1)]
 #define yvel0(j,k) yvel0[((j-xmin)) + (k-ymin)*(nx+1)]
 #define xvel1(j,k) xvel1[((j-xmin)) + (k-ymin)*(nx+1)]
 #define yvel1(j,k) yvel1[((j-xmin)) + (k-ymin)*(nx+1)]
-#define stepbymass(j,k) stepbymass[((j)) + (k)*(nx+1)]
+#define stepbymass(j,k) stepbymass[((j-ifirst(0))) + (k-ifirst(0))*(sbmnx+1)]
 
 #define vol_flux_x(j,k) vol_flux_x[((j-xmin)) + (k-ymin)*(nx+1)]
 #define vol_flux_y(j,k) vol_flux_y[((j-xmin)) + (k-ymin)*(nx+1)]
 
-#define volume_change(i,j) volume_change[((i)) + (j)*nx]
+#define volume_change(i,j) volume_change[((i)-ifirst(0)) + (j-ifirst(1))*vnx]
 
 Cleverleaf::Cleverleaf(
         tbox::Pointer<hier::PatchHierarchy> hierarchy,
@@ -215,6 +216,11 @@ void Cleverleaf::initializeDataOnPatch(
         int ymin = ifirst(1) - density_ghosts(1);
         int ymax = ilast(1) + density_ghosts(1);
 
+        int xminng = ifirst(0);
+        int xmaxng = ilast(0);
+        int yminng = ifirst(1);
+        int ymaxng = ilast(1);
+
         int nx = xmax - xmin + 1;
         int ny = ymax - ymin + 1;
 
@@ -222,8 +228,8 @@ void Cleverleaf::initializeDataOnPatch(
             for(int i = xmin; i <= xmax; i++) {
                 //int n1 = POLY2(i,j,imin,jmin,nx);
 
-                if (((i >= xmin + 2) && (i <= xmax - 2)) &&
-                        ((j >= ymin + 2) && ( j <= ymax - 2))) {
+                if (((i >= xminng + 16) && (i <= xmaxng - 16)) &&
+                        ((j >= yminng + 16) && ( j <= ymaxng - 16))) {
                     density(i,j) = 1.0;
                     energy(i,j) = 2.5;
                 } else {
@@ -254,7 +260,7 @@ void Cleverleaf::initializeDataOnPatch(
         viscosity->fillAll(0.0);
         soundspeed->fillAll(0.0);
         volume->fillAll(vol);
-        pressure->fillAll(0.0);
+        pressure->fillAll(5.0);
 
         /*
          * Fill in arrays of dx/dy
@@ -323,16 +329,6 @@ void Cleverleaf::accelerate(
 {
     double nodal_mass;
 
-    const hier::Index ifirst = patch.getBox().lower();
-    const hier::Index ilast = patch.getBox().upper();
-
-    int xmin = ifirst(0); 
-    int xmax = ilast(0); 
-    int ymin = ifirst(1); 
-    int ymax = ilast(1); 
-
-    int nx = xmax - xmin + 1;
-
     tbox::Pointer<pdat::CellData<double> > v_density = patch.getPatchData(d_density, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > v_volume = patch.getPatchData(d_volume, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
@@ -340,6 +336,28 @@ void Cleverleaf::accelerate(
     tbox::Pointer<pdat::CellData<double> > v_viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
     tbox::Pointer<pdat::NodeData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
     tbox::Pointer<pdat::NodeData<double> > v_vel1 = patch.getPatchData(d_velocity, getNewDataContext());
+        
+    hier::IntVector ghosts = v_pressure->getGhostCellWidth();
+
+    const hier::Index ifirst = patch.getBox().lower();
+    const hier::Index ilast = patch.getBox().upper();
+
+    int xmin = ifirst(0) - ghosts(0); 
+    int xmax = ilast(0) + ghosts(0); 
+    int ymin = ifirst(1) - ghosts(1); 
+    int ymax = ilast(1) + ghosts(1); 
+
+    /**
+     * nx needs to account for the number of ghosts or things go very wrong!
+     */
+    int nx = (xmax) - (xmin) + 1;
+
+    /**
+     * vnx is used by the volume_change array define at the top of this file
+     */
+    int sbmnx = ilast(0) - ifirst(0) + 1;
+
+    tbox::pout << "xmin: " << nx << std::endl;
 
     double* xarea = v_celldeltas->getPointer(1);
     double* yarea = v_celldeltas->getPointer(0);
@@ -352,11 +370,11 @@ void Cleverleaf::accelerate(
     double* xvel1 = v_vel1->getPointer(0);
     double* yvel1 = v_vel1->getPointer(1);
 
-    double* stepbymass;
-    stepbymass = (double*) malloc(((xmax-xmin+2)*(ymax-ymin+2))*sizeof(double));
+    pdat::NodeData<double> v_stepbymass(patch.getBox(), 1, hier::IntVector(d_dim, 0));
+    double* stepbymass = v_stepbymass.getPointer();
 
-    for(int k = ymin; k <= ymax+1; k++) {
-        for(int j = xmin; j <= xmax+1; j++ ) {
+    for(int k = ifirst(1); k <= ilast(1)+1; k++) {
+        for(int j = ifirst(0); j <= ilast(0)+1; j++ ) {
 
             nodal_mass=(density0(j-1,k-1)*volume(j-1,k-1)
                     +density0(j,k-1)*volume(j,k-1)
@@ -368,24 +386,24 @@ void Cleverleaf::accelerate(
         }
     }
 
-    for(int k = ymin; k <= ymax+1; k++) {
-        for(int j = xmin; j <= xmax+1; j++ ) {
+    for(int k = ifirst(1); k <= ilast(1)+1; k++) {
+        for(int j = ifirst(0); j <= ilast(0)+1; j++ ) {
 
             xvel1(j,k)=xvel0(j,k)-stepbymass(j,k)*(xarea(j,k)*(pressure(j,k)-pressure(j-1,k))
                     +xarea(j,k-1)*(pressure(j,k-1)-pressure(j-1,k-1)));
         }
     }
 
-    for(int k = ymin; k <= ymax+1; k++) {
-        for(int j = xmin; j <= xmax+1; j++ ) {
+    for(int k = ifirst(1); k <= ilast(1)+1; k++) {
+        for(int j = ifirst(0); j <= ilast(0)+1; j++ ) {
 
             yvel1(j,k)=yvel0(j,k)-stepbymass(j,k)*(yarea(j,k)*(pressure(j,k)-pressure(j,k-1))
                     +yarea(j-1,k)*(pressure(j-1,k)-pressure(j-1,k-1)));
         }
     }
 
-    for(int k = ymin; k <= ymax+1; k++) {
-        for(int j = xmin; j <= xmax+1; j++ ) {
+    for(int k = ifirst(1); k <= ilast(1)+1; k++) {
+        for(int j = ifirst(0); j <= ilast(0)+1; j++ ) {
 
             xvel1(j,k)=xvel1(j,k)-stepbymass(j,k)*(xarea(j,k)*(viscosity(j,k)-viscosity(j-1,k))
                     +xarea(j,k-1)*(viscosity(j,k-1)-viscosity(j-1,k-1)));
@@ -393,31 +411,19 @@ void Cleverleaf::accelerate(
         }
     }
 
-    for(int k = ymin; k <= ymax+1; k++) {
-        for(int j = xmin; j <= xmax+1; j++ ) {
+    for(int k = ifirst(1); k <= ilast(1)+1; k++) {
+        for(int j = ifirst(0); j <= ilast(0)+1; j++ ) {
 
             yvel1(j,k)=yvel1(j,k)-stepbymass(j,k)*(yarea(j,k)*(viscosity(j,k)-viscosity(j,k-1))
                     +yarea(j-1,k)*(viscosity(j-1,k)-viscosity(j-1,k-1)));
         }
     }
-
-    delete stepbymass;
 }
 
 void Cleverleaf::ideal_gas_knl(
         hier::Patch& patch,
         bool predict)
 {
-
-    const hier::Index ifirst = patch.getBox().lower();
-    const hier::Index ilast = patch.getBox().upper();
-
-    int xmin = ifirst(0); 
-    int xmax = ilast(0); 
-    int ymin = ifirst(1); 
-    int ymax = ilast(1); 
-
-    int nx = xmax - xmin + 1;
 
     tbox::Pointer<pdat::CellData<double> > v_density;
     tbox::Pointer<pdat::CellData<double> > v_energy;
@@ -436,8 +442,25 @@ void Cleverleaf::ideal_gas_knl(
 
     tbox::Pointer<pdat::CellData<double> > v_pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
 
-
     tbox::Pointer<pdat::CellData<double> > v_soundspeed = patch.getPatchData(d_soundspeed, getCurrentDataContext());
+
+
+    hier::IntVector ghosts = v_pressure->getGhostCellWidth();
+
+    const hier::Index ifirst = patch.getBox().lower();
+    const hier::Index ilast = patch.getBox().upper();
+
+    int xmin = ifirst(0) - ghosts(0); 
+    int xmax = ilast(0) + ghosts(0); 
+    int ymin = ifirst(1) - ghosts(1); 
+    int ymax = ilast(1) + ghosts(1); 
+
+    /**
+     * nx needs to account for the number of ghosts or things go very wrong!
+     */
+    int nx = (xmax) - (xmin) + 1;
+
+    tbox::pout << "xmin: " << nx << std::endl;
 
     double* density = v_density->getPointer();
     double* energy = v_energy->getPointer();
@@ -449,8 +472,8 @@ void Cleverleaf::ideal_gas_knl(
     double sound_speed_squared = 0;
     double v = 0;
 
-    for(int k = ymin; k <= ymax; k++) {
-        for(int j = xmin; j <= xmax; j++){
+    for(int k = ifirst(1); k <= ilast(1); k++) {
+        for(int j = ifirst(0); j <= ilast(0); j++){
 
             v=1.0/density(j,k);
 
@@ -480,16 +503,6 @@ void Cleverleaf::viscosity_knl(
          pgradx2,pgrady2,grad,ygrad,pgrad,
          xgrad,div,strain2,limiter;
 
-    const hier::Index ifirst = patch.getBox().lower();
-    const hier::Index ilast = patch.getBox().upper();
-
-    int xmin = ifirst(0); 
-    int xmax = ilast(0); 
-    int ymin = ifirst(1); 
-    int ymax = ilast(1); 
-
-    int nx = xmax - xmin + 1;
-
     tbox::Pointer<pdat::CellData<double> > v_density0 = patch.getPatchData(d_density, getCurrentDataContext());
 
     tbox::Pointer<pdat::CellData<double> > v_pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
@@ -498,6 +511,23 @@ void Cleverleaf::viscosity_knl(
     tbox::Pointer<pdat::NodeData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
 
+
+    hier::IntVector ghosts = v_pressure->getGhostCellWidth();
+
+    const hier::Index ifirst = patch.getBox().lower();
+    const hier::Index ilast = patch.getBox().upper();
+
+    int xmin = ifirst(0) - ghosts(0); 
+    int xmax = ilast(0) + ghosts(0); 
+    int ymin = ifirst(1) - ghosts(1); 
+    int ymax = ilast(1) + ghosts(1); 
+
+    /**
+     * nx needs to account for the number of ghosts or things go very wrong!
+     */
+    int nx = (xmax) - (xmin) + 1;
+
+    tbox::pout << "xmin: " << nx << std::endl;
     double* density = v_density0->getPointer();
     double* pressure = v_pressure->getPointer();
     double* viscosity = v_viscosity->getPointer();
@@ -506,8 +536,8 @@ void Cleverleaf::viscosity_knl(
     double* celldx = v_celldeltas->getPointer(0);
     double* celldy = v_celldeltas->getPointer(1);
 
-    for(int k = ymin; k <= ymax; k++) {
-        for(int j = xmin; j <= xmax; j++){
+    for(int k = ifirst(1); k <= ilast(1); k++) {
+        for(int j = ifirst(0); j <= ilast(0); j++){
 
             ugrad=(xvel0(j+1,k)+xvel0(j+1,k+1))-(xvel0(j,k)+xvel0(j,k+1));
 
@@ -566,17 +596,8 @@ double Cleverleaf::calc_dt_knl(
     double xl_pos,
            yl_pos;
 
-    const hier::Index ifirst = patch.getBox().lower();
-    const hier::Index ilast = patch.getBox().upper();
-
-    int xmin = ifirst(0); 
-    int xmax = ilast(0); 
-    int ymin = ifirst(1); 
-    int ymax = ilast(1); 
-
-    tbox::Pointer<pdat::CellData<double> > v_density0 = patch.getPatchData(d_density, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > v_density1 = patch.getPatchData(d_density, getNewDataContext());
-
+    tbox::Pointer<pdat::CellData<double> > v_density0 = patch.getPatchData(d_density, getCurrentDataContext());
 
     tbox::Pointer<pdat::CellData<double> > v_energy0 = patch.getPatchData(d_energy, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > v_energy1 = patch.getPatchData(d_energy, getNewDataContext());
@@ -592,6 +613,21 @@ double Cleverleaf::calc_dt_knl(
     tbox::Pointer<pdat::CellData<double> > v_volume = patch.getPatchData(d_volume, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > v_cellcoords = patch.getPatchData(d_cellcoords, getCurrentDataContext());
     tbox::Pointer<pdat::CellData<double> > v_energy = patch.getPatchData(d_energy, getCurrentDataContext());
+
+    hier::IntVector ghosts = v_pressure->getGhostCellWidth();
+
+    const hier::Index ifirst = patch.getBox().lower();
+    const hier::Index ilast = patch.getBox().upper();
+
+    int xmin = ifirst(0) - ghosts(0);
+    int xmax = ilast(0) + ghosts(0);
+    int ymin = ifirst(1) - ghosts(1);
+    int ymax = ilast(1) + ghosts(1);
+
+    /**
+     * nx needs to account for the number of ghosts or things go very wrong!
+     */
+    int nx = xmax - xmin + 1;
 
     double* celldx = v_celldeltas->getPointer(0);
     double* celldy = v_celldeltas->getPointer(1);
@@ -616,91 +652,78 @@ double Cleverleaf::calc_dt_knl(
     double dtv_safe = 0.5;
     double dtdiv_safe = 0.7;
 
-    for(int k = ymin; k <= ymax; k++) {
-        for(int j = xmin; j <= xmax; j++){
+    for(int k = ifirst(1); k <= ilast(1); k++) {
+        for(int j = ifirst(0); j <= ilast(0); j++){
 
-            int n1 = POLY2(j,k,xmin,ymin, (xmax-xmin+1));
-            int n2 = POLY2(j+1,k,xmin,ymin, (xmax-xmin+1));
-            int n3 = POLY2(j,k-1,xmin,ymin, (xmax-xmin+1));
-            int n4 = POLY2(j-1,k,xmin,ymin, (xmax-xmin+1));
-            int n5 = POLY2(j,k+1,xmin,ymin, (xmax-xmin+1));
-            int n6 = POLY2(j+1,k+1,xmin,ymin, (xmax-xmin+1));
-            int n7 = POLY2(j+1,k-1,xmin,ymin, (xmax-xmin+1));
+            dsx=celldx(j,k);
+            dsy=celldy(j,k);
 
-            dsx=celldx[n1];
-            dsy=celldy[n1];
-
-            cc=soundspeed[n1]*soundspeed[n1];
-            cc=cc+2.0*viscosity[n1]/density0[n1];
+            cc=soundspeed(j,k)*soundspeed(j,k);
+            cc=cc+2.0*viscosity(j,k)/density0(j,k);
             cc=max(sqrt(cc),1.0e-16);
 
             dtct=min(dsx,dsy)/cc;
 
             div=0.0;
 
-            dv1=(xvel0[n1]+xvel0[n5])*xarea[n1];
-            dv2=(xvel0[n2]+xvel0[n6])*xarea[n2];
+            dv1=(xvel0(j  ,k)+xvel0(j  ,k+1))*xarea(j  ,k);
+            dv2=(xvel0(j+1,k)+xvel0(j+1,k+1))*xarea(j+1,k);
 
             div=div+dv2-dv1;
 
-            dtut=2.0*volume[n1]/max(abs(dv1), max(abs(dv2),1.0e-16*volume[n1]));
+            dtut=2.0*volume(j,k)/max(abs(dv1),max(abs(dv2),1.0e-16*volume(j,k)));
 
-            dv1=(yvel0[n1]+yvel0[n2])*yarea[n1];
-            dv2=(yvel0[n5]+yvel0[n6])*yarea[n5];
+            dv1=(yvel0(j,k  )+yvel0(j+1,k  ))*yarea(j,k  );
+            dv2=(yvel0(j,k+1)+yvel0(j+1,k+1))*yarea(j,k+1);
 
             div=div+dv2-dv1;
 
-            dtvt=2.0*volume[n1]/max(abs(dv1),max(abs(dv2),1.0e-16*volume[n1]));
+            dtvt=2.0*volume(j,k)/max(abs(dv1),max(abs(dv2),1.0e-16*volume(j,k)));
 
-            div=div/(2.0*volume[n1]);
+            div=div/(2.0*volume(j,k));
 
             if (div < -1.0e-16) {
                 dtdivt=-1.0/div;
             } else {
                 dtdivt=1.0e+21;
-            }
+            } 
 
-            dtct=dtct*dtc_safe;
-            if (dtct < dt_min_val) {
+            if (dtct*dtc_safe < dt_min_val) {
                 jldt=j;
                 kldt=k;
-                dt_min_val=dtct;
+                dt_min_val=dtct*dtc_safe;
                 dtl_control=1;
-                xl_pos=cellx[n1];
-                yl_pos=celly[n1];
-            }
+                xl_pos=cellx(j,k);
+                yl_pos=celly(j,k);
+            } 
 
-            dtut=dtut*dtu_safe;
-            if (dtut < dt_min_val) {
+            if (dtut*dtu_safe < dt_min_val) {
                 jldt=j;
                 kldt=k;
-                dt_min_val=dtut;
+                dt_min_val=dtut*dtu_safe;
                 dtl_control=2;
-                xl_pos=cellx[n1];
-                yl_pos=celly[n1];
-            }
+                xl_pos=cellx(j,k);
+                yl_pos=celly(j,k);
+            } 
 
-            dtvt=dtvt*dtv_safe;
-            if (dtvt < dt_min_val) {
+            if (dtvt*dtv_safe < dt_min_val) {
                 jldt=j;
                 kldt=k;
-                dt_min_val=dtvt;
+                dt_min_val=dtvt*dtv_safe;
                 dtl_control=3;
-                xl_pos=cellx[n1];
-                yl_pos=celly[n1];
-            }
+                xl_pos=cellx(j,k);
+                yl_pos=celly(j,k);
+            } 
 
-            dtdivt=dtdivt*dtdiv_safe;
-            if (dtdivt < dt_min_val) {
+            if (dtdivt*dtdiv_safe < dt_min_val) {
                 jldt=j;
                 kldt=k;
-                dt_min_val=dtdivt;
+                dt_min_val=dtdivt*dtdiv_safe;
                 dtl_control=4;
-                xl_pos=cellx[n1];
-                yl_pos=celly[n1];
-            }
+                xl_pos=cellx(j,k);
+                yl_pos=celly(j,k);
+            } 
         }
-
     }
 
     cout << "RETURNING " << dt_min_val << " FROM calc_dt_knl()" << endl;
@@ -716,20 +739,6 @@ void Cleverleaf::pdv_knl(
     double recip_volume, energy_change, min_cell_volume;
 
     /*
-     * Sort out x and y bounds of patch
-     */
-    const hier::Index ifirst = patch.getBox().lower();
-    const hier::Index ilast = patch.getBox().upper();
-
-    int xmin = ifirst(0); 
-    int xmax = ilast(0); 
-
-    int ymin = ifirst(1); 
-    int ymax = ilast(1); 
-
-    int nx = xmax - xmin + 1;
-
-    /*
      * Get necessary variables
      */
     tbox::Pointer<pdat::CellData<double> > area = patch.getPatchData(d_celldeltas, getCurrentDataContext());
@@ -743,6 +752,28 @@ void Cleverleaf::pdv_knl(
     tbox::Pointer<pdat::NodeData<double> > v0 = patch.getPatchData(d_velocity, getCurrentDataContext());
     tbox::Pointer<pdat::NodeData<double> > v1 = patch.getPatchData(d_velocity, getNewDataContext());
 
+    hier::IntVector ghosts = pres->getGhostCellWidth();
+
+    const hier::Index ifirst = patch.getBox().lower();
+    const hier::Index ilast = patch.getBox().upper();
+
+    int xmin = ifirst(0) - ghosts(0);
+    int xmax = ilast(0) + ghosts(0);
+    int ymin = ifirst(1) - ghosts(1);
+    int ymax = ilast(1) + ghosts(1);
+
+    /**
+     * nx needs to account for the number of ghosts or things go very wrong!
+     */
+    int nx = xmax- xmin + 1;
+
+    /**
+     * vnx is used by the volume_change array define at the top of this file
+     */
+    int vnx = ilast(0) - ifirst(0) + 1;
+
+    tbox::pout << "xmin: " << nx << std::endl;
+
     double* xarea = area->getPointer(1);   
     double* yarea = area->getPointer(0);   
     double* volume = vol->getPointer(); 
@@ -751,18 +782,20 @@ void Cleverleaf::pdv_knl(
     double* energy0 = en0->getPointer();
     double* energy1 = en1->getPointer();
     double* pressure = pres->getPointer();
-    double* viscosity= visc->getPointer();
+    double* viscosity = visc->getPointer();
     double* xvel0 = v0->getPointer(0);
     double* xvel1 = v1->getPointer(0);
     double* yvel0 = v0->getPointer(1);
     double* yvel1 = v1->getPointer(1);
 
-    double* volume_change = (double*) malloc(((xmax-xmin+1)*(ymax-ymin+1))*sizeof(double));
+    pdat::CellData<double> v_volchange(patch.getBox(), 1, hier::IntVector(d_dim, 0));
+    //double* volume_change = (double*) malloc((((xmax + ghosts(0)) - (xmin - ghosts(0)) +1)*((ymax + ghosts(1)) - (ymin - ghosts(1)) +1))*sizeof(double));
+    double* volume_change = v_volchange.getPointer();
 
     if (predict) {
 
-        for (int  k = ymin; k <= ymax; k++) {
-            for (int j = xmin; j <= xmax; j++) {
+        for (int  k = ifirst(1); k <= ilast(1); k++) {
+            for (int j = ifirst(0); j <= ilast(0); j++) {
 
                 left_flux=(xarea(j,k)*(xvel0(j,k)+xvel0(j,k+1)
                             +xvel0(j,k)+xvel0(j,k+1)))*0.25*dt*0.5;
@@ -805,8 +838,8 @@ void Cleverleaf::pdv_knl(
 
     } else {
 
-        for (int  k = ymin; k <= ymax; k++) {
-            for (int j = xmin; j <= xmax; j++) {
+        for (int  k = ifirst(1); k <= ilast(1); k++) {
+            for (int j = ifirst(0); j <= ilast(0); j++) {
 
                 left_flux=(xarea(j,k)*(xvel0(j,k)+xvel0(j,k+1)
                             +xvel1(j,k)+xvel1(j,k+1)))*0.25*dt;
@@ -838,6 +871,9 @@ void Cleverleaf::pdv_knl(
 
                 energy_change=(pressure(j,k)/density0(j,k)+viscosity(j,k)/density0(j,k))*total_flux*recip_volume;
 
+                tbox::pout << "energy change = " << energy_change << ", volume change = " << volume_change(j,k) << std::endl;
+                tbox::pout << "[" << j << "][" << k << "]" << std::endl;
+
                 energy1(j,k)=energy0(j,k)-energy_change;
 
                 density1(j,k)=density0(j,k)*volume_change(j,k);
@@ -845,8 +881,6 @@ void Cleverleaf::pdv_knl(
         }
 
     }
-
-    delete volume_change;
 }
 
 void Cleverleaf::flux_calc_knl(
@@ -854,22 +888,29 @@ void Cleverleaf::flux_calc_knl(
         double dt)
 {
 
-    const hier::Index ifirst = patch.getBox().lower();
-    const hier::Index ilast = patch.getBox().upper();
-
-    int xmin = ifirst(0); 
-    int xmax = ilast(0); 
-    int ymin = ifirst(1); 
-    int ymax = ilast(1); 
-
-    int nx = xmax - xmin + 1;
-
     tbox::Pointer<pdat::NodeData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
     tbox::Pointer<pdat::NodeData<double> > v_vel1 = patch.getPatchData(d_velocity, getNewDataContext());
 
     tbox::Pointer<pdat::EdgeData<double> > v_volflux = patch.getPatchData(d_volflux, getCurrentDataContext());
 
     tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
+
+    hier::IntVector ghosts = v_vel0->getGhostCellWidth();
+
+    const hier::Index ifirst = patch.getBox().lower();
+    const hier::Index ilast = patch.getBox().upper();
+
+    int xmin = ifirst(0) - ghosts(0); 
+    int xmax = ilast(0) + ghosts(0); 
+    int ymin = ifirst(1) - ghosts(1); 
+    int ymax = ilast(1) + ghosts(1); 
+
+    /**
+     * nx needs to account for the number of ghosts or things go very wrong!
+     */
+    int nx = (xmax) - (xmin) + 1;
+
+    tbox::pout << "xmin: " << nx << std::endl;
 
     double* xvel0 = v_vel0->getPointer(0);
     double* xvel1 = v_vel1->getPointer(0);
@@ -881,8 +922,8 @@ void Cleverleaf::flux_calc_knl(
     double* yarea = v_celldeltas->getPointer(0);
     double* vol_flux_y = v_volflux->getPointer(0);
 
-    for (int k = ymin; k <= ymax; k++) {
-        for (int j = xmin; j <= xmax+1; j++) {
+    for (int k = ifirst(1); k <= ilast(1); k++) {
+        for (int j = ifirst(0); j <= ilast(0)+1; j++) {
             vol_flux_x(j,k)=0.25*dt*xarea(j,k)
                 *(xvel0(j,k)+xvel0(j,k+1)+xvel1(j,k)+xvel1(j,k+1));
 
@@ -890,8 +931,8 @@ void Cleverleaf::flux_calc_knl(
         }
     }
 
-    for (int k = ymin; k <= ymax+1; k++) {
-        for (int j = xmin; j <= xmax; j++) {
+    for (int k = ifirst(1); k <= ilast(1)+1; k++) {
+        for (int j = ifirst(0); j <= ilast(0); j++) {
             vol_flux_y(j,k)=0.25*dt*yarea(j,k)
                 *(yvel0(j,k)+yvel0(j+1,k)+yvel1(j,k)+yvel1(j+1,k));
         }
