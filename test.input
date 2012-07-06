@@ -3,7 +3,7 @@ Main {
 }
 
 CartesianGeometry {
-    domain_boxes = [ (0,0), (127,127) ]
+    domain_boxes = [ (0,0), (31,31) ]
     x_lo         = -50.e0, -50.e0
     x_up         = 50.e0, 50.e0
 }
@@ -16,11 +16,11 @@ PatchHierarchy {
     }
     
     largest_patch_size {
-        level_0 = 127,127
+        level_0 = 31,31
     }
 
     smallest_patch_size {
-        level_0 = 127,127
+        level_0 = 31,31
     }
 }
 
