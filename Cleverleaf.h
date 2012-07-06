@@ -67,7 +67,8 @@ class Cleverleaf:
 
         void advec_mom(hier::Patch& patch,
                 int sweep_number,
-                ADVEC_DIR direction);
+                ADVEC_DIR direction,
+                ADVEC_DIR which_vel);
  
     private:
 

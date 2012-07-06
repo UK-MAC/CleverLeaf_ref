@@ -56,7 +56,8 @@ class LagrangianEulerianPatchStrategy
 
         virtual void advec_mom(hier::Patch& patch,
                 int sweep_number,
-                ADVEC_DIR direction) = 0;
+                ADVEC_DIR direction,
+                ADVEC_DIR which_vel) = 0;
 
         virtual void tagGradientDetectorCells(
                 hier::Patch& patch,

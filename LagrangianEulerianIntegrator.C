@@ -262,6 +262,8 @@ double LagrangianEulerianIntegrator::advanceLevel(
     */
    advection(level);
 
+   advect_x = !advect_x;
+
     /*
      * reset_field is used to copy density, energy and velocity
      * timelevel 1 values back to timelevel 0.
@@ -460,15 +462,12 @@ void LagrangianEulerianIntegrator::advection(
     if(advect_x)  direction = LagrangianEulerianPatchStrategy::X;
     if(!advect_x) direction = LagrangianEulerianPatchStrategy::Y;
 
-  //  xvel=g_xdir;
-   // yvel=g_ydir;
-
   /*
    * TODO: update energy, density and volflux halos
    */
 
 #ifdef LOOPPRINT
-    tbox::pout << "LagrangianEulerianIntegrator: advection: advec_cell" << std::endl;
+    tbox::pout << "LagrangianEulerianIntegrator: advection: advec_cell {{{" << std::endl;
 #endif
     for(hier::PatchLevel::Iterator p(level);p;p++){
 
@@ -477,11 +476,16 @@ void LagrangianEulerianIntegrator::advection(
         d_patch_strategy->advec_cell(*patch,sweep_number,direction);
     }
 
+#ifdef LOOPPRINT
+    tbox::pout << "}}}" << std::endl;
+#endif
+
   /*
    * TODO: update density1, energy1, velocity1 and mass_flux halos
    */
+
 #ifdef LOOPPRINT
-    tbox::pout << "LagrangianEulerianIntegrator: advection: advec_mom" << std::endl;
+    tbox::pout << "LagrangianEulerianIntegrator: advection: advec_mom x {{{" << std::endl;
 #endif
     for(hier::PatchLevel::Iterator p(level);p;p++){
 
@@ -490,8 +494,27 @@ void LagrangianEulerianIntegrator::advection(
         /*
          * advection for x and y momentum.
          */
-        d_patch_strategy->advec_mom(*patch,sweep_number, direction);
+        d_patch_strategy->advec_mom(*patch,sweep_number,direction, LagrangianEulerianPatchStrategy::X);
     }
+#ifdef LOOPPRINT
+    tbox::pout << "}}}" << std::endl;
+#endif
+
+#ifdef LOOPPRINT
+    tbox::pout << "LagrangianEulerianIntegrator: advection: advec_mom y {{{" << std::endl;
+#endif
+    for(hier::PatchLevel::Iterator p(level);p;p++){
+
+        tbox::Pointer<hier::Patch>patch=*p;
+
+        /*
+         * advection for x and y momentum.
+         */
+        d_patch_strategy->advec_mom(*patch,sweep_number,direction, LagrangianEulerianPatchStrategy::Y);
+    }
+#ifdef LOOPPRINT
+    tbox::pout << "}}}" << std::endl;
+#endif
 
   sweep_number=2;
 
@@ -499,7 +522,7 @@ void LagrangianEulerianIntegrator::advection(
   if(!advect_x) direction = LagrangianEulerianPatchStrategy::X;
 
 #ifdef LOOPPRINT
-    tbox::pout << "LagrangianEulerianIntegrator: advection: advec_cell" << std::endl;
+    tbox::pout << "LagrangianEulerianIntegrator: advection: advec_cell {{{" << std::endl;
 #endif
     for(hier::PatchLevel::Iterator p(level);p;p++){
 
@@ -507,13 +530,16 @@ void LagrangianEulerianIntegrator::advection(
 
         d_patch_strategy->advec_cell(*patch,sweep_number,direction);
     }
+#ifdef LOOPPRINT
+    tbox::pout << "}}}" << std::endl;
+#endif
 
   /*
    * TODO: Update density1, energy1, vel1 and mass flux halos
    */
 
 #ifdef LOOPPRINT
-    tbox::pout << "LagrangianEulerianIntegrator: advection: advec_mom" << std::endl;
+    tbox::pout << "LagrangianEulerianIntegrator: advection: advec_mom x {{{" << std::endl;
 #endif
     for(hier::PatchLevel::Iterator p(level);p;p++){
 
@@ -522,6 +548,25 @@ void LagrangianEulerianIntegrator::advection(
         /*
          * advection for x and y momentum.
          */
-        d_patch_strategy->advec_mom(*patch,sweep_number, direction);
+        d_patch_strategy->advec_mom(*patch,sweep_number, direction, LagrangianEulerianPatchStrategy::X);
     }
+#ifdef LOOPPRINT
+    tbox::pout << "}}}" << std::endl;
+#endif
+
+#ifdef LOOPPRINT
+    tbox::pout << "LagrangianEulerianIntegrator: advection: advec_mom y {{{" << std::endl;
+#endif
+    for(hier::PatchLevel::Iterator p(level);p;p++){
+
+        tbox::Pointer<hier::Patch>patch=*p;
+
+        /*
+         * advection for x and y momentum.
+         */
+        d_patch_strategy->advec_mom(*patch,sweep_number, direction, LagrangianEulerianPatchStrategy::Y);
+    }
+#ifdef LOOPPRINT
+    tbox::pout << "}}}" << std::endl;
+#endif
 }
