@@ -1,0 +1,15 @@
+/** @mainpage Cleverleaf Source Code Documentation
+ *
+ * Cleverleaf is a work-in-progress code to test the possibilities and
+ * performance of the SAMRAI toolkit from Livermore. The current version 0.1a
+ * implements a simple Lagrangian-Eulerian hydro scheme taken from CloverLeaf,
+ * a microbenchmark currently being developed by Wayne Gaudin. 
+ *
+ * @par Limitations
+ * The application currently only runs in serial, with a fixed input deck.
+ * 
+ * @par Coming soon...
+ * - Input descriptions for states and geometries.
+ * - Parallel, version.
+ * - Preliminary AMR version.
+ */
