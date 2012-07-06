@@ -39,7 +39,7 @@ class LagrangianEulerianIntegrator:
         ~LagrangianEulerianIntegrator();
 
         /**
-         * @synopsis  Register a variable with the integrator, allowing
+         * Register a variable with the integrator, allowing
          * it to be correctly transferred at halo exchanges as well as
          * coarsen/refine times
          *
@@ -53,6 +53,11 @@ class LagrangianEulerianIntegrator:
                 hier::IntVector nghosts,
                 const tbox::Pointer<hier::GridGeometry> transfer_geom);
 
+        /**
+         * Get the context to be used for visualisation.
+         *
+         * @returns The data context used for visualisation.
+         */
         tbox::Pointer<hier::VariableContext> getPlotContext();
 
         /*

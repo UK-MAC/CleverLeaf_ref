@@ -21,16 +21,40 @@ using namespace std;
 
 #include <vector>
 
+
+/**
+ * @class Cleverleaf
+ *
+ * Cleverleaf extends LagrangianEulerianPatchStrategy to provide necessary physics.
+ *
+ * Cleverleaf implements the abstract methods in the LagrangianEulerianPatchStrategy
+ * class with the concrete versions of the methods needed to run the required physics
+ * on a patch.
+ */
 class Cleverleaf:
     public LagrangianEulerianPatchStrategy
 {
     public:
+
+        /**
+         * Constructor for Cleverleaf class.
+         *
+         * @param hierarchy Pointer to the PatchHierarchy we are using.
+         * @param dim The dimension of the problem.
+         * @param grid_geometry The geometry of the problem.
+         */
         Cleverleaf(
-                tbox::Pointer<hier::PatchHierarchy>,
+                tbox::Pointer<hier::PatchHierarchy> hierarchy,
                 const tbox::Dimension& dim,
                 tbox::Pointer<geom::CartesianGridGeometry> grid_geometry);
 
-        void registerVisItDataWriter(tbox::Pointer<appu::VisItDataWriter>);
+        /**
+         * Register a VisitDataWriter with the class.
+         *
+         * @param writer The VisitDataWriter to register.
+         */
+        void registerVisItDataWriter(tbox::Pointer<appu::VisItDataWriter> writer);
+
         void registerModelVariables(LagrangianEulerianIntegrator* integrator);
 
         void initializeDataOnPatch(
