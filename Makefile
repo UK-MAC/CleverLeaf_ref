@@ -31,4 +31,7 @@ cleverleaf: LagrangianEulerianPatchStrategy.o LagrangianEulerianIntegrator.o Cle
 clean:
 	rm -f *.o cleverleaf
 
+docs:
+	doxygen Doxyfile
+
 .PHONY: clean
