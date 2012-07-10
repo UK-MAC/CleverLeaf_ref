@@ -18,6 +18,15 @@
 
 using namespace SAMRAI;
 
+/**
+ * @class LagrangianEulerianIntegrator
+ *
+ * Controls the steps necessary to advance the solution across the geometry.
+ *
+ * These methods are largely defined in SAMRAI::algs::TimeRefinementLevelStrategy, and
+ * provide a mechanism for SAMRAI to use the LagrangianEulerianIntegrator to
+ * perform a complete timestep on the given solution state.
+ */
 class LagrangianEulerianIntegrator:
     public algs::TimeRefinementLevelStrategy,
     public mesh::StandardTagAndInitStrategy,
@@ -25,18 +34,35 @@ class LagrangianEulerianIntegrator:
 {
     public:
 
+        /**
+         * Enum representing the type of a given variable.
+         */
         enum VAR_TYPE {
             FIELD = 0,
             FLUX = 1,
             NORMAL = 2 };
 
 
+        /**
+         * Create a new LagrangianEulerianIntegrator.
+         *
+         * The patch_strategy object is the key parameter, as here we provide the
+         * class implementing the LagrangianEulerianPatchStrategy methods in such
+         * a way as to perform the desired physics on a give patch.
+         *
+         * @param object_name Name for this object, currently unused.
+         * @param input_db Input database containing necessary setup info.
+         * @param patch_strategy Patch strategy object to use.
+         */
         LagrangianEulerianIntegrator(
                 const std::string& object_name,
                 tbox::Pointer<tbox::Database> input_db,
                 LagrangianEulerianPatchStrategy* patch_strategy
                 );
 
+        /**
+         * Default empty destructor.
+         */
         ~LagrangianEulerianIntegrator();
 
         /**
@@ -64,14 +90,51 @@ class LagrangianEulerianIntegrator:
         /*
          * TimeRefinementLevelStrategy methods
          */
+        
+        /**
+         * Initialize the levelIntegrator.
+         *
+         * Sets up the model variables.
+         *
+         * @param gridding_alg
+         */
         void initializeLevelIntegrator(
                 tbox::Pointer<mesh::GriddingAlgorithmStrategy> gridding_alg);
 
+        /**
+         * Return the stable dt for the given level.
+         *
+         * @param level Level to compute dt for.
+         * @param dt_time The current dt time.
+         * @param initial_time True if we are at the initial time.
+         *
+         * @returns 
+         */
         double getLevelDt(
                 const tbox::Pointer<hier::PatchLevel> level,
                 const double dt_time,
                 const bool initial_time);
 
+        /**
+         * Advances the level from current_time to new_time.
+         *
+         * Takes the steps necessary to advance the level one timestep.
+         * This routine utilizes the methods from the LagrangianEulerianPatchStrategy
+         * to perform the necessary physics on each patch in the level.
+         *
+         * Communication and boundary computation is carried out at the appropriate
+         * points. 
+         *
+         * @param level level to advance.
+         * @param hierarchy the hierarchy of patches.
+         * @param current_time the current simulation time.
+         * @param new_time the time to advance to.
+         * @param first_step true if this is the first step.
+         * @param last_step true if this is the last step
+         * @param regrid_advance
+         *
+         * @returns the next dt value.
+         */
         double advanceLevel(
                 const tbox::Pointer<hier::PatchLevel> level,
                 const tbox::Pointer<hier::PatchHierarchy> hierarchy,
@@ -151,28 +214,29 @@ class LagrangianEulerianIntegrator:
                 const tbox::Pointer<hier::PatchHierarchy> hierarchy);
 
     protected:
-        /*
+        /**
          * PatchStrategy contains user-specified methods needed for
          * operating on a patch in the AMR hierarchy.
          */
         LagrangianEulerianPatchStrategy* d_patch_strategy;
 
-        /*
+        /**
          * The name of this object.
          */
         std::string d_object_name;
 
-        /*
+        /**
          * The dimension of the problem.
          */
         const tbox::Dimension d_dim;
 
-        /*
+        /**
          * Variable contexts.
          */
-        tbox::Pointer<hier::VariableContext> d_current;
+
         tbox::Pointer<hier::VariableContext> d_new;
         tbox::Pointer<hier::VariableContext> d_scratch;
+        tbox::Pointer<hier::VariableContext> d_current;
         tbox::Pointer<hier::VariableContext> d_plot_context;
 
         hier::ComponentSelector d_temp_var_scratch_data;

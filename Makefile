@@ -20,18 +20,27 @@ CXX=mpiCC
 CPPFLAGS=-g -DDEBUG -lz $(HYPRE_INC) $(HDF_INC) $(SAMRAI_INC) $(MATH_INC)
 LDFLAGS=-g -lz $(SAMRAI_LIB) $(HYPRE_LIB) $(HDF_LIB) $(MATH_LIB)
 
-all: cleverleaf
+CPP_FILES := $(wildcard src/*.C)
+OBJ_FILES := $(addprefix obj/,$(notdir $(CPP_FILES:.C=.o)))
 
-cleverleaf: LagrangianEulerianPatchStrategy.o LagrangianEulerianIntegrator.o Cleverleaf.o main.o 
+all: obj cleverleaf
+
+cleverleaf: $(OBJ_FILES)
 	$(CXX) $^ $(LDFLAGS) -o $@
 
-%.o: src/%.C
-	$(CXX) $(CPPFLAGS) -c $<
+obj/%.o: src/%.C
+	$(CXX) $(CPPFLAGS) -c -o $@ $<
+
+obj: 
+	mkdir -p obj
 
 clean:
-	rm -f *.o cleverleaf
+	rm -f obj/*.o cleverleaf
 
 docs:
-	doxygen Doxyfile
+	doxygen doc/Doxyfile
 
-.PHONY: clean
+cleandoc:
+	rm -rf doc/dox
+
+.PHONY: clean, doc
