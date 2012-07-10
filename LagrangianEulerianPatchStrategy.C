@@ -2,6 +2,7 @@
 
 LagrangianEulerianPatchStrategy::LagrangianEulerianPatchStrategy(
         const tbox::Dimension& dim):
+    RefinePatchStrategy(dim),
     d_dim(dim)
 {
 }

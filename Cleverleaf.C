@@ -1414,3 +1414,11 @@ void Cleverleaf::advec_mom(hier::Patch& patch,
         }
     } 
 }
+
+
+void Cleverleaf::setPhysicalBoundaryConditions(
+        hier::Patch& patch,
+        const double fill_time,
+        const hier::IntVector& ghost_width_to_fill)
+{
+}

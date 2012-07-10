@@ -5,6 +5,7 @@
 #include "SAMRAI/hier/VariableContext.h"
 #include "SAMRAI/tbox/Dimension.h"
 #include "SAMRAI/tbox/Pointer.h"
+#include "SAMRAI/xfer/RefinePatchStrategy.h"
 
 using namespace SAMRAI;
 
@@ -20,7 +21,8 @@ class LagrangianEulerianIntegrator;
  * Cloverleaf. This includes the Lagrangian step methods and the advection
  * methods for remapping the grid.
  */
-class LagrangianEulerianPatchStrategy
+class LagrangianEulerianPatchStrategy:
+    public xfer::RefinePatchStrategy
 {
     public:
         /**
@@ -190,6 +192,72 @@ class LagrangianEulerianPatchStrategy
          */
         const tbox::Dimension& getDim() const;
 
+        /*
+         * RefinePatchStrategy methods.
+         */
+
+        /**
+         * Set user-defined boundary conditions at the physical domain boundary.
+         */
+        virtual void
+            setPhysicalBoundaryConditions(
+                    hier::Patch& patch,
+                    const double fill_time,
+                    const hier::IntVector& ghost_width_to_fill) = 0;
+
+        /**
+         * Return maximum stencil width needed for user-defined
+         * data interpolation operations.  Default is to return
+         * zero, assuming no user-defined operations provided.
+         *
+         * Note that this function is not pure virtual. It is given a
+         * dummy implementation here so that users may ignore it when
+         * inheriting from this class.
+         */
+        virtual hier::IntVector
+            getRefineOpStencilWidth() const;
+
+        /**
+         * Pre- and post-processing routines for implementing user-defined
+         * spatial interpolation routines applied to variables.  The
+         * interpolation routines are used in the hyperbolic AMR algorithm
+         * for filling patch ghost cells before advancing data on a level
+         * and after regridding a level to fill portions of the new level
+         * from some coarser level.  These routines are called automatically
+         * from within patch boundary filling schedules; thus, some concrete
+         * function matching these signatures must be provided in the user's
+         * patch routines.  However, the routines only need to perform some
+         * operations when "USER_DEFINED_REFINE" is given as the interpolation
+         * method for some variable when the patch routines register variables
+         * with the hyperbolic level integration algorithm, typically.  If the
+         * user does not provide operations that refine such variables in either
+         * of these routines, then they will not be refined.
+         *
+         * The order in which these operations are used in each patch
+         * boundary filling schedule is:
+         *
+         * - \b (1) {Call user's preprocessRefine() routine.}
+         * - \b (2) {Refine all variables with standard interpolation operators.}
+         * - \b (3) {Call user's postprocessRefine() routine.}
+         *
+         * Note that these functions are not pure virtual. They are given
+         * dummy implementations here so that users may ignore them when
+         * inheriting from this class.
+         */
+        virtual void
+            preprocessRefine(
+                    hier::Patch& fine,
+                    const hier::Patch& coarse,
+                    const hier::Box& fine_box,
+                    const hier::IntVector& ratio);
+
+        ///
+        virtual void
+            postprocessRefine(
+                    hier::Patch& fine,
+                    const hier::Patch& coarse,
+                    const hier::Box& fine_box,
+                    const hier::IntVector& ratio);
     private:
         const tbox::Dimension d_dim;
 

@@ -12,6 +12,7 @@
 #include "SAMRAI/tbox/Pointer.h"
 #include "SAMRAI/tbox/Database.h"
 #include "SAMRAI/tbox/List.h"
+#include "SAMRAI/xfer/RefineAlgorithm.h"
 
 #include <string>
 
@@ -146,7 +147,8 @@ class LagrangianEulerianIntegrator:
                 const tbox::Pointer<hier::PatchLevel> level);
 
         void advection(
-                const tbox::Pointer<hier::PatchLevel> level);
+                const tbox::Pointer<hier::PatchLevel> level,
+                const tbox::Pointer<hier::PatchHierarchy> hierarchy);
 
     protected:
         /*
@@ -179,6 +181,8 @@ class LagrangianEulerianIntegrator:
 
         tbox::List<tbox::Pointer<hier::Variable> > d_field_vars;
         tbox::List<tbox::Pointer<hier::Variable> > d_revert_vars;
+
+        tbox::Pointer<xfer::RefineAlgorithm> d_bdry_fill_density;
 
         bool advect_x;
 };

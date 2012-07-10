@@ -94,6 +94,11 @@ class Cleverleaf:
                 ADVEC_DIR direction,
                 ADVEC_DIR which_vel);
  
+        void setPhysicalBoundaryConditions(
+                    hier::Patch& patch,
+                    const double fill_time,
+                    const hier::IntVector& ghost_width_to_fill);
+
     private:
 
         tbox::Pointer<hier::PatchHierarchy> d_hierarchy;
