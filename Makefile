@@ -18,7 +18,7 @@ MATH_LIB=-L$(LAPACK_DIR)/lib -llapack -lblas
 CXX=mpiCC
 
 CPPFLAGS=-g -DDEBUG -lz $(HYPRE_INC) $(HDF_INC) $(SAMRAI_INC) $(MATH_INC)
-LDFLAGS=-g -lz $(SAMRAI_LIB) $(HYPRE_LIB) $(HDF_LIB) $(MATH_LIB)
+LDFLAGS=-g -lz $(SAMRAI_LIB) $(HYPRE_LIB) $(HDF_LIB) $(MATH_LIB) -lstdc++ -lgfortran
 
 CPP_FILES := $(wildcard src/*.C)
 OBJ_FILES := $(addprefix obj/,$(notdir $(CPP_FILES:.C=.o)))
