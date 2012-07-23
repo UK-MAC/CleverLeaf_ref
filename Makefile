@@ -39,6 +39,7 @@ clean:
 
 docs:
 	doxygen doc/Doxyfile
+	rsync doc/dox/html/* /shared/general/docs/Cleverleaf/ -r
 
 cleandoc:
 	rm -rf doc/dox
