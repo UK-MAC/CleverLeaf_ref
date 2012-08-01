@@ -35,16 +35,16 @@
 #define yvel0(j,k) yvel0[((j-xmin)) + (k-ymin)*(nx+1)]
 #define xvel1(j,k) xvel1[((j-xmin)) + (k-ymin)*(nx+1)]
 #define yvel1(j,k) yvel1[((j-xmin)) + (k-ymin)*(nx+1)]
-#define stepbymass(j,k) stepbymass[((j-ifirst(0))) + (k-ifirst(0))*(sbmnx+1)]
+#define stepbymass(j,k) stepbymass[((j-ifirst(0))) + (k-ifirst(1))*(sbmnx+1)]
 
 #define vertexdx(j) vertexdx[((j-xmin)) + (k-ymin)*(nx+1)]
 #define vertexdy(k) vertexdy[((j-xmin)) + (k-ymin)*(nx+1)]
 
 #define vol_flux_x(j,k) vol_flux_x[((j-xmin)) + (k-ymin)*(nx+1)]
-#define vol_flux_y(j,k) vol_flux_y[((j-xmin)) + (k-ymin)*(nx+1)]
+#define vol_flux_y(j,k) vol_flux_y[((j-xmin)) + (k-ymin)*(nx)]
 
 #define mass_flux_x(j,k) mass_flux_x[((j-xmin)) + (k-ymin)*(nx+1)]
-#define mass_flux_y(j,k) mass_flux_y[((j-xmin)) + (k-ymin)*(nx+1)]
+#define mass_flux_y(j,k) mass_flux_y[((j-xmin)) + (k-ymin)*(nx)]
 
 #define volume_change(i,j) volume_change[((i)-ifirst(0)) + (j-ifirst(1))*vnx]
 
