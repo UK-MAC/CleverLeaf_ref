@@ -211,7 +211,10 @@ class LagrangianEulerianIntegrator:
 
         void advection(
                 const tbox::Pointer<hier::PatchLevel> level,
-                const tbox::Pointer<hier::PatchHierarchy> hierarchy);
+                const tbox::Pointer<hier::PatchHierarchy> hierarchy,
+                double current_time);
+
+        void fillBoundaries();
 
     protected:
         /**
@@ -246,7 +249,7 @@ class LagrangianEulerianIntegrator:
         tbox::List<tbox::Pointer<hier::Variable> > d_field_vars;
         tbox::List<tbox::Pointer<hier::Variable> > d_revert_vars;
 
-        tbox::Pointer<xfer::RefineAlgorithm> d_bdry_fill_density;
+        tbox::Pointer<xfer::RefineAlgorithm> d_bdry_fill_pressure;
 
         bool advect_x;
 };

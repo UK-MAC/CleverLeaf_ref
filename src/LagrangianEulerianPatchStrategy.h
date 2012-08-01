@@ -42,7 +42,7 @@ class LagrangianEulerianPatchStrategy:
         /**
          * Register model variables with the LagrangianEulerianIntegrator.
          *
-         * @param integrator The integrator being used.
+         * @param integrator The integrator object being used.
          */
         virtual void registerModelVariables(
                 LagrangianEulerianIntegrator* integrator) = 0;

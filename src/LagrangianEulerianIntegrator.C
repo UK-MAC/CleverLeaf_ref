@@ -25,7 +25,7 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
     /*
      * Communication algorithms
      */
-    d_bdry_fill_density = new xfer::RefineAlgorithm(d_dim);
+    d_bdry_fill_pressure = new xfer::RefineAlgorithm(d_dim);
 
     /*
      * Variable contexts
@@ -212,6 +212,9 @@ double LagrangianEulerianIntegrator::advanceLevel(
     /*
      * TODO: Update pressure halos!
      */
+    d_bdry_fill_pressure->createSchedule(level, d_patch_strategy)->fillData(current_time);
+    tbox::pout << "Pressure halo updated!" << std::endl;
+    
 
     /*
      * Call revert to reset density and energy
@@ -263,7 +266,7 @@ double LagrangianEulerianIntegrator::advanceLevel(
    /*
     * advection here...
     */
-   advection(level, hierarchy);
+   advection(level, hierarchy, new_time);
 
    advect_x = !advect_x;
 
@@ -337,7 +340,6 @@ void LagrangianEulerianIntegrator::initializeLevelData (
         level->setTime(init_data_time, d_temp_var_cur_data); 
     }
 
-
     for (hier::PatchLevel::Iterator p(level); p; p++) {
         tbox::Pointer<hier::Patch> patch(*p);
 
@@ -402,11 +404,14 @@ void LagrangianEulerianIntegrator::registerVariable(
 
     if((var->getName() == "density") || (var->getName() == "energy")) {
         d_revert_vars.appendItem(var);
-        
-         tbox::Pointer<hier::RefineOperator> refine_op =
-            transfer_geom->lookupRefineOperator(var, "CONSTANT_REFINE");
+    }
 
-         d_bdry_fill_density->registerRefine(cur_id, cur_id, scr_id, refine_op);
+    if(var->getName() == "pressure") {
+        d_bdry_fill_pressure->registerRefine(
+                cur_id,
+                cur_id,
+                cur_id,
+                tbox::Pointer<SAMRAI::xfer::VariableFillPattern>(NULL));
     }
 
     d_temp_var_cur_data.setFlag(cur_id);
@@ -451,7 +456,7 @@ void LagrangianEulerianIntegrator::revert(
       tbox::List<tbox::Pointer<hier::Variable> >::Iterator
          revert_var = d_revert_vars.listStart();
       while (revert_var) {
-#ifdef DEBUG
+#if 1
           tbox::pout << "Copying " << revert_var()->getName() << " back to tl0" << std::endl;
 #endif
          tbox::Pointer<hier::PatchData> src_data =
@@ -467,7 +472,8 @@ void LagrangianEulerianIntegrator::revert(
 
 void LagrangianEulerianIntegrator::advection(
         const tbox::Pointer<hier::PatchLevel> level,
-        const tbox::Pointer<hier::PatchHierarchy> hierarchy)
+        const tbox::Pointer<hier::PatchHierarchy> hierarchy,
+        double current_time)
 {
 
     int sweep_number=1;
@@ -497,14 +503,6 @@ void LagrangianEulerianIntegrator::advection(
   /*
    * TODO: update density1, energy1, velocity1 and mass_flux halos
    */
-
-   tbox::Pointer<xfer::RefineSchedule> fill_schedule;
-
-   const int coarser_ln = level->getNextCoarserHierarchyLevelNumber();
-
-    fill_schedule = d_bdry_fill_density-> createSchedule(level, coarser_ln, hierarchy, d_patch_strategy);
-
-    fill_schedule->fillData(current_time);
 
 #ifdef LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advection: advec_mom x {{{" << std::endl;
@@ -544,7 +542,7 @@ void LagrangianEulerianIntegrator::advection(
   if(!advect_x) direction = LagrangianEulerianPatchStrategy::X;
 
 #ifdef LOOPPRINT
-    tbox::pout << "LagrangianEulerianIntegrator: advection: advec_cell {{{" << std::endl;
+    tbox::pout << "LagrangianEulerianIntegrator: advection sweep 2: advec_cell {{{" << std::endl;
 #endif
     for(hier::PatchLevel::Iterator p(level);p;p++){
 
@@ -592,3 +590,5 @@ void LagrangianEulerianIntegrator::advection(
     tbox::pout << "}}}" << std::endl;
 #endif
 }
+
+

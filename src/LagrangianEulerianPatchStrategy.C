@@ -44,3 +44,30 @@ const tbox::Dimension& LagrangianEulerianPatchStrategy::getDim() const
 {
     return d_dim;
 }
+
+hier::IntVector LagrangianEulerianPatchStrategy::getRefineOpStencilWidth() const 
+{
+    return hier::IntVector(d_dim,0);
+}
+
+void LagrangianEulerianPatchStrategy::preprocessRefine(
+        hier::Patch& fine,
+        const hier::Patch& coarse,
+        const hier::Box& fine_box,
+        const hier::IntVector& ratio)
+{
+    /*
+     * Dummy implementation!
+     */
+}
+
+void LagrangianEulerianPatchStrategy::postprocessRefine(
+        hier::Patch& fine,
+        const hier::Patch& coarse,
+        const hier::Box& fine_box,
+        const hier::IntVector& ratio)
+{
+    /*
+     * Dummy implementation!
+     */
+}

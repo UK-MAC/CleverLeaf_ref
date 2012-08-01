@@ -7,8 +7,12 @@
 #include "SAMRAI/pdat/NodeData.h"
 #include "SAMRAI/pdat/EdgeData.h"
 
+#include "SAMRAI/appu/CartesianBoundaryUtilities2.h"
+#include "SAMRAI/appu/CartesianBoundaryDefines.h"
+
 #include <iostream>
 #include <cmath>
+
 
 #define POLY2(i, j, imin, jmin, nx) ((i - imin) + (j-jmin) * nx)
 
@@ -391,7 +395,7 @@ void Cleverleaf::accelerate(
      */
     int sbmnx = ilast(0) - ifirst(0) + 1;
 
-    tbox::pout << "xmin: " << nx << std::endl;
+    //tbox::pout << "xmin: " << nx << std::endl;
 
     double* xarea = v_celldeltas->getPointer(1);
     double* yarea = v_celldeltas->getPointer(0);
@@ -494,7 +498,7 @@ void Cleverleaf::ideal_gas_knl(
      */
     int nx = (xmax) - (xmin) + 1;
 
-    tbox::pout << "xmin: " << nx << std::endl;
+    //tbox::pout << "xmin: " << nx << std::endl;
 
     double* density = v_density->getPointer();
     double* energy = v_energy->getPointer();
@@ -511,8 +515,8 @@ void Cleverleaf::ideal_gas_knl(
 
             v=1.0/density(j,k);
 
-            tbox::pout << "density: " << density(j,k) << std::endl;
-            tbox::pout << "energy: " << energy(j,k) << std::endl;
+            //tbox::pout << "density: " << density(j,k) << std::endl;
+            //tbox::pout << "energy: " << energy(j,k) << std::endl;
 
             pressure(j,k)=(1.4-1.0)*density(j,k)*energy(j,k);
 
@@ -524,7 +528,9 @@ void Cleverleaf::ideal_gas_knl(
 
             soundspeed(j,k)=sqrt(sound_speed_squared);
 
+#ifdef DEBUG
             tbox::pout << "Updating pressure[" << j << "][" << k << "]=" << pressure(j,k) << ", soundspeed[" << j << "][" << k << "]=" << soundspeed(j,k) << std::endl;
+#endif
         }
     }
 }
@@ -561,7 +567,6 @@ void Cleverleaf::viscosity_knl(
      */
     int nx = (xmax) - (xmin) + 1;
 
-    tbox::pout << "xmin: " << nx << std::endl;
     double* density = v_density0->getPointer();
     double* pressure = v_pressure->getPointer();
     double* viscosity = v_viscosity->getPointer();
@@ -806,7 +811,6 @@ void Cleverleaf::pdv_knl(
      */
     int vnx = ilast(0) - ifirst(0) + 1;
 
-    tbox::pout << "xmin: " << nx << std::endl;
 
     double* xarea = area->getPointer(1);   
     double* yarea = area->getPointer(0);   
@@ -860,8 +864,10 @@ void Cleverleaf::pdv_knl(
 
                 energy_change=(pressure(j,k)/density0(j,k)+viscosity(j,k)/density0(j,k))*total_flux*recip_volume;
 
+#ifdef DEBUG
                 tbox::pout << "energy change = " << energy_change << ", volume change = " << volume_change(j,k) << std::endl;
                 tbox::pout << "[" << j << "][" << k << "]" << std::endl;
+#endif
 
                 energy1(j,k)=energy0(j,k)-energy_change;
 
@@ -904,8 +910,10 @@ void Cleverleaf::pdv_knl(
 
                 energy_change=(pressure(j,k)/density0(j,k)+viscosity(j,k)/density0(j,k))*total_flux*recip_volume;
 
+#ifdef DEBUG
                 tbox::pout << "energy change = " << energy_change << ", volume change = " << volume_change(j,k) << std::endl;
                 tbox::pout << "[" << j << "][" << k << "]" << std::endl;
+#endif
 
                 energy1(j,k)=energy0(j,k)-energy_change;
 
@@ -943,8 +951,6 @@ void Cleverleaf::flux_calc_knl(
      */
     int nx = (xmax) - (xmin) + 1;
 
-    tbox::pout << "xmin: " << nx << std::endl;
-
     double* xvel0 = v_vel0->getPointer(0);
     double* xvel1 = v_vel1->getPointer(0);
     double* xarea = v_celldeltas->getPointer(1);
@@ -960,7 +966,9 @@ void Cleverleaf::flux_calc_knl(
             vol_flux_x(j,k)=0.25*dt*xarea(j,k)
                 *(xvel0(j,k)+xvel0(j,k+1)+xvel1(j,k)+xvel1(j,k+1));
 
+#ifdef DEBUG
             tbox::pout << "vol_flux_x(" << j << "," << k << ") = " << vol_flux_x(j,k) << std::endl;
+#endif
         }
     }
 
@@ -969,7 +977,9 @@ void Cleverleaf::flux_calc_knl(
             vol_flux_y(j,k)=0.25*dt*yarea(j,k)
                 *(yvel0(j,k)+yvel0(j+1,k)+yvel1(j,k)+yvel1(j+1,k));
 
+#ifdef DEBUG
             tbox::pout << "vol_flux_y(" << j << "," << k << ") = " << vol_flux_y(j,k) << std::endl;
+#endif
         }
     }
 }
@@ -1431,4 +1441,50 @@ void Cleverleaf::setPhysicalBoundaryConditions(
         const double fill_time,
         const hier::IntVector& ghost_width_to_fill)
 {
+
+    tbox::Array<double> d_bdry_edge_pressure;
+
+    tbox::MathUtilities<double>::setArrayToSignalingNaN(d_bdry_edge_pressure);
+
+    d_bdry_edge_pressure.resizeArray(NUM_2D_EDGES);
+
+    tbox::pout << "In Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
+//
+    tbox::Pointer<pdat::CellData<double> > pressure =
+        patch.getPatchData(d_pressure, getCurrentDataContext());
+
+    tbox::pout << "In Cleverleaf::setPhysicalBoundaryConditions:1444" << std::endl;
+//
+    tbox::Array<int> tmp_edge_scalar_bcond(NUM_2D_EDGES);
+//    tbox::Array<int> tmp_edge_vector_bcond(NUM_2D_EDGES);
+//
+    tbox::Array<int> tmp_node_scalar_bcond(NUM_2D_NODES);
+//
+    for (int i = 0; i < NUM_2D_EDGES; i++) {
+        tmp_edge_scalar_bcond[i] = BdryCond::FLOW;
+    }
+//
+    for (int i = 0; i < NUM_2D_NODES; i++) {
+        tmp_node_scalar_bcond[i] = BdryCond::YFLOW;
+    }
+//
+    tbox::pout << "In Cleverleaf::setPhysicalBoundaryConditions:1460" << std::endl;
+
+    appu::CartesianBoundaryUtilities2::
+        fillEdgeBoundaryData("pressure", pressure,
+                patch,
+                ghost_width_to_fill,
+                tmp_edge_scalar_bcond,
+                d_bdry_edge_pressure);
+
+    tbox::pout << "In Cleverleaf::setPhysicalBoundaryConditions:1468" << std::endl;
+
+    appu::CartesianBoundaryUtilities2::
+        fillNodeBoundaryData("pressure", pressure,
+                patch,
+                ghost_width_to_fill,
+                tmp_node_scalar_bcond,
+                d_bdry_edge_pressure);
+
+    tbox::pout << "In Cleverleaf::setPhysicalBoundaryConditions:1476 (end of function)" << std::endl;
 }
