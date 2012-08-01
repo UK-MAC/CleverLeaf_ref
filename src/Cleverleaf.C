@@ -223,11 +223,8 @@ void Cleverleaf::initializeDataOnPatch(
                 getCurrentDataContext());
 
         /*
-         * Fill density and energy with some data, these are our initial conditions.
+         * Fill in the volume array...
          */
-        double* density = v_density->getPointer();
-        double* energy = v_energy->getPointer();
-
         const hier::Index ifirst = patch.getBox().lower();
         const hier::Index ilast = patch.getBox().upper();
 
@@ -246,29 +243,13 @@ void Cleverleaf::initializeDataOnPatch(
         int nx = xmax - xmin + 1;
         int ny = ymax - ymin + 1;
 
-        for(int j = ymin; j <= ymax; j++) {
-            for(int i = xmin; i <= xmax; i++) {
-                //int n1 = POLY2(i,j,imin,jmin,nx);
-
-                if (((i >= xminng + 4) && (i <= xmaxng - 4)) &&
-                        ((j >= yminng + 4) && ( j <= ymaxng - 4))) {
-                    density(i,j) = 1.0;
-                    energy(i,j) = 2.5;
-                } else {
-                    density(i,j) = 0.1;
-                    energy(i,j) = 1.0;
-                }
-            }
-        }
-
-        /*
-         * Fill in the volume array...
-         */
         const tbox::Pointer<geom::CartesianPatchGeometry> pgeom = patch.getPatchGeometry();
         const double* dxs = pgeom->getDx();
         const double* coords = pgeom->getXLower();
+
         double rxmin = coords[0];
         double rymin = coords[1];
+
         double dx = dxs[0];
         double dy = dxs[1];
         double vol = dx*dy;
@@ -282,7 +263,7 @@ void Cleverleaf::initializeDataOnPatch(
         viscosity->fillAll(0.0);
         soundspeed->fillAll(0.0);
         volume->fillAll(vol);
-        pressure->fillAll(5.0);
+        pressure->fillAll(0.0);
 
         /*
          * Fill in arrays of dx/dy
@@ -318,8 +299,11 @@ void Cleverleaf::initializeDataOnPatch(
             for(int i = vimin; i <= vimax; i++) {
                 int ind = POLY2(i,j,vimin,vjmin,vnx);
 
-                vertexx[ind] = rxmin + dx*(xcount-rxmin);
-                vertexy[ind] = rymin + dy*(ycount-rymin);
+                /*
+                 * Start at rxmin-2dx because we have 2 ghost cells!
+                 */
+                vertexx[ind] = (rxmin-2*dx) + dx*(xcount);
+                vertexy[ind] = (rymin-2*dy) + dy*(ycount);
 
                 xcount++;
             }
@@ -340,6 +324,32 @@ void Cleverleaf::initializeDataOnPatch(
 
                 cellx[ind] = 0.5*(vertexx[vind]+vertexx[vind2]);
                 celly[ind] = 0.5*(vertexy[vind]+vertexy[vind3]);
+
+            }
+        }
+
+        /*
+         * Fill density and energy with some data, these are our initial conditions.
+         */
+        double* density = v_density->getPointer();
+        double* energy = v_energy->getPointer();
+
+        for(int j = ymin; j <= ymax; j++) {
+            for(int i = xmin; i <= xmax; i++) {
+                int n1 = POLY2(i,j,xmin,ymin,nx);
+
+                /*
+                 * Produces square of size 60x60 in the centre of the domain
+                 */
+                if ((cellx[n1] >= -30.0 && cellx[n1] <= 30.0)
+                        && (celly[n1] >= -30.0 && celly[n1] <= 30.0)) {
+                    density(i,j) = 1.0;
+                    energy(i,j) = 2.5;
+                } else {
+                    density(i,j) = 0.1;
+                    energy(i,j) = 1.0;
+                }
+                
             }
         }
 
