@@ -345,8 +345,16 @@ void Cleverleaf::initializeDataOnPatch(
                 /*
                  * Produces square of size 60x60 in the centre of the domain
                  */
-                if ((cellx[n1] >= -30.0 && cellx[n1] <= 30.0)
-                        && (celly[n1] >= -30.0 && celly[n1] <= 30.0)) {
+//                if ((cellx[n1] >= -30.0 && cellx[n1] <= 30.0)
+//                        && (celly[n1] >= -30.0 && celly[n1] <= 30.0)) {
+//                    density(i,j) = 1.0;
+//                    energy(i,j) = 2.5;
+//                } else {
+//                    density(i,j) = 0.1;
+//                    energy(i,j) = 1.0;
+//                }
+                if ((j >= yminng+1 && j <= ymaxng-1)
+                        && (i >= xminng+1 && i <= xmaxng-1)) {
                     density(i,j) = 1.0;
                     energy(i,j) = 2.5;
                 } else {
@@ -1449,42 +1457,49 @@ void Cleverleaf::setPhysicalBoundaryConditions(
     d_bdry_edge_pressure.resizeArray(NUM_2D_EDGES);
 
     tbox::pout << "In Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
-//
-    tbox::Pointer<pdat::CellData<double> > pressure =
+
+    tbox::Pointer<pdat::CellData<double> > v_pressure =
         patch.getPatchData(d_pressure, getCurrentDataContext());
 
-    tbox::pout << "In Cleverleaf::setPhysicalBoundaryConditions:1444" << std::endl;
-//
-    tbox::Array<int> tmp_edge_scalar_bcond(NUM_2D_EDGES);
-//    tbox::Array<int> tmp_edge_vector_bcond(NUM_2D_EDGES);
-//
-    tbox::Array<int> tmp_node_scalar_bcond(NUM_2D_NODES);
-//
-    for (int i = 0; i < NUM_2D_EDGES; i++) {
-        tmp_edge_scalar_bcond[i] = BdryCond::FLOW;
+    hier::IntVector ghosts = v_pressure->getGhostCellWidth();
+
+    const hier::Index ifirst = patch.getBox().lower();
+    const hier::Index ilast = patch.getBox().upper();
+
+    int xmin = ifirst(0) - ghosts(0); 
+    int xmax = ilast(0) + ghosts(0); 
+    int ymin = ifirst(1) - ghosts(1); 
+    int ymax = ilast(1) + ghosts(1); 
+
+    int nx = xmax - xmin +1;
+
+    double* pressure = v_pressure->getPointer();
+
+    int depth = 2;
+
+    for (int k=1; k <= depth; k++) {
+        for (int j=xmin; j <= xmax; j++) {
+            pressure(j,0-k)=pressure(j,-1+k);
+        }
     }
-//
-    for (int i = 0; i < NUM_2D_NODES; i++) {
-        tmp_node_scalar_bcond[i] = BdryCond::YFLOW;
+
+    for (int k=1; k <= depth; k++) {
+        for (int j=xmin; j <= xmax; j++) {
+            pressure(j,ilast(1)+k)=pressure(j,ilast(1)-k);
+        }
     }
-//
-    tbox::pout << "In Cleverleaf::setPhysicalBoundaryConditions:1460" << std::endl;
 
-    appu::CartesianBoundaryUtilities2::
-        fillEdgeBoundaryData("pressure", pressure,
-                patch,
-                ghost_width_to_fill,
-                tmp_edge_scalar_bcond,
-                d_bdry_edge_pressure);
+    for (int k=ymin; k <= ymax; k++) {
+        for (int j=1; j <= depth; j++) {
+            pressure(0-j,k)=pressure(1+j,k);
+        }
+    }
 
-    tbox::pout << "In Cleverleaf::setPhysicalBoundaryConditions:1468" << std::endl;
+    for (int k=ymin; k <= ymax; k++) {
+        for (int j=1; j <= depth; j++) {
+            pressure(ilast(0)+j,k)=pressure(ilast(0)-j,k);
+        }
+    }
 
-    appu::CartesianBoundaryUtilities2::
-        fillNodeBoundaryData("pressure", pressure,
-                patch,
-                ghost_width_to_fill,
-                tmp_node_scalar_bcond,
-                d_bdry_edge_pressure);
-
-    tbox::pout << "In Cleverleaf::setPhysicalBoundaryConditions:1476 (end of function)" << std::endl;
+    tbox::pout << "Leaving Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
 }
