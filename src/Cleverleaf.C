@@ -1479,25 +1479,31 @@ void Cleverleaf::setPhysicalBoundaryConditions(
 
     for (int k=1; k <= depth; k++) {
         for (int j=xmin; j <= xmax; j++) {
-            pressure(j,0-k)=pressure(j,-1+k);
+            pressure(j, ifirst(1)-k) = pressure(j, (ifirst(1)+(k-1)));
         }
     }
+
+    tbox::pout << "Leaving Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
 
     for (int k=1; k <= depth; k++) {
         for (int j=xmin; j <= xmax; j++) {
-            pressure(j,ilast(1)+k)=pressure(j,ilast(1)-k);
+            pressure(j,ilast(1)+k)=pressure(j,ilast(1)-(k-1));
         }
     }
 
-    for (int k=ymin; k <= ymax; k++) {
-        for (int j=1; j <= depth; j++) {
-            pressure(0-j,k)=pressure(1+j,k);
-        }
-    }
+    tbox::pout << "Leaving Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
 
     for (int k=ymin; k <= ymax; k++) {
         for (int j=1; j <= depth; j++) {
-            pressure(ilast(0)+j,k)=pressure(ilast(0)-j,k);
+            pressure(ifirst(0)-j,k)=pressure(ifirst(0)+(j-1),k);
+        }
+    }
+
+    tbox::pout << "Leaving Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
+
+    for (int k=ymin; k <= ymax; k++) {
+        for (int j=1; j <= depth; j++) {
+            pressure(ilast(0)+j,k)=pressure(ilast(0)-(j-1),k);
         }
     }
 
