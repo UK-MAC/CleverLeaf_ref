@@ -345,22 +345,26 @@ void Cleverleaf::initializeDataOnPatch(
                 /*
                  * Produces square of size 60x60 in the centre of the domain
                  */
-//                if ((cellx[n1] >= -30.0 && cellx[n1] <= 30.0)
-//                        && (celly[n1] >= -30.0 && celly[n1] <= 30.0)) {
-//                    density(i,j) = 1.0;
-//                    energy(i,j) = 2.5;
-//                } else {
-//                    density(i,j) = 0.1;
-//                    energy(i,j) = 1.0;
-//                }
-                if ((j >= yminng+1 && j <= ymaxng-1)
-                        && (i >= xminng+1 && i <= xmaxng-1)) {
+                if ((cellx[n1] >= -30.0 && cellx[n1] <= 30.0)
+                        && (celly[n1] >= -30.0 && celly[n1] <= 30.0)) {
                     density(i,j) = 1.0;
                     energy(i,j) = 2.5;
                 } else {
                     density(i,j) = 0.1;
                     energy(i,j) = 1.0;
                 }
+
+                /*
+                 * Use this loop to set square size per patch explicitly
+                 */
+//                if ((j >= yminng+1 && j <= ymaxng-1)
+//                        && (i >= xminng+1 && i <= xmaxng-1)) {
+//                    density(i,j) = 1.0;
+//                    energy(i,j) = 2.5;
+//                } else {
+//                    density(i,j) = 0.1;
+//                    energy(i,j) = 1.0;
+//                }
                 
             }
         }
@@ -1477,35 +1481,56 @@ void Cleverleaf::setPhysicalBoundaryConditions(
 
     int depth = 2;
 
-    for (int k=1; k <= depth; k++) {
-        for (int j=xmin; j <= xmax; j++) {
-            pressure(j, ifirst(1)-k) = pressure(j, (ifirst(1)+(k-1)));
+    const tbox::Pointer<geom::CartesianPatchGeometry> pgeom = 
+        patch.getPatchGeometry();
+
+    const tbox::Array<hier::BoundaryBox>& edge_bdry = pgeom->getCodimensionBoundaries(Bdry::EDGE2D);
+
+    for(int i = 0; i < edge_bdry.getSize(); i++) {
+        switch(edge_bdry[i].getLocationIndex()) {
+            case (BdryLoc::YLO) :
+                for (int k=1; k <= depth; k++) {
+                    for (int j=xmin; j <= xmax; j++) {
+                        pressure(j, ifirst(1)-k) = pressure(j, (ifirst(1)+(k-1)));
+                    }
+                }
+                tbox::pout << "YLO" << std::endl;
+                break;
+
+
+            case (BdryLoc::YHI) :
+                for (int k=1; k <= depth; k++) {
+                    for (int j=xmin; j <= xmax; j++) {
+                        pressure(j,ilast(1)+k)=pressure(j,ilast(1)-(k-1));
+                    }
+                }
+                tbox::pout << "YHI" << std::endl;
+                break;
+
+
+            case (BdryLoc::XLO) :
+                for (int k=ymin; k <= ymax; k++) {
+                    for (int j=1; j <= depth; j++) {
+                        pressure(ifirst(0)-j,k)=pressure(ifirst(0)+(j-1),k);
+                    }
+                }
+                tbox::pout << "XLO" << std::endl;
+                break;
+
+            case (BdryLoc::XHI) :
+                for (int k=ymin; k <= ymax; k++) {
+                    for (int j=1; j <= depth; j++) {
+                        pressure(ilast(0)+j,k)=pressure(ilast(0)-(j-1),k);
+                    }
+                }
+                tbox::pout << "XHI" << std::endl;
+                break;
+
+            default : tbox::perr << "[ERROR] Unknown edge location in setPhysicalBoundaryConditions... " << std::endl;
+                      exit(-1);
         }
     }
 
     tbox::pout << "Leaving Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
 
-    for (int k=1; k <= depth; k++) {
-        for (int j=xmin; j <= xmax; j++) {
-            pressure(j,ilast(1)+k)=pressure(j,ilast(1)-(k-1));
-        }
-    }
-
-    tbox::pout << "Leaving Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
-
-    for (int k=ymin; k <= ymax; k++) {
-        for (int j=1; j <= depth; j++) {
-            pressure(ifirst(0)-j,k)=pressure(ifirst(0)+(j-1),k);
-        }
-    }
-
-    tbox::pout << "Leaving Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
-
-    for (int k=ymin; k <= ymax; k++) {
-        for (int j=1; j <= depth; j++) {
-            pressure(ilast(0)+j,k)=pressure(ilast(0)-(j-1),k);
-        }
-    }
-
-    tbox::pout << "Leaving Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
 }
