@@ -35,13 +35,32 @@ class LagrangianEulerianIntegrator:
     public:
 
         /**
-         * Enum representing the type of a given variable.
+         * \defgroup Types Constants representing the type of a given variable.
+         * @{
          */
-        enum VAR_TYPE {
-            FIELD = 0,
-            FLUX = 1,
-            NORMAL = 2 };
+        const static int NORMAL = 1;
+        const static int FIELD = 2;
+        const static int REVERT = 4;
+        /**
+         * @}
+         */
 
+        /**
+         * \defgroup Exchanges Constants for the various exchange points, used when registering variables.
+         *
+         * @{
+         */
+        const static int NO_EXCH = 0;
+        const static int PRIME_CELLS_EXCH = 1;
+        const static int PRE_LAGRANGE_EXCH = 2;
+        const static int POST_VISCOSITY_EXCH = 4;
+        const static int HALF_STEP_EXCH = 8;
+        const static int PRE_SWEEP_1_CELL_EXCH = 16;
+        const static int PRE_SWEEP_1_MOM_EXCH = 32;
+        const static int PRE_SWEEP_2_MOM_EXCH = 64;
+        /**
+         * @}
+         */
 
         /**
          * Create a new LagrangianEulerianIntegrator.
@@ -71,12 +90,15 @@ class LagrangianEulerianIntegrator:
          * coarsen/refine times
          *
          * @param var The variable to register
+         * @param var_type The type of variable
+         * @param var_exchanges The exchanges this variable is involved in
          * @param ghosts The number of ghosts this variable has
          * @param transfer_geom
          */
         void registerVariable(
                 tbox::Pointer<hier::Variable> var,
-                const VAR_TYPE var_type,
+                const int var_type,
+                const int var_exchanges,
                 hier::IntVector nghosts,
                 const tbox::Pointer<hier::GridGeometry> transfer_geom);
 

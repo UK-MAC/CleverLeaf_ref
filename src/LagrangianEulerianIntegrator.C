@@ -372,7 +372,8 @@ void LagrangianEulerianIntegrator::putToDatabase(
 
 void LagrangianEulerianIntegrator::registerVariable(
         tbox::Pointer<hier::Variable> var,
-        const VAR_TYPE var_type,
+        const int var_type,
+        const int var_exchanges,
         const hier::IntVector ghosts,
         const tbox::Pointer<hier::GridGeometry> transfer_geom)
 {
@@ -386,9 +387,9 @@ void LagrangianEulerianIntegrator::registerVariable(
 
     const hier::IntVector& zero_ghosts(hier::IntVector::getZero(dim));
 
-    if(var_type == FIELD)
+    if((var_type & FIELD) == FIELD) {
         d_field_vars.appendItem(var);
-
+    }
 
     int cur_id = variable_db->registerVariableAndContext(var,
             d_current,
@@ -402,7 +403,8 @@ void LagrangianEulerianIntegrator::registerVariable(
             d_scratch,
             ghosts);
 
-    if((var->getName() == "density") || (var->getName() == "energy")) {
+    if((var_type & REVERT) == REVERT) {
+        std::cout << "Found a revert var: " << var->getName() << std::endl;
         d_revert_vars.appendItem(var);
     }
 
