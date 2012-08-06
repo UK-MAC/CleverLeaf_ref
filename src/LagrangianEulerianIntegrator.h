@@ -272,6 +272,7 @@ class LagrangianEulerianIntegrator:
         tbox::List<tbox::Pointer<hier::Variable> > d_revert_vars;
 
         tbox::Pointer<xfer::RefineAlgorithm> d_bdry_fill_pressure;
+        tbox::Pointer<xfer::RefineAlgorithm> d_bdry_fill_prime_halos;
 
         bool advect_x;
 };

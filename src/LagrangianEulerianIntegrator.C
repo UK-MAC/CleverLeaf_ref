@@ -27,6 +27,8 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
      */
     d_bdry_fill_pressure = new xfer::RefineAlgorithm(d_dim);
 
+    d_bdry_fill_prime_halos = new xfer::RefineAlgorithm(d_dim);
+
     /*
      * Variable contexts
      *
@@ -347,6 +349,12 @@ void LagrangianEulerianIntegrator::initializeLevelData (
                 init_data_time,
                 initial_time);
     }
+
+   // TODO: prime_halos_exch here. 
+    d_bdry_fill_prime_halos->createSchedule(level, d_patch_strategy)->fillData(init_data_time);
+    tbox::pout << "Exchanged initial data" << std::endl;
+
+
 }
 
 void LagrangianEulerianIntegrator::resetHierarchyConfiguration (
@@ -387,6 +395,8 @@ void LagrangianEulerianIntegrator::registerVariable(
 
     const hier::IntVector& zero_ghosts(hier::IntVector::getZero(dim));
 
+    //tbox::Pointer<hier::RefineOperator> refine_op = transfer_geom->lookupRefineOperator(var, "CONSTANT_REFINE");
+
     if((var_type & FIELD) == FIELD) {
         d_field_vars.appendItem(var);
     }
@@ -415,6 +425,18 @@ void LagrangianEulerianIntegrator::registerVariable(
                 cur_id,
                 tbox::Pointer<SAMRAI::xfer::VariableFillPattern>(NULL));
     }
+
+    if((var_exchanges & PRIME_CELLS_EXCH) == PRIME_CELLS_EXCH) {
+        tbox::pout << "Registering " << var->getName() << " for initial exchange..." << std::endl;
+
+        d_bdry_fill_prime_halos->registerRefine(
+                cur_id,
+                cur_id,
+                cur_id,
+                tbox::Pointer<xfer::VariableFillPattern>(NULL));
+    }
+               
+
 
     d_temp_var_cur_data.setFlag(cur_id);
     d_temp_var_new_data.setFlag(new_id);
