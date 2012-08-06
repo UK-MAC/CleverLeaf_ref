@@ -1579,7 +1579,31 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                 reflectPhysicalBoundary(
                         pressure,
                         BdryLoc::YLO,
-                        2,
+                        depth,
+                        ifirst,
+                        ilast,
+                        xmin,
+                        xmax,
+                        ymin,
+                        ymax,
+                        nx);
+
+                reflectPhysicalBoundary(
+                        density0,
+                        BdryLoc::YLO,
+                        depth,
+                        ifirst,
+                        ilast,
+                        xmin,
+                        xmax,
+                        ymin,
+                        ymax,
+                        nx);
+
+                reflectPhysicalBoundary(
+                        density1,
+                        BdryLoc::YLO,
+                        depth,
                         ifirst,
                         ilast,
                         xmin,
@@ -1598,7 +1622,31 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                 reflectPhysicalBoundary(
                         pressure,
                         BdryLoc::YHI,
-                        2,
+                        depth,
+                        ifirst,
+                        ilast,
+                        xmin,
+                        xmax,
+                        ymin,
+                        ymax,
+                        nx);
+
+                reflectPhysicalBoundary(
+                        density0,
+                        BdryLoc::YHI,
+                        depth,
+                        ifirst,
+                        ilast,
+                        xmin,
+                        xmax,
+                        ymin,
+                        ymax,
+                        nx);
+
+                reflectPhysicalBoundary(
+                        density1,
+                        BdryLoc::YHI,
+                        depth,
                         ifirst,
                         ilast,
                         xmin,
@@ -1614,7 +1662,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                 reflectPhysicalBoundary(
                         pressure,
                         BdryLoc::XLO,
-                        2,
+                        depth,
                         ifirst,
                         ilast,
                         xmin,
@@ -1623,6 +1671,29 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                         ymax,
                         nx);
 
+                reflectPhysicalBoundary(
+                        density0,
+                        BdryLoc::XLO,
+                        depth,
+                        ifirst,
+                        ilast,
+                        xmin,
+                        xmax,
+                        ymin,
+                        ymax,
+                        nx);
+
+                reflectPhysicalBoundary(
+                        density1,
+                        BdryLoc::XLO,
+                        depth,
+                        ifirst,
+                        ilast,
+                        xmin,
+                        xmax,
+                        ymin,
+                        ymax,
+                        nx);
                 tbox::pout << "XLO" << std::endl;
                 break;
 
@@ -1631,7 +1702,31 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                 reflectPhysicalBoundary(
                         pressure,
                         BdryLoc::XHI,
-                        2,
+                        depth,
+                        ifirst,
+                        ilast,
+                        xmin,
+                        xmax,
+                        ymin,
+                        ymax,
+                        nx);
+
+                reflectPhysicalBoundary(
+                        density0,
+                        BdryLoc::XHI,
+                        depth,
+                        ifirst,
+                        ilast,
+                        xmin,
+                        xmax,
+                        ymin,
+                        ymax,
+                        nx);
+
+                reflectPhysicalBoundary(
+                        density1,
+                        BdryLoc::XHI,
+                        depth,
                         ifirst,
                         ilast,
                         xmin,
