@@ -14,6 +14,7 @@
 #include "SAMRAI/pdat/NodeVariable.h"
 #include "SAMRAI/pdat/EdgeVariable.h"
 #include "SAMRAI/geom/CartesianGridGeometry.h"
+#include "SAMRAI/appu/CartesianBoundaryDefines.h"
 
 using namespace SAMRAI;
 
@@ -98,6 +99,18 @@ class Cleverleaf:
                     hier::Patch& patch,
                     const double fill_time,
                     const hier::IntVector& ghost_width_to_fill);
+
+        void reflectPhysicalBoundary(
+                double* data,
+                BdryLoc::Type boundary,
+                int depth,
+                hier::Index ifirst,
+                hier::Index ilast,
+                int xmin,
+                int xmax,
+                int ymin,
+                int ymax,
+                int nx);
 
     private:
 

@@ -68,6 +68,8 @@
 
 #define vel1(j,k) vel1[((j-xmin)) + (k-ymin)*(nx+1)]
 
+#define data(i,j) data[((i-xmin)) + (j-ymin)*nx]
+
 Cleverleaf::Cleverleaf(
         tbox::Pointer<hier::PatchHierarchy> hierarchy,
         const tbox::Dimension& dim,
@@ -1537,6 +1539,12 @@ void Cleverleaf::setPhysicalBoundaryConditions(
     tbox::Pointer<pdat::CellData<double> > v_pressure =
         patch.getPatchData(d_pressure, getCurrentDataContext());
 
+    tbox::Pointer<pdat::CellData<double> > v_density0 =
+        patch.getPatchData(d_pressure, getCurrentDataContext());
+
+    tbox::Pointer<pdat::CellData<double> > v_density1 =
+        patch.getPatchData(d_pressure, getNewDataContext());
+
     hier::IntVector ghosts = v_pressure->getGhostCellWidth();
 
     const hier::Index ifirst = patch.getBox().lower();
@@ -1551,6 +1559,9 @@ void Cleverleaf::setPhysicalBoundaryConditions(
 
     double* pressure = v_pressure->getPointer();
 
+    double* density0 = v_density0->getPointer();
+    double* density1 = v_density1->getPointer();
+
     int depth = 2;
 
     const tbox::Pointer<geom::CartesianPatchGeometry> pgeom = 
@@ -1561,40 +1572,74 @@ void Cleverleaf::setPhysicalBoundaryConditions(
     for(int i = 0; i < edge_bdry.getSize(); i++) {
         switch(edge_bdry[i].getLocationIndex()) {
             case (BdryLoc::YLO) :
-                for (int k=1; k <= depth; k++) {
-                    for (int j=xmin; j <= xmax; j++) {
-                        pressure(j, ifirst(1)-k) = pressure(j, (ifirst(1)+(k-1)));
-                    }
-                }
-                tbox::pout << "YLO" << std::endl;
+
+                /*
+                 * update pressure boundary...
+                 */
+                reflectPhysicalBoundary(
+                        pressure,
+                        BdryLoc::YLO,
+                        2,
+                        ifirst,
+                        ilast,
+                        xmin,
+                        xmax,
+                        ymin,
+                        ymax,
+                        nx);
                 break;
 
 
             case (BdryLoc::YHI) :
-                for (int k=1; k <= depth; k++) {
-                    for (int j=xmin; j <= xmax; j++) {
-                        pressure(j,ilast(1)+k)=pressure(j,ilast(1)-(k-1));
-                    }
-                }
-                tbox::pout << "YHI" << std::endl;
+                
+                /*
+                 * Update pressure boundary...
+                 */
+                reflectPhysicalBoundary(
+                        pressure,
+                        BdryLoc::YHI,
+                        2,
+                        ifirst,
+                        ilast,
+                        xmin,
+                        xmax,
+                        ymin,
+                        ymax,
+                        nx);
                 break;
 
 
             case (BdryLoc::XLO) :
-                for (int k=ymin; k <= ymax; k++) {
-                    for (int j=1; j <= depth; j++) {
-                        pressure(ifirst(0)-j,k)=pressure(ifirst(0)+(j-1),k);
-                    }
-                }
+
+                reflectPhysicalBoundary(
+                        pressure,
+                        BdryLoc::XLO,
+                        2,
+                        ifirst,
+                        ilast,
+                        xmin,
+                        xmax,
+                        ymin,
+                        ymax,
+                        nx);
+
                 tbox::pout << "XLO" << std::endl;
                 break;
 
             case (BdryLoc::XHI) :
-                for (int k=ymin; k <= ymax; k++) {
-                    for (int j=1; j <= depth; j++) {
-                        pressure(ilast(0)+j,k)=pressure(ilast(0)-(j-1),k);
-                    }
-                }
+
+                reflectPhysicalBoundary(
+                        pressure,
+                        BdryLoc::XHI,
+                        2,
+                        ifirst,
+                        ilast,
+                        xmin,
+                        xmax,
+                        ymin,
+                        ymax,
+                        nx);
+
                 tbox::pout << "XHI" << std::endl;
                 break;
 
@@ -1605,4 +1650,67 @@ void Cleverleaf::setPhysicalBoundaryConditions(
 
     tbox::pout << "Leaving Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
 
+}
+
+void Cleverleaf::reflectPhysicalBoundary(
+        double* data,
+        BdryLoc::Type boundary,
+        int depth,
+        hier::Index ifirst,
+        hier::Index ilast,
+        int xmin,
+        int xmax,
+        int ymin,
+        int ymax,
+        int nx)
+{
+
+        switch(boundary) {
+            case (BdryLoc::YLO) :
+                /*
+                 * Reflect bottom edge...
+                 */
+                for (int k=1; k <= depth; k++) {
+                    for (int j=xmin; j <= xmax; j++) {
+                        data(j, ifirst(1)-k) = data(j, (ifirst(1)+(k-1)));
+                    }
+                }
+                tbox::pout << "YLO" << std::endl;
+                break;
+
+            case (BdryLoc::YHI) :
+                
+                /*
+                 * Reflect top edge...
+                 */
+                for (int k=1; k <= depth; k++) {
+                    for (int j=xmin; j <= xmax; j++) {
+                        data(j,ilast(1)+k)=data(j,ilast(1)-(k-1));
+                    }
+                }
+                tbox::pout << "YHI" << std::endl;
+                break;
+
+            case (BdryLoc::XLO) :
+
+                for (int k=ymin; k <= ymax; k++) {
+                    for (int j=1; j <= depth; j++) {
+                        data(ifirst(0)-j,k)=data(ifirst(0)+(j-1),k);
+                    }
+                }
+                tbox::pout << "XLO" << std::endl;
+                break;
+
+            case (BdryLoc::XHI) :
+                for (int k=ymin; k <= ymax; k++) {
+                    for (int j=1; j <= depth; j++) {
+                        data(ilast(0)+j,k)=data(ilast(0)-(j-1),k);
+                    }
+                }
+                tbox::pout << "XHI" << std::endl;
+                break;
+
+            default : tbox::perr << "[ERROR] Unknown edge location in reflectPhysicalBoundary... " << std::endl;
+                      exit(-1);
+        }
 }
