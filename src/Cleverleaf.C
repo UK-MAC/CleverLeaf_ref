@@ -1551,6 +1551,9 @@ void Cleverleaf::setPhysicalBoundaryConditions(
     tbox::Pointer<pdat::CellData<double> > v_energy1 =
         patch.getPatchData(d_energy, getNewDataContext());
 
+    tbox::Pointer<pdat::CellData<double> > v_viscosity =
+        patch.getPatchData(d_viscosity, getCurrentDataContext());
+
     hier::IntVector ghosts = v_pressure->getGhostCellWidth();
 
     const hier::Index ifirst = patch.getBox().lower();
@@ -1570,6 +1573,8 @@ void Cleverleaf::setPhysicalBoundaryConditions(
 
     double* energy0 = v_energy0->getPointer();
     double* energy1 = v_energy1->getPointer();
+
+    double* viscosity = v_viscosity->getPointer();
 
     int depth = 2;
 
@@ -1621,6 +1626,13 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                         depth,
                         ifirst, ilast,
                         xmin, xmax, ymin, ymax, nx);
+
+                reflectPhysicalBoundary(
+                        viscosity,
+                        BdryLoc::YLO,
+                        depth,
+                        ifirst, ilast,
+                        xmin, xmax, ymin, ymax, nx);
                 break;
 
 
@@ -1663,6 +1675,14 @@ void Cleverleaf::setPhysicalBoundaryConditions(
 
                 reflectPhysicalBoundary(
                         energy1,
+                        BdryLoc::YHI,
+                        depth,
+                        ifirst, ilast,
+                        xmin, xmax, ymin, ymax,
+                        nx);
+
+                reflectPhysicalBoundary(
+                        viscosity,
                         BdryLoc::YHI,
                         depth,
                         ifirst, ilast,
@@ -1712,6 +1732,14 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                         xmin, xmax, ymin, ymax,
                         nx);
 
+                reflectPhysicalBoundary(
+                        viscosity,
+                        BdryLoc::XLO,
+                        depth,
+                        ifirst, ilast,
+                        xmin, xmax, ymin, ymax,
+                        nx);
+
                 tbox::pout << "XLO" << std::endl;
                 break;
 
@@ -1751,6 +1779,14 @@ void Cleverleaf::setPhysicalBoundaryConditions(
 
                 reflectPhysicalBoundary(
                         energy1,
+                        BdryLoc::XHI,
+                        depth,
+                        ifirst, ilast,
+                        xmin, xmax, ymin, ymax,
+                        nx);
+
+                reflectPhysicalBoundary(
+                        viscosity,
                         BdryLoc::XHI,
                         depth,
                         ifirst, ilast,
