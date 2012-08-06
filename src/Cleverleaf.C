@@ -1540,10 +1540,10 @@ void Cleverleaf::setPhysicalBoundaryConditions(
         patch.getPatchData(d_pressure, getCurrentDataContext());
 
     tbox::Pointer<pdat::CellData<double> > v_density0 =
-        patch.getPatchData(d_pressure, getCurrentDataContext());
+        patch.getPatchData(d_density, getCurrentDataContext());
 
     tbox::Pointer<pdat::CellData<double> > v_density1 =
-        patch.getPatchData(d_pressure, getNewDataContext());
+        patch.getPatchData(d_density, getNewDataContext());
 
     hier::IntVector ghosts = v_pressure->getGhostCellWidth();
 
@@ -1580,37 +1580,24 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                         pressure,
                         BdryLoc::YLO,
                         depth,
-                        ifirst,
-                        ilast,
-                        xmin,
-                        xmax,
-                        ymin,
-                        ymax,
+                        ifirst, ilast,
+                        xmin, xmax, ymin, ymax,
                         nx);
 
                 reflectPhysicalBoundary(
                         density0,
                         BdryLoc::YLO,
                         depth,
-                        ifirst,
-                        ilast,
-                        xmin,
-                        xmax,
-                        ymin,
-                        ymax,
+                        ifirst, ilast,
+                        xmin, xmax, ymin, ymax,
                         nx);
 
                 reflectPhysicalBoundary(
                         density1,
                         BdryLoc::YLO,
                         depth,
-                        ifirst,
-                        ilast,
-                        xmin,
-                        xmax,
-                        ymin,
-                        ymax,
-                        nx);
+                        ifirst, ilast,
+                        xmin, xmax, ymin, ymax, nx);
                 break;
 
 
@@ -1623,36 +1610,24 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                         pressure,
                         BdryLoc::YHI,
                         depth,
-                        ifirst,
-                        ilast,
-                        xmin,
-                        xmax,
-                        ymin,
-                        ymax,
+                        ifirst, ilast,
+                        xmin, xmax, ymin, ymax,
                         nx);
 
                 reflectPhysicalBoundary(
                         density0,
                         BdryLoc::YHI,
                         depth,
-                        ifirst,
-                        ilast,
-                        xmin,
-                        xmax,
-                        ymin,
-                        ymax,
+                        ifirst, ilast,
+                        xmin, xmax, ymin, ymax,
                         nx);
 
                 reflectPhysicalBoundary(
                         density1,
                         BdryLoc::YHI,
                         depth,
-                        ifirst,
-                        ilast,
-                        xmin,
-                        xmax,
-                        ymin,
-                        ymax,
+                        ifirst, ilast,
+                        xmin, xmax, ymin, ymax,
                         nx);
                 break;
 
@@ -1663,36 +1638,23 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                         pressure,
                         BdryLoc::XLO,
                         depth,
-                        ifirst,
-                        ilast,
-                        xmin,
-                        xmax,
-                        ymin,
-                        ymax,
+                        ifirst, ilast,
+                        xmin, xmax, ymin, ymax,
                         nx);
 
                 reflectPhysicalBoundary(
                         density0,
                         BdryLoc::XLO,
                         depth,
-                        ifirst,
-                        ilast,
-                        xmin,
-                        xmax,
-                        ymin,
-                        ymax,
-                        nx);
+                        ifirst, ilast,
+                        xmin, xmax, ymin, ymax, nx);
 
                 reflectPhysicalBoundary(
                         density1,
                         BdryLoc::XLO,
                         depth,
-                        ifirst,
-                        ilast,
-                        xmin,
-                        xmax,
-                        ymin,
-                        ymax,
+                        ifirst, ilast,
+                        xmin, xmax, ymin, ymax,
                         nx);
                 tbox::pout << "XLO" << std::endl;
                 break;
@@ -1703,36 +1665,24 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                         pressure,
                         BdryLoc::XHI,
                         depth,
-                        ifirst,
-                        ilast,
-                        xmin,
-                        xmax,
-                        ymin,
-                        ymax,
+                        ifirst, ilast,
+                        xmin, xmax, ymin, ymax,
                         nx);
 
                 reflectPhysicalBoundary(
                         density0,
                         BdryLoc::XHI,
                         depth,
-                        ifirst,
-                        ilast,
-                        xmin,
-                        xmax,
-                        ymin,
-                        ymax,
+                        ifirst, ilast,
+                        xmin, xmax, ymin, ymax,
                         nx);
 
                 reflectPhysicalBoundary(
                         density1,
                         BdryLoc::XHI,
                         depth,
-                        ifirst,
-                        ilast,
-                        xmin,
-                        xmax,
-                        ymin,
-                        ymax,
+                        ifirst, ilast,
+                        xmin, xmax, ymin, ymax,
                         nx);
 
                 tbox::pout << "XHI" << std::endl;
