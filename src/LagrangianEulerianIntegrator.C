@@ -395,10 +395,13 @@ void LagrangianEulerianIntegrator::registerVariable(
 
     const hier::IntVector& zero_ghosts(hier::IntVector::getZero(dim));
 
-    //tbox::Pointer<hier::RefineOperator> refine_op = transfer_geom->lookupRefineOperator(var, "CONSTANT_REFINE");
-
     if((var_type & FIELD) == FIELD) {
         d_field_vars.appendItem(var);
+    }
+
+    if((var_type & REVERT) == REVERT) {
+        std::cout << "Found a revert var: " << var->getName() << std::endl;
+        d_revert_vars.appendItem(var);
     }
 
     int cur_id = variable_db->registerVariableAndContext(var,
@@ -412,11 +415,6 @@ void LagrangianEulerianIntegrator::registerVariable(
     int scr_id = variable_db->registerVariableAndContext(var,
             d_scratch,
             ghosts);
-
-    if((var_type & REVERT) == REVERT) {
-        std::cout << "Found a revert var: " << var->getName() << std::endl;
-        d_revert_vars.appendItem(var);
-    }
 
     if(var->getName() == "pressure") {
         d_bdry_fill_pressure->registerRefine(

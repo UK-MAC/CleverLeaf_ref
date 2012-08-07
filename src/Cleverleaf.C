@@ -1529,12 +1529,6 @@ void Cleverleaf::setPhysicalBoundaryConditions(
         const hier::IntVector& ghost_width_to_fill)
 {
 
-    tbox::Array<double> d_bdry_edge_pressure;
-
-    tbox::MathUtilities<double>::setArrayToSignalingNaN(d_bdry_edge_pressure);
-
-    d_bdry_edge_pressure.resizeArray(NUM_2D_EDGES);
-
     tbox::pout << "In Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
 
     tbox::Pointer<pdat::CellData<double> > v_pressure =
@@ -1601,7 +1595,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
     double* vol_flux_x = v_volflux->getPointer(0);
     double* vol_flux_y = v_volflux->getPointer(1);
 
-    int depth = 2;
+    int depth = ghost_width_to_fill[0];
 
     const tbox::Pointer<geom::CartesianPatchGeometry> pgeom = 
         patch.getPatchGeometry();
