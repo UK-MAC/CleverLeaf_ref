@@ -26,10 +26,9 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
      * Communication algorithms
      */
     d_bdry_fill_pressure = new xfer::RefineAlgorithm(d_dim);
-
     d_bdry_fill_prime_halos = new xfer::RefineAlgorithm(d_dim);
-
     d_bdry_fill_pre_lagrange = new xfer::RefineAlgorithm(d_dim);
+    d_bdry_fill_post_viscosity = new xfer::RefineAlgorithm(d_dim);
 
     /*
      * Variable contexts
@@ -123,6 +122,7 @@ double LagrangianEulerianIntegrator::getLevelDt(
     /*
      * TODO: update_halos viscosity
      */
+    d_bdry_fill_post_viscosity->createSchedule(level, d_patch_strategy)->fillData(dt_time);
 
 #ifdef LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: getLevelDt: calc_dt {{{" << std::endl;
@@ -451,6 +451,16 @@ void LagrangianEulerianIntegrator::registerVariable(
                 tbox::Pointer<xfer::VariableFillPattern>(NULL));
     }
                
+    if((var_exchanges & POST_VISCOSITY_EXCH) == POST_VISCOSITY_EXCH) {
+#ifdef DEBUG
+        tbox::pout << "Registering " << var->getName() << " for post-viscosity exchange..." << std::endl;
+#endif
+        d_bdry_fill_post_viscosity->registerRefine(
+                cur_id,
+                cur_id,
+                cur_id,
+                tbox::Pointer<xfer::VariableFillPattern>(NULL));
+    }
 
 
     d_temp_var_cur_data.setFlag(cur_id);

@@ -142,7 +142,8 @@ void Cleverleaf::registerModelVariables(
     integrator->registerVariable(
             d_viscosity,
             LagrangianEulerianIntegrator::NORMAL,
-            LagrangianEulerianIntegrator::PRIME_CELLS_EXCH,
+            LagrangianEulerianIntegrator::PRIME_CELLS_EXCH |
+                LagrangianEulerianIntegrator::POST_VISCOSITY_EXCH,
             d_nghosts,
             d_grid_geometry);
 
