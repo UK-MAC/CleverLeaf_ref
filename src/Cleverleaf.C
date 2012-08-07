@@ -135,7 +135,8 @@ void Cleverleaf::registerModelVariables(
             d_pressure,
             LagrangianEulerianIntegrator::NORMAL,
             LagrangianEulerianIntegrator::PRIME_CELLS_EXCH |
-                LagrangianEulerianIntegrator::PRE_LAGRANGE_EXCH,
+                LagrangianEulerianIntegrator::PRE_LAGRANGE_EXCH |
+                LagrangianEulerianIntegrator::HALF_STEP_EXCH,
             d_nghosts,
             d_grid_geometry);
 

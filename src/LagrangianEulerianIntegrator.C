@@ -25,7 +25,7 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
     /*
      * Communication algorithms
      */
-    d_bdry_fill_pressure = new xfer::RefineAlgorithm(d_dim);
+    d_bdry_fill_half_step = new xfer::RefineAlgorithm(d_dim);
     d_bdry_fill_prime_halos = new xfer::RefineAlgorithm(d_dim);
     d_bdry_fill_pre_lagrange = new xfer::RefineAlgorithm(d_dim);
     d_bdry_fill_post_viscosity = new xfer::RefineAlgorithm(d_dim);
@@ -218,7 +218,7 @@ double LagrangianEulerianIntegrator::advanceLevel(
     /*
      * TODO: Update pressure halos!
      */
-    d_bdry_fill_pressure->createSchedule(level, d_patch_strategy)->fillData(current_time);
+    d_bdry_fill_half_step->createSchedule(level, d_patch_strategy)->fillData(current_time);
     tbox::pout << "Pressure halo updated!" << std::endl;
     
 
@@ -420,14 +420,6 @@ void LagrangianEulerianIntegrator::registerVariable(
             d_scratch,
             ghosts);
 
-    if(var->getName() == "pressure") {
-        d_bdry_fill_pressure->registerRefine(
-                cur_id,
-                cur_id,
-                cur_id,
-                tbox::Pointer<SAMRAI::xfer::VariableFillPattern>(NULL));
-    }
-
     if((var_exchanges & PRIME_CELLS_EXCH) == PRIME_CELLS_EXCH) {
 #ifdef DEBUG
         tbox::pout << "Registering " << var->getName() << " for initial exchange..." << std::endl;
@@ -460,6 +452,18 @@ void LagrangianEulerianIntegrator::registerVariable(
                 cur_id,
                 cur_id,
                 tbox::Pointer<xfer::VariableFillPattern>(NULL));
+    }
+
+    if((var_exchanges & HALF_STEP_EXCH) == HALF_STEP_EXCH) {
+#ifdef DEBUG
+        tbox::pout << "Registering " << var->getName() << " for half-step exchange..." << std::endl;
+#endif
+
+        d_bdry_fill_half_step->registerRefine(
+                cur_id,
+                cur_id,
+                cur_id,
+                tbox::Pointer<SAMRAI::xfer::VariableFillPattern>(NULL));
     }
 
 
