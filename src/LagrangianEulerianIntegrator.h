@@ -35,28 +35,42 @@ class LagrangianEulerianIntegrator:
     public:
 
         /**
-         * \defgroup Types Constants representing the type of a given variable.
+         * @name Types 
+         * Constants representing the type of a given variable.
          * @{
          */
+
+        /** Normal variable. */
         const static int NORMAL = 1;
+        /** Field variable, copied back to tl0 at end of timestep. */
         const static int FIELD = 2;
+        /** Revert variable, copied back to tl0 at half-step. */
         const static int REVERT = 4;
         /**
          * @}
          */
 
         /**
-         * \defgroup Exchanges Constants for the various exchange points, used when registering variables.
+         * @name Exchanges 
+         * Constants for the various exchange points, used when registering variables.
          *
          * @{
          */
+        /** Not exchanged */
         const static int NO_EXCH = 0;
+        /** Exchanged at startup */
         const static int PRIME_CELLS_EXCH = 1;
+        /** Exchanged before the Lagrangian step */
         const static int PRE_LAGRANGE_EXCH = 2;
+        /** Exchanged after viscosity kernel */
         const static int POST_VISCOSITY_EXCH = 4;
+        /** Exchanged at half step */
         const static int HALF_STEP_EXCH = 8;
+        /** Exchanged before cell advection sweep 1 */
         const static int PRE_SWEEP_1_CELL_EXCH = 16;
+        /** Exchanged before momentum advection sweep 1 */
         const static int PRE_SWEEP_1_MOM_EXCH = 32;
+        /** Exchanged before momentum advection sweep 2 */
         const static int PRE_SWEEP_2_MOM_EXCH = 64;
         /**
          * @}

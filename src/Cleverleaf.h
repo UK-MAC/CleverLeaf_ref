@@ -100,6 +100,23 @@ class Cleverleaf:
                     const double fill_time,
                     const hier::IntVector& ghost_width_to_fill);
 
+        /**
+         * 
+         * Reflect data at physical boundaries.
+         *
+         * This method applies the reflective boundary condition up to a give depth for the data passed in.
+         *
+         * @param data The data to array to reflect boundaries of.
+         * @param boundary Which boundayr to reflect.
+         * @param depth The depth of cells to reflect the boundary over.
+         * @param ifirst The first non-ghost cell of each dimension.
+         * @param ilast The last non-ghost cell of each dimension.
+         * @param xmin The xmin index of the entire patch (including ghosts)
+         * @param xmax The xmax index of the entire patch (including ghosts)
+         * @param ymin The ymin index of the entire patch (including ghosts)
+         * @param ymax The ymax index of the entire patch (including ghosts)
+         * @param nx The number of cells in the x dimension
+         */
         void reflectPhysicalBoundary(
                 double* data,
                 BdryLoc::Type boundary,
