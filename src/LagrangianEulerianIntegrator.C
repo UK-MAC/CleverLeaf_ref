@@ -30,6 +30,7 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
     d_bdry_fill_pre_lagrange = new xfer::RefineAlgorithm(d_dim);
     d_bdry_fill_post_viscosity = new xfer::RefineAlgorithm(d_dim);
     d_bdry_fill_pre_sweep1_cell = new xfer::RefineAlgorithm(d_dim);
+    d_bdry_fill_pre_sweep1_mom = new xfer::RefineAlgorithm(d_dim);
 
     /*
      * Variable contexts
@@ -478,6 +479,16 @@ void LagrangianEulerianIntegrator::registerVariable(
                 tbox::Pointer<SAMRAI::xfer::VariableFillPattern>(NULL));
     }
 
+    if((var_exchanges & PRE_SWEEP_1_MOM_EXCH) == PRE_SWEEP_1_MOM_EXCH) {
+#ifdef DEBUG
+        tbox::pout << "Registering " << var->getName() << " for pre-sweep1 mom exchange" << std::endl;
+#endif
+        d_bdry_fill_pre_sweep1_mom->registerRefine(
+                cur_id,
+                cur_id,
+                cur_id,
+                tbox::Pointer<SAMRAI::xfer::VariableFillPattern>(NULL));
+    }
 
     d_temp_var_cur_data.setFlag(cur_id);
     d_temp_var_new_data.setFlag(new_id);
@@ -569,6 +580,7 @@ void LagrangianEulerianIntegrator::advection(
   /*
    * TODO: update density1, energy1, velocity1 and mass_flux halos
    */
+    d_bdry_fill_pre_sweep1_mom->createSchedule(level, d_patch_strategy)->fillData(current_time);
 
 #ifdef LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advection: advec_mom x {{{" << std::endl;
