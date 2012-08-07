@@ -275,6 +275,7 @@ class LagrangianEulerianIntegrator:
         tbox::Pointer<xfer::RefineAlgorithm> d_bdry_fill_prime_halos;
         tbox::Pointer<xfer::RefineAlgorithm> d_bdry_fill_pre_lagrange;
         tbox::Pointer<xfer::RefineAlgorithm> d_bdry_fill_post_viscosity;
+        tbox::Pointer<xfer::RefineAlgorithm> d_bdry_fill_pre_sweep1_cell;
 
         bool advect_x;
 };

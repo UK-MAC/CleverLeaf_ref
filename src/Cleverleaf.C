@@ -127,7 +127,7 @@ void Cleverleaf::registerModelVariables(
     integrator->registerVariable(
             d_volflux,
             LagrangianEulerianIntegrator::NORMAL,
-            LagrangianEulerianIntegrator::NO_EXCH,
+            LagrangianEulerianIntegrator::PRE_SWEEP_1_CELL_EXCH,
             d_nghosts,
             d_grid_geometry);
 
@@ -159,7 +159,8 @@ void Cleverleaf::registerModelVariables(
             d_density,
             LagrangianEulerianIntegrator::FIELD | LagrangianEulerianIntegrator::REVERT,
             LagrangianEulerianIntegrator::PRIME_CELLS_EXCH |
-                LagrangianEulerianIntegrator::PRE_LAGRANGE_EXCH,
+                LagrangianEulerianIntegrator::PRE_LAGRANGE_EXCH |
+                LagrangianEulerianIntegrator::PRE_SWEEP_1_CELL_EXCH,
             d_nghosts, 
             d_grid_geometry);
 
@@ -167,7 +168,8 @@ void Cleverleaf::registerModelVariables(
             d_energy,
             LagrangianEulerianIntegrator::FIELD | LagrangianEulerianIntegrator::REVERT,
             LagrangianEulerianIntegrator::PRIME_CELLS_EXCH |
-                LagrangianEulerianIntegrator::PRE_LAGRANGE_EXCH,
+                LagrangianEulerianIntegrator::PRE_LAGRANGE_EXCH |
+                LagrangianEulerianIntegrator::PRE_SWEEP_1_CELL_EXCH,
             d_nghosts,
             d_grid_geometry);
 
