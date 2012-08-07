@@ -230,21 +230,37 @@ class LagrangianEulerianIntegrator:
                 const bool initial_time,
                 const bool uses_richardson_extrapolation_too);
 
-        /*
+        /**
          * Serializable methods.
          */
 
         void putToDatabase(tbox::Pointer<tbox::Database> database);
 
-        /*
+        /**
          * Copy new field variable values back to timelevel 0.
+         *
+         * @param level The level we are working on.
          */
         void resetField(
                 const tbox::Pointer<hier::PatchLevel> level);
 
+        /**
+         * Copy variables in revert_vars back to timelevel 0.
+         *
+         * @param level The level we are working on.
+         * @param hierarchy The patch hierarchy we are working on.
+         * @param current_time The current simulation time.
+         */
         void revert(
                 const tbox::Pointer<hier::PatchLevel> level);
 
+        /**
+         * Perform cell-centered and momentum advection.
+         *
+         * @param level The level we are working on.
+         * @param hierarchy The patch hierarchy we are working on.
+         * @param current_time The current simulation time.
+         */
         void advection(
                 const tbox::Pointer<hier::PatchLevel> level,
                 const tbox::Pointer<hier::PatchHierarchy> hierarchy,
@@ -270,13 +286,22 @@ class LagrangianEulerianIntegrator:
         const tbox::Dimension d_dim;
 
         /**
-         * Variable contexts.
+         * @name Variable contexts
+         *
+         * Variable contexts for the simulation
+         * @{
          */
-
+        /** "New" timelevel 1 variables. */
         tbox::Pointer<hier::VariableContext> d_new;
+        /** Scratch variables. */
         tbox::Pointer<hier::VariableContext> d_scratch;
+        /** "Old" timelevel 0 variables. */
         tbox::Pointer<hier::VariableContext> d_current;
+        /** Context used to write ViSiT dumps. */
         tbox::Pointer<hier::VariableContext> d_plot_context;
+        /**
+         * @}
+         */
 
         hier::ComponentSelector d_temp_var_scratch_data;
         hier::ComponentSelector d_temp_var_cur_data;
@@ -285,6 +310,13 @@ class LagrangianEulerianIntegrator:
         tbox::List<tbox::Pointer<hier::Variable> > d_field_vars;
         tbox::List<tbox::Pointer<hier::Variable> > d_revert_vars;
 
+        /**
+         * @name Communication exchanges
+         * 
+         * Algorithms for various communication points in the application.
+         *
+         * @{
+         */
         tbox::Pointer<xfer::RefineAlgorithm> d_bdry_fill_half_step;
         tbox::Pointer<xfer::RefineAlgorithm> d_bdry_fill_prime_halos;
         tbox::Pointer<xfer::RefineAlgorithm> d_bdry_fill_pre_lagrange;
@@ -292,6 +324,9 @@ class LagrangianEulerianIntegrator:
         tbox::Pointer<xfer::RefineAlgorithm> d_bdry_fill_pre_sweep1_cell;
         tbox::Pointer<xfer::RefineAlgorithm> d_bdry_fill_pre_sweep1_mom;
         tbox::Pointer<xfer::RefineAlgorithm> d_bdry_fill_pre_sweep2_mom;
+        /**
+         * @}
+         */
 
         bool advect_x;
 };
