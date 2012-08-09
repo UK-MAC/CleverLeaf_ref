@@ -303,9 +303,9 @@ class LagrangianEulerianIntegrator:
          * @}
          */
 
-        hier::ComponentSelector d_temp_var_scratch_data;
-        hier::ComponentSelector d_temp_var_cur_data;
-        hier::ComponentSelector d_temp_var_new_data;
+        hier::ComponentSelector d_var_scratch_data;
+        hier::ComponentSelector d_var_cur_data;
+        hier::ComponentSelector d_var_new_data;
 
         tbox::List<tbox::Pointer<hier::Variable> > d_field_vars;
         tbox::List<tbox::Pointer<hier::Variable> > d_revert_vars;
