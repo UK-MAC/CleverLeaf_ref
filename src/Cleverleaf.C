@@ -1617,11 +1617,11 @@ void Cleverleaf::setPhysicalBoundaryConditions(
         patch.getPatchGeometry();
 
     const tbox::Array<hier::BoundaryBox>& edge_bdry = pgeom->getCodimensionBoundaries(Bdry::EDGE2D);
+    tbox::pout << "In Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
 
     for(int i = 0; i < edge_bdry.getSize(); i++) {
         switch(edge_bdry[i].getLocationIndex()) {
             case (BdryLoc::YLO) :
-
                 /*
                  * update pressure boundary...
                  */
@@ -1942,8 +1942,6 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                         depth,
                         ifirst, ilast,
                         xmin, xmax, ymin, ymax+1, nx);
-
-                tbox::pout << "XLO" << std::endl;
                 break;
 
             case (BdryLoc::XHI) :
@@ -2051,8 +2049,6 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                         depth,
                         ifirst, ilast,
                         xmin, xmax, ymin, ymax+1, nx);
-
-                tbox::pout << "XHI" << std::endl;
                 break;
 
             default : tbox::perr << "[ERROR] Unknown edge location in setPhysicalBoundaryConditions... " << std::endl;
@@ -2087,7 +2083,6 @@ void Cleverleaf::reflectPhysicalBoundary(
                         data(j, ifirst(1)-k) = data(j, (ifirst(1)+(k-1)));
                     }
                 }
-                tbox::pout << "YLO" << std::endl;
                 break;
 
             case (BdryLoc::YHI) :
@@ -2100,7 +2095,6 @@ void Cleverleaf::reflectPhysicalBoundary(
                         data(j,ilast(1)+k)=data(j,ilast(1)-(k-1));
                     }
                 }
-                tbox::pout << "YHI" << std::endl;
                 break;
 
             case (BdryLoc::XLO) :
@@ -2110,7 +2104,6 @@ void Cleverleaf::reflectPhysicalBoundary(
                         data(ifirst(0)-j,k)=data(ifirst(0)+(j-1),k);
                     }
                 }
-                tbox::pout << "XLO" << std::endl;
                 break;
 
             case (BdryLoc::XHI) :
@@ -2119,7 +2112,6 @@ void Cleverleaf::reflectPhysicalBoundary(
                         data(ilast(0)+j,k)=data(ilast(0)-(j-1),k);
                     }
                 }
-                tbox::pout << "XHI" << std::endl;
                 break;
 
             default : tbox::perr << "[ERROR] Unknown edge location in reflectPhysicalBoundary... " << std::endl;
