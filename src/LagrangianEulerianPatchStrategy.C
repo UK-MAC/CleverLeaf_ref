@@ -30,6 +30,12 @@ void LagrangianEulerianPatchStrategy::setNewDataContext(
     d_new_data_context = context;
 }
 
+void LagrangianEulerianPatchStrategy::setScratchDataContext(
+        tbox::Pointer<hier::VariableContext> context)
+{
+    d_scratch_data_context = context;
+}
+
 tbox::Pointer<hier::VariableContext> LagrangianEulerianPatchStrategy::getCurrentDataContext()
 {
     return d_current_data_context;
@@ -37,7 +43,12 @@ tbox::Pointer<hier::VariableContext> LagrangianEulerianPatchStrategy::getCurrent
 
 tbox::Pointer<hier::VariableContext> LagrangianEulerianPatchStrategy::getNewDataContext()
 {
-    return d_new_data_context;;
+    return d_new_data_context;
+}
+
+tbox::Pointer<hier::VariableContext> LagrangianEulerianPatchStrategy::getScratchDataContext()
+{
+    return d_scratch_data_context;
 }
 
 const tbox::Dimension& LagrangianEulerianPatchStrategy::getDim() const

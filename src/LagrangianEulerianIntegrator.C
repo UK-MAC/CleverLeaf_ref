@@ -49,6 +49,7 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
      */
     patch_strategy->setCurrentDataContext(d_current);
     patch_strategy->setNewDataContext(d_new);
+    patch_strategy->setScratchDataContext(d_scratch);
 
     d_plot_context = d_current;
 }
@@ -90,9 +91,9 @@ double LagrangianEulerianIntegrator::getLevelDt(
     double patch_dt;
 
     level->allocatePatchData(d_var_cur_data, dt_time);
-    level->allocatePatchData(d_var_new_data, dt_time);
+    //level->allocatePatchData(d_var_new_data, dt_time);
 
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: getLevelDt: ideal_gas corrector {{{" << std::endl;
 #endif
     for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
@@ -100,7 +101,7 @@ double LagrangianEulerianIntegrator::getLevelDt(
 
         d_patch_strategy->ideal_gas_knl(*patch, false);
     }
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "}}}" << std::endl;
 #endif
 
@@ -108,12 +109,14 @@ double LagrangianEulerianIntegrator::getLevelDt(
      * TODO: update_halos pressure, energy, density, velocity0
      */
 
+    d_patch_strategy->setCurrentDataContext(d_scratch);
     level->allocatePatchData(d_var_scratch_data, dt_time);
     d_bdry_fill_pre_lagrange->createSchedule(level, d_patch_strategy)->fillData(dt_time);
     level->deallocatePatchData(d_var_scratch_data);
+    d_patch_strategy->setCurrentDataContext(d_current);
 
 
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: getLevelDt: viscosity {{{" << std::endl;
 #endif
     for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
@@ -121,18 +124,20 @@ double LagrangianEulerianIntegrator::getLevelDt(
 
         d_patch_strategy->viscosity_knl(*patch);
     }
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "}}}" << std::endl;
 #endif
 
     /*
      * TODO: update_halos viscosity
      */
+    d_patch_strategy->setCurrentDataContext(d_scratch);
     level->allocatePatchData(d_var_scratch_data, dt_time);
     d_bdry_fill_post_viscosity->createSchedule(level, d_patch_strategy)->fillData(dt_time);
     level->deallocatePatchData(d_var_scratch_data);
+    d_patch_strategy->setCurrentDataContext(d_current);
 
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: getLevelDt: calc_dt {{{" << std::endl;
 #endif
     for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
@@ -143,7 +148,7 @@ double LagrangianEulerianIntegrator::getLevelDt(
 
         dt = tbox::MathUtilities<double>::Min(dt, patch_dt);
     }
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "}}}" << std::endl;
 #endif
 
@@ -158,7 +163,14 @@ double LagrangianEulerianIntegrator::getLevelDt(
         return 0.04;
     }
 
-    return global_dt;
+    /*
+     * TODO: Hard code the max_timestep here for now...
+     */
+//    if (global_dt > 0.04) {
+//        return 0.04;
+//    } else {
+        return global_dt;
+//    }
 }
 
 double LagrangianEulerianIntegrator::advanceLevel(
@@ -194,7 +206,7 @@ double LagrangianEulerianIntegrator::advanceLevel(
     /*
      * PdV kernel, predictor.
      */
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advanceLevel: PdV predictor {{{" << std::endl;
 #endif
     for(hier::PatchLevel::Iterator p(level);p;p++){
@@ -203,14 +215,14 @@ double LagrangianEulerianIntegrator::advanceLevel(
 
         d_patch_strategy->pdv_knl(*patch,dt, true);
     }
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "}}}" << std::endl;
 #endif
 
     /*
      * PdV kernel, predictor needs ideal gas call.
      */
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advanceLevel: ideal_gas predictor {{{" << std::endl;
 #endif
     for(hier::PatchLevel::Iterator p(level);p;p++){
@@ -219,17 +231,18 @@ double LagrangianEulerianIntegrator::advanceLevel(
 
         d_patch_strategy->ideal_gas_knl(*patch,true);
     }
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "}}}" << std::endl;
 #endif
 
     /*
      * TODO: Update pressure halos!
      */
+    d_patch_strategy->setCurrentDataContext(d_scratch);
     level->allocatePatchData(d_var_scratch_data, current_time);
     d_bdry_fill_half_step->createSchedule(level, d_patch_strategy)->fillData(current_time);
-    tbox::pout << "Pressure halo updated!" << std::endl;
-    level->deallocatePatchData(d_var_scratch_data);
+    //tbox::pout << "Pressure halo updated!" << std::endl;
+    d_patch_strategy->setCurrentDataContext(d_current);
     
 
     /*
@@ -240,7 +253,7 @@ double LagrangianEulerianIntegrator::advanceLevel(
     /*
      * Acceleration due to pressure/velocity
      */ 
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advanceLevel: acceleration {{{" << std::endl;
 #endif
     for(hier::PatchLevel::Iterator p(level);p;p++){
@@ -249,14 +262,14 @@ double LagrangianEulerianIntegrator::advanceLevel(
 
         d_patch_strategy->accelerate(*patch,dt);
     }
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "}}}" << std::endl;
 #endif
 
    /*
     * PdV kernel, corrector.
     */
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advanceLevel: PdV corrector {{{" << std::endl;
 #endif
    for(hier::PatchLevel::Iterator p(level);p;p++){
@@ -265,7 +278,7 @@ double LagrangianEulerianIntegrator::advanceLevel(
 
         d_patch_strategy->pdv_knl(*patch,dt, false);
     }
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "}}}" << std::endl;
 #endif
 
@@ -282,7 +295,7 @@ double LagrangianEulerianIntegrator::advanceLevel(
    /*
     * advection here...
     */
-   //advection(level, hierarchy, new_time);
+   advection(level, hierarchy, new_time);
 
    advect_x = !advect_x;
 
@@ -364,10 +377,14 @@ void LagrangianEulerianIntegrator::initializeLevelData (
     }
 
    // TODO: prime_halos_exch here. 
+    d_patch_strategy->setCurrentDataContext(d_scratch);
     level->allocatePatchData(d_var_scratch_data, init_data_time);
-    d_bdry_fill_prime_halos->createSchedule(level, d_patch_strategy)->fillData(init_data_time);
-    tbox::pout << "Exchanged initial data" << std::endl;
+    tbox::Pointer<xfer::RefineSchedule> refine_sched = d_bdry_fill_prime_halos->createSchedule(level, d_patch_strategy);
+    //refine_sched->printClassData(tbox::pout);
+    refine_sched->fillData(init_data_time);
+    //tbox::pout << "Exchanged initial data" << std::endl;
     level->deallocatePatchData(d_var_scratch_data);
+    d_patch_strategy->setCurrentDataContext(d_current);
 
 
 }
@@ -400,9 +417,7 @@ void LagrangianEulerianIntegrator::registerVariable(
         const hier::IntVector ghosts,
         const tbox::Pointer<hier::GridGeometry> transfer_geom)
 {
-#ifdef DEBUG
-    tbox::pout << "Registering variable: " << var->getName() << std::endl;
-#endif
+    //tbox::pout << "Registering variable: " << var->getName() << std::endl;
 
     const tbox::Dimension dim(ghosts.getDim());
 
@@ -415,7 +430,7 @@ void LagrangianEulerianIntegrator::registerVariable(
     }
 
     if((var_type & REVERT) == REVERT) {
-        std::cout << "Found a revert var: " << var->getName() << std::endl;
+        //std::cout << "Found a revert var: " << var->getName() << std::endl;
         d_revert_vars.appendItem(var);
     }
 
@@ -431,6 +446,19 @@ void LagrangianEulerianIntegrator::registerVariable(
             d_scratch,
             ghosts);
 
+    tbox::Pointer<hier::RefineOperator> refine_op;
+
+    if (var->getName() == "massflux") {
+        //tbox::pout << "Using CONSERVATIVE_LINEAR_REFINE..." << std::endl;
+        refine_op = transfer_geom->lookupRefineOperator(var, "CONSERVATIVE_LINEAR_REFINE");
+    } else if (var->getName() == "volflux") {
+        //tbox::pout << "Using CONSERVATIVE_LINEAR_REFINE..." << std::endl;
+        refine_op = transfer_geom->lookupRefineOperator(var, "CONSERVATIVE_LINEAR_REFINE");
+    } else {
+        //tbox::pout << "Using LINEAR_REFINE..." << std::endl;
+        refine_op = transfer_geom->lookupRefineOperator(var, "LINEAR_REFINE");
+    }
+    
     if((var_exchanges & PRIME_CELLS_EXCH) == PRIME_CELLS_EXCH) {
 #ifdef DEBUG
         tbox::pout << "Registering " << var->getName() << " for initial exchange..." << std::endl;
@@ -440,7 +468,7 @@ void LagrangianEulerianIntegrator::registerVariable(
                 cur_id,
                 cur_id,
                 scr_id,
-                tbox::Pointer<xfer::VariableFillPattern>(NULL));
+                refine_op);
     }
 
     if((var_exchanges & PRE_LAGRANGE_EXCH) == PRE_LAGRANGE_EXCH) {
@@ -451,7 +479,7 @@ void LagrangianEulerianIntegrator::registerVariable(
                 cur_id,
                 cur_id,
                 scr_id,
-                tbox::Pointer<xfer::VariableFillPattern>(NULL));
+                refine_op);
     }
                
     if((var_exchanges & POST_VISCOSITY_EXCH) == POST_VISCOSITY_EXCH) {
@@ -462,7 +490,7 @@ void LagrangianEulerianIntegrator::registerVariable(
                 cur_id,
                 cur_id,
                 scr_id,
-                tbox::Pointer<xfer::VariableFillPattern>(NULL));
+                refine_op);
     }
 
     if((var_exchanges & HALF_STEP_EXCH) == HALF_STEP_EXCH) {
@@ -474,7 +502,7 @@ void LagrangianEulerianIntegrator::registerVariable(
                 cur_id,
                 cur_id,
                 scr_id,
-                tbox::Pointer<SAMRAI::xfer::VariableFillPattern>(NULL));
+                refine_op);
     }
 
     if((var_exchanges & PRE_SWEEP_1_CELL_EXCH) == PRE_SWEEP_1_CELL_EXCH) {
@@ -486,7 +514,7 @@ void LagrangianEulerianIntegrator::registerVariable(
                 cur_id,
                 cur_id,
                 scr_id,
-                tbox::Pointer<SAMRAI::xfer::VariableFillPattern>(NULL));
+                refine_op);
     }
 
     if((var_exchanges & PRE_SWEEP_1_MOM_EXCH) == PRE_SWEEP_1_MOM_EXCH) {
@@ -497,7 +525,7 @@ void LagrangianEulerianIntegrator::registerVariable(
                 cur_id,
                 cur_id,
                 scr_id,
-                tbox::Pointer<SAMRAI::xfer::VariableFillPattern>(NULL));
+                refine_op);
     }
 
     if((var_exchanges & PRE_SWEEP_2_MOM_EXCH) == PRE_SWEEP_2_MOM_EXCH) {
@@ -508,7 +536,7 @@ void LagrangianEulerianIntegrator::registerVariable(
                 cur_id,
                 cur_id,
                 scr_id,
-                tbox::Pointer<SAMRAI::xfer::VariableFillPattern>(NULL));
+                refine_op);
     }
 
     d_var_cur_data.setFlag(cur_id);
@@ -531,9 +559,9 @@ void LagrangianEulerianIntegrator::resetField(
       tbox::List<tbox::Pointer<hier::Variable> >::Iterator
          field_var = d_field_vars.listStart();
       while (field_var) {
-#ifdef DEBUG
-          tbox::pout << "Copying " << field_var()->getName() << " back to tl0" << std::endl;
-#endif
+
+          //tbox::pout << "Copying " << field_var()->getName() << " back to tl0" << std::endl;
+
          tbox::Pointer<hier::PatchData> src_data =
             patch->getPatchData(field_var(), d_new);
          tbox::Pointer<hier::PatchData> dst_data =
@@ -554,7 +582,7 @@ void LagrangianEulerianIntegrator::revert(
       tbox::List<tbox::Pointer<hier::Variable> >::Iterator
          revert_var = d_revert_vars.listStart();
       while (revert_var) {
-#if 1
+#if DEBUG
           tbox::pout << "Copying " << revert_var()->getName() << " back to tl0" << std::endl;
 #endif
          tbox::Pointer<hier::PatchData> src_data =
@@ -585,7 +613,7 @@ void LagrangianEulerianIntegrator::advection(
    */
     d_bdry_fill_pre_sweep1_cell->createSchedule(level, d_patch_strategy)->fillData(current_time);
 
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advection: advec_cell {{{" << std::endl;
 #endif
     for(hier::PatchLevel::Iterator p(level);p;p++){
@@ -595,7 +623,7 @@ void LagrangianEulerianIntegrator::advection(
         d_patch_strategy->advec_cell(*patch,sweep_number,direction);
     }
 
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "}}}" << std::endl;
 #endif
 
@@ -604,7 +632,7 @@ void LagrangianEulerianIntegrator::advection(
    */
     d_bdry_fill_pre_sweep1_mom->createSchedule(level, d_patch_strategy)->fillData(current_time);
 
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advection: advec_mom x {{{" << std::endl;
 #endif
     for(hier::PatchLevel::Iterator p(level);p;p++){
@@ -616,11 +644,11 @@ void LagrangianEulerianIntegrator::advection(
          */
         d_patch_strategy->advec_mom(*patch,sweep_number,direction, LagrangianEulerianPatchStrategy::X);
     }
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "}}}" << std::endl;
 #endif
 
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advection: advec_mom y {{{" << std::endl;
 #endif
     for(hier::PatchLevel::Iterator p(level);p;p++){
@@ -632,7 +660,7 @@ void LagrangianEulerianIntegrator::advection(
          */
         d_patch_strategy->advec_mom(*patch,sweep_number,direction, LagrangianEulerianPatchStrategy::Y);
     }
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "}}}" << std::endl;
 #endif
 
@@ -641,7 +669,7 @@ void LagrangianEulerianIntegrator::advection(
   if(advect_x)  direction = LagrangianEulerianPatchStrategy::Y;
   if(!advect_x) direction = LagrangianEulerianPatchStrategy::X;
 
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advection sweep 2: advec_cell {{{" << std::endl;
 #endif
     for(hier::PatchLevel::Iterator p(level);p;p++){
@@ -650,7 +678,7 @@ void LagrangianEulerianIntegrator::advection(
 
         d_patch_strategy->advec_cell(*patch,sweep_number,direction);
     }
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "}}}" << std::endl;
 #endif
 
@@ -659,7 +687,7 @@ void LagrangianEulerianIntegrator::advection(
    */
     d_bdry_fill_pre_sweep2_mom->createSchedule(level, d_patch_strategy)->fillData(current_time);
 
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advection: advec_mom x {{{" << std::endl;
 #endif
     for(hier::PatchLevel::Iterator p(level);p;p++){
@@ -671,11 +699,11 @@ void LagrangianEulerianIntegrator::advection(
          */
         d_patch_strategy->advec_mom(*patch,sweep_number, direction, LagrangianEulerianPatchStrategy::X);
     }
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "}}}" << std::endl;
 #endif
 
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advection: advec_mom y {{{" << std::endl;
 #endif
     for(hier::PatchLevel::Iterator p(level);p;p++){
@@ -687,7 +715,7 @@ void LagrangianEulerianIntegrator::advection(
          */
         d_patch_strategy->advec_mom(*patch,sweep_number, direction, LagrangianEulerianPatchStrategy::Y);
     }
-#ifdef LOOPPRINT
+#if LOOPPRINT
     tbox::pout << "}}}" << std::endl;
 #endif
 }

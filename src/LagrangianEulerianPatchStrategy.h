@@ -164,6 +164,13 @@ class LagrangianEulerianPatchStrategy:
         tbox::Pointer<hier::VariableContext> getNewDataContext();
 
         /**
+         * Get the data context corresponding to the scratch storage.
+         *
+         * @returns Scratch data context.
+         */
+        tbox::Pointer<hier::VariableContext> getScratchDataContext();
+
+        /**
          * Set the data context for the current time.
          *
          * This context contains the timelevel 0 data.
@@ -181,6 +188,14 @@ class LagrangianEulerianPatchStrategy:
          * @param context Context for new time.
          */
         void setNewDataContext(
+                tbox::Pointer<hier::VariableContext> context);
+
+        /**
+         * Set the data context for the scratch space.
+         *
+         * @param context Context for scratch space.
+         */
+        void setScratchDataContext(
                 tbox::Pointer<hier::VariableContext> context);
 
         /**
@@ -262,7 +277,7 @@ class LagrangianEulerianPatchStrategy:
         const tbox::Dimension d_dim;
 
         tbox::Pointer<hier::VariableContext> d_new_data_context;
-
         tbox::Pointer<hier::VariableContext> d_current_data_context;
+        tbox::Pointer<hier::VariableContext> d_scratch_data_context;
 };
 #endif

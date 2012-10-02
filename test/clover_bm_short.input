@@ -48,7 +48,7 @@ GriddingAlgorithm {
 
 TimeRefinementIntegrator {
     start_time = 0.e0
-    end_time = 10.e0
+    end_time = 0.5e0
     grow_dt = 1.5e0
-    max_integrator_steps = 1000
+    max_integrator_steps=10000
 }

@@ -23,7 +23,7 @@
 #define xarea(i,j) xarea[((i-xmin)) + (j-ymin)*nx]
 #define yarea(i,j) yarea[((i-xmin)) + (j-ymin)*nx]
 #define volume(i,j) volume[((i-xmin)) + (j-ymin)*nx]
-#define density0(i,j) density0[((i-xmin)) + (j-ymin)*nx]
+#define density0(i,j) density0[((i)-xmin) + ((j)-ymin)*nx]
 #define density1(i,j) density1[((i-xmin)) + (j-ymin)*nx]
 #define energy0(i,j) energy0[((i-xmin)) + (j-ymin)*nx]
 #define energy1(i,j) energy1[((i-xmin)) + (j-ymin)*nx]
@@ -425,6 +425,9 @@ void Cleverleaf::initializeDataOnPatch(
         /*
          * Fill density and energy with some data, these are our initial conditions.
          */
+        v_energy->fillAll(50);
+        v_density->fillAll(50);
+
         double* density = v_density->getPointer();
         double* energy = v_energy->getPointer();
 
@@ -435,14 +438,26 @@ void Cleverleaf::initializeDataOnPatch(
                 /*
                  * Produces square of size 60x60 in the centre of the domain
                  */
-                if ((cellx[n1] >= -30.0 && cellx[n1] <= 30.0)
-                        && (celly[n1] >= -30.0 && celly[n1] <= 30.0)) {
+                if ((cellx[n1] >= 0.0 && cellx[n1] <= 5.0)
+                        && (celly[n1] >= 0.0 && celly[n1] <= 2.0)) {
                     density(i,j) = 1.0;
                     energy(i,j) = 2.5;
                 } else {
-                    density(i,j) = 0.1;
+                    density(i,j) = 0.2;
                     energy(i,j) = 1.0;
                 }
+
+                /*
+                 * Produces square of size 60x60 in the centre of the domain
+                 */
+//                if ((cellx[n1] <= -10.0))
+//                {
+//                    density(i,j) = 1.0;
+//                    energy(i,j) = 2.5;
+//                } else {
+//                    density(i,j) = 0.1;
+//                    energy(i,j) = 1.0;
+//                }
 
                 /*
                  * Use this loop to set square size per patch explicitly
@@ -531,6 +546,17 @@ void Cleverleaf::accelerate(
 
             xvel1(j,k)=xvel0(j,k)-stepbymass(j,k)*(xarea(j,k)*(pressure(j,k)-pressure(j-1,k))
                     +xarea(j,k-1)*(pressure(j,k-1)-pressure(j-1,k-1)));
+#ifdef DEBUG
+            cout << xvel0(j,k) << std::endl;
+            cout << stepbymass(j,k) << std::endl;
+            cout << xarea(j,k) << std::endl;
+            cout << pressure(j,k) << std::endl;
+            cout << pressure(j-1,k) << std::endl;
+            cout << xarea(j,k-1) << std::endl;
+            cout << pressure(j,k-1) << std::endl;
+            cout << pressure(j-1,k-1) << std::endl;
+            cout << "xvel1(" << j << "," << k << ") = " << xvel1(j,k) << std::endl;
+#endif
         }
     }
 
@@ -539,6 +565,9 @@ void Cleverleaf::accelerate(
 
             yvel1(j,k)=yvel0(j,k)-stepbymass(j,k)*(yarea(j,k)*(pressure(j,k)-pressure(j,k-1))
                     +yarea(j-1,k)*(pressure(j-1,k)-pressure(j-1,k-1)));
+#ifdef DEBUG
+            cout << "yvel1(" << j << "," << k << ") = " << yvel1(j,k) << std::endl;
+#endif
         }
     }
 
@@ -548,6 +577,9 @@ void Cleverleaf::accelerate(
             xvel1(j,k)=xvel1(j,k)-stepbymass(j,k)*(xarea(j,k)*(viscosity(j,k)-viscosity(j-1,k))
                     +xarea(j,k-1)*(viscosity(j,k-1)-viscosity(j-1,k-1)));
 
+#ifdef DEBUG
+            cout << "xvel1(" << j << "," << k << ") = " << xvel1(j,k) << std::endl;
+#endif
         }
     }
 
@@ -556,6 +588,9 @@ void Cleverleaf::accelerate(
 
             yvel1(j,k)=yvel1(j,k)-stepbymass(j,k)*(yarea(j,k)*(viscosity(j,k)-viscosity(j,k-1))
                     +yarea(j-1,k)*(viscosity(j-1,k)-viscosity(j-1,k-1)));
+#ifdef DEBUG
+            cout << "yvel1(" << j << "," << k << ") = " << yvel1(j,k) << std::endl;
+#endif
         }
     }
 }
@@ -733,9 +768,12 @@ void Cleverleaf::viscosity_knl(
 double Cleverleaf::calc_dt_knl(
         hier::Patch& patch)
 {
-    double div,dsx,dsy,dtut,dtvt,dtct,dtdivt,cc,dv1,dv2,kldt,jldt;
+    double div,dsx,dsy,dtut,dtvt,dtct,dtdivt,cc,dv1,dv2;
     double xl_pos,
            yl_pos;
+
+    int kldt;
+    int jldt;
 
     tbox::Pointer<pdat::CellData<double> > v_density1 = patch.getPatchData(d_density, getNewDataContext());
     tbox::Pointer<pdat::CellData<double> > v_density0 = patch.getPatchData(d_density, getCurrentDataContext());
@@ -867,7 +905,19 @@ double Cleverleaf::calc_dt_knl(
         }
     }
 
-    cout << "RETURNING " << dt_min_val << " FROM calc_dt_knl()" << endl;
+    tbox::pout << "Timestep information:" << std::endl;
+    tbox::pout << "\tj, k  : " << jldt << "," << kldt << std::endl;
+    tbox::pout << "\tx, y  : " << cellx(jldt,kldt) << "," << celly(jldt,kldt) << std::endl;
+    tbox::pout << "\ttimestep : " << dt_min_val << std::endl;
+    tbox::pout << "\tCell velocities:" << std::endl;
+    tbox::pout << "\t\t" << xvel0(jldt  ,kldt  ) << "," << yvel0(jldt  ,kldt  ) << std::endl;
+    tbox::pout << "\t\t" << xvel0(jldt+1,kldt  ) << "," << yvel0(jldt+1,kldt  ) << std::endl;
+    tbox::pout << "\t\t" << xvel0(jldt+1,kldt+1) << "," << yvel0(jldt+1,kldt+1) << std::endl;
+    tbox::pout << "\t\t" << xvel0(jldt  ,kldt+1) << "," << yvel0(jldt  ,kldt+1) << std::endl;
+    tbox::pout << "\tdensity, energy, pressure, soundspeed " << std::endl;
+    tbox::pout << "\t" << density0(jldt, kldt) << "," << energy(jldt,kldt) << "," << pressure(jldt,kldt) << "," << soundspeed(jldt,kldt) << std::endl;
+
+    //cout << "RETURNING " << dt_min_val << " FROM calc_dt_knl()" << endl;
     return dt_min_val;
 }
 
@@ -1038,7 +1088,7 @@ void Cleverleaf::flux_calc_knl(
 
     tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
 
-    hier::IntVector ghosts = v_vel0->getGhostCellWidth();
+    hier::IntVector ghosts = v_celldeltas->getGhostCellWidth();
 
     const hier::Index ifirst = patch.getBox().lower();
     const hier::Index ilast = patch.getBox().upper();
@@ -1070,6 +1120,8 @@ void Cleverleaf::flux_calc_knl(
 
 #ifdef DEBUG
             tbox::pout << "vol_flux_x(" << j << "," << k << ") = " << vol_flux_x(j,k) << std::endl;
+            tbox::pout << "\tdt\txarea(" << j << "," << k << ")\txvel0(" << j << "," << k << ")\txvel0(" << j << "," << k+1 << ")\txvel1(" << j << "," << k << ")\txvel1(" << j << "," << k+1 << ")" << std::endl;
+            tbox::pout << "\t" << dt << "\t" << xarea(j,k) << "\t" << xvel0(j,k) << "\t" << xvel0(j,k+1) << "\t" << xvel1(j,k) << "\t" << xvel1(j,k+1) << std::endl;
 #endif
         }
     }
@@ -1117,10 +1169,10 @@ void Cleverleaf::advec_cell(hier::Patch& patch,
     double* volume = v_volume->getPointer();
     double* density1 = v_density1->getPointer();
     double* energy1 = v_energy1->getPointer();
-    double* vol_flux_x = v_volflux->getPointer(0);
-    double* vol_flux_y = v_volflux->getPointer(1);
-    double* mass_flux_x = v_massflux->getPointer(0);
-    double* mass_flux_y = v_massflux->getPointer(1);
+    double* vol_flux_x = v_volflux->getPointer(1);
+    double* vol_flux_y = v_volflux->getPointer(0);
+    double* mass_flux_x = v_massflux->getPointer(1);
+    double* mass_flux_y = v_massflux->getPointer(0);
 
     double* vertexdx = vertexdeltas->getPointer(0);
     double* vertexdy = vertexdeltas->getPointer(1);
@@ -1150,7 +1202,7 @@ void Cleverleaf::advec_cell(hier::Patch& patch,
     one_by_six=1.0/6.0;
 
 
-    if(dir = X) {
+    if(dir == X) {
         if (sweep_number == 1){
             for(int k= ymin; k <= ymax; k++) {
                 for(int j=xmin; j <= xmax; j++) {
@@ -1225,6 +1277,7 @@ void Cleverleaf::advec_cell(hier::Patch& patch,
 #ifdef DEBUG
                 tbox::pout << "density(" << j << "," << k << ") = " << density1(j,k) << std::endl;
                 tbox::pout << "energy(" << j << "," << k << ") = " << energy1(j,k) << std::endl;
+                tbox::pout << "advec_vol(" << j << "," << k << ") = " << advec_vol(j,k) << std::endl;
 #endif
 
             }
@@ -1305,6 +1358,10 @@ void Cleverleaf::advec_cell(hier::Patch& patch,
         advec_vol(j,k)=pre_vol(j,k)+vol_flux_y(j,k)-vol_flux_y(j,k+1);
         density1(j,k)=post_mass(j,k)/advec_vol(j,k);
         energy1(j,k)=post_ener(j,k);
+
+#ifdef DEBUG
+        tbox::pout << "advec_vol(" << j << "," << k << ") = " << advec_vol(j,k) << std::endl;
+#endif
       }
     }
   }
@@ -1341,10 +1398,10 @@ void Cleverleaf::advec_mom(hier::Patch& patch,
 
     double* volume = v_volume->getPointer();
     double* density1 = v_density1->getPointer();
-    double* vol_flux_x = v_volflux->getPointer(0);
-    double* vol_flux_y = v_volflux->getPointer(1);
-    double* mass_flux_x = v_massflux->getPointer(0);
-    double* mass_flux_y = v_massflux->getPointer(1);
+    double* vol_flux_x = v_volflux->getPointer(1);
+    double* vol_flux_y = v_volflux->getPointer(0);
+    double* mass_flux_x = v_massflux->getPointer(1);
+    double* mass_flux_y = v_massflux->getPointer(0);
 
     double* vel1;
 
@@ -1470,6 +1527,12 @@ void Cleverleaf::advec_mom(hier::Patch& patch,
                 mom_flux(j,k)=advec_vel(j,k)*node_flux(j,k);
             }
             for(int j=ifirst(0); j <= ilast(0)+1; j++) {
+                double tv1 = (vel1(j,k)*node_mass_pre(j,k)+mom_flux(j-1,k)-mom_flux(j,k))/node_mass_post(j,k);
+                double nmp = node_mass_pre(j,k);
+                double mf = mom_flux(j-1,k);
+                double mf1 = mom_flux(j,k);
+                double nmpo = node_mass_post(j,k);
+
                 vel1(j,k)=(vel1(j,k)*node_mass_pre(j,k)+mom_flux(j-1,k)-mom_flux(j,k))/node_mass_post(j,k);
 #ifdef DEBUG
                 tbox::pout << "node_mass_pre(" << j << "," << k << ") = " << node_mass_pre(j,k) << std::endl;
@@ -1525,6 +1588,12 @@ void Cleverleaf::advec_mom(hier::Patch& patch,
             }
 
             for(int k=ifirst(1); k <= ilast(1)+1; k++) {
+                double tv1 = (vel1(j,k)*node_mass_pre(j,k)+mom_flux(j,k-1)-mom_flux(j,k))/node_mass_post(j,k);
+                double nmp = node_mass_pre(j,k);
+                double mf = mom_flux(j,k-1);
+                double mf1 = mom_flux(j,k);
+                double nmpo = node_mass_post(j,k);
+
                 vel1(j,k)=(vel1(j,k)*node_mass_pre(j,k)+mom_flux(j,k-1)-mom_flux(j,k))/node_mass_post(j,k);
 #ifdef DEBUG
                 tbox::pout << "node_mass_pre(" << j << "," << k << ") = " << node_mass_pre(j,k) << std::endl;
@@ -1545,37 +1614,37 @@ void Cleverleaf::setPhysicalBoundaryConditions(
         const hier::IntVector& ghost_width_to_fill)
 {
 
-    tbox::pout << "In Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
+    //tbox::pout << "In Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
 
     tbox::Pointer<pdat::CellData<double> > v_pressure =
-        patch.getPatchData(d_pressure, getCurrentDataContext());
+        patch.getPatchData(d_pressure, getScratchDataContext());
 
     tbox::Pointer<pdat::CellData<double> > v_density0 =
-        patch.getPatchData(d_density, getCurrentDataContext());
+        patch.getPatchData(d_density, getScratchDataContext());
 
     tbox::Pointer<pdat::CellData<double> > v_density1 =
         patch.getPatchData(d_density, getNewDataContext());
 
     tbox::Pointer<pdat::CellData<double> > v_energy0 =
-        patch.getPatchData(d_energy, getCurrentDataContext());
+        patch.getPatchData(d_energy, getScratchDataContext());
     
     tbox::Pointer<pdat::CellData<double> > v_energy1 =
         patch.getPatchData(d_energy, getNewDataContext());
 
     tbox::Pointer<pdat::CellData<double> > v_viscosity =
-        patch.getPatchData(d_viscosity, getCurrentDataContext());
+        patch.getPatchData(d_viscosity, getScratchDataContext());
 
     tbox::Pointer<pdat::NodeData<double> > v_vel0 =
-        patch.getPatchData(d_velocity, getCurrentDataContext());
+        patch.getPatchData(d_velocity, getScratchDataContext());
 
     tbox::Pointer<pdat::NodeData<double> > v_vel1 =
         patch.getPatchData(d_velocity, getNewDataContext());
 
     tbox::Pointer<pdat::EdgeData<double> > v_massflux = 
-        patch.getPatchData(d_massflux, getCurrentDataContext());
+        patch.getPatchData(d_massflux, getScratchDataContext());
 
     tbox::Pointer<pdat::EdgeData<double> > v_volflux = 
-        patch.getPatchData(d_volflux, getCurrentDataContext());
+        patch.getPatchData(d_volflux, getScratchDataContext());
 
     hier::IntVector ghosts = v_pressure->getGhostCellWidth();
 
@@ -1605,11 +1674,11 @@ void Cleverleaf::setPhysicalBoundaryConditions(
     double* yvel0 = v_vel0->getPointer(1);
     double* yvel1 = v_vel1->getPointer(1);
 
-    double* mass_flux_x = v_massflux->getPointer(0);
-    double* mass_flux_y = v_massflux->getPointer(1);
+    double* mass_flux_x = v_massflux->getPointer(1);
+    double* mass_flux_y = v_massflux->getPointer(0);
 
-    double* vol_flux_x = v_volflux->getPointer(0);
-    double* vol_flux_y = v_volflux->getPointer(1);
+    double* vol_flux_x = v_volflux->getPointer(1);
+    double* vol_flux_y = v_volflux->getPointer(0);
 
     int depth = ghost_width_to_fill[0];
 
@@ -1943,7 +2012,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                         ifirst, ilast,
                         xmin, xmax, ymin, ymax+1, nx);
 
-                tbox::pout << "XLO" << std::endl;
+                //tbox::pout << "XLO" << std::endl;
                 break;
 
             case (BdryLoc::XHI) :
@@ -2052,7 +2121,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                         ifirst, ilast,
                         xmin, xmax, ymin, ymax+1, nx);
 
-                tbox::pout << "XHI" << std::endl;
+                //tbox::pout << "XHI" << std::endl;
                 break;
 
             default : tbox::perr << "[ERROR] Unknown edge location in setPhysicalBoundaryConditions... " << std::endl;
@@ -2060,7 +2129,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
         }
     }
 
-    tbox::pout << "Leaving Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
+    //tbox::pout << "Leaving Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
 
 }
 
@@ -2087,7 +2156,6 @@ void Cleverleaf::reflectPhysicalBoundary(
                         data(j, ifirst(1)-k) = data(j, (ifirst(1)+(k-1)));
                     }
                 }
-                tbox::pout << "YLO" << std::endl;
                 break;
 
             case (BdryLoc::YHI) :
@@ -2100,7 +2168,6 @@ void Cleverleaf::reflectPhysicalBoundary(
                         data(j,ilast(1)+k)=data(j,ilast(1)-(k-1));
                     }
                 }
-                tbox::pout << "YHI" << std::endl;
                 break;
 
             case (BdryLoc::XLO) :
@@ -2110,7 +2177,6 @@ void Cleverleaf::reflectPhysicalBoundary(
                         data(ifirst(0)-j,k)=data(ifirst(0)+(j-1),k);
                     }
                 }
-                tbox::pout << "XLO" << std::endl;
                 break;
 
             case (BdryLoc::XHI) :
@@ -2119,7 +2185,6 @@ void Cleverleaf::reflectPhysicalBoundary(
                         data(ilast(0)+j,k)=data(ilast(0)-(j-1),k);
                     }
                 }
-                tbox::pout << "XHI" << std::endl;
                 break;
 
             default : tbox::perr << "[ERROR] Unknown edge location in reflectPhysicalBoundary... " << std::endl;
