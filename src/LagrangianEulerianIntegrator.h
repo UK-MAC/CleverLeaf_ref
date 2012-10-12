@@ -268,6 +268,13 @@ class LagrangianEulerianIntegrator:
 
         void fillBoundaries();
 
+        /*
+         * Print out the field summary
+         */
+        void printFieldSummary(
+                double time,
+                int step);
+
     protected:
         /**
          * PatchStrategy contains user-specified methods needed for
@@ -329,6 +336,8 @@ class LagrangianEulerianIntegrator:
          */
 
         bool advect_x;
+
+        tbox::Pointer<hier::PatchHierarchy> d_current_hierarchy;
 };
 
 #endif

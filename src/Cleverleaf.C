@@ -2191,3 +2191,68 @@ void Cleverleaf::reflectPhysicalBoundary(
                       exit(-1);
         }
 }
+
+void Cleverleaf::field_summary(
+        hier::Patch& patch,
+        double* vol,
+        double* mass,
+        double* press,
+        double* ie,
+        double* ke)
+{
+    tbox::Pointer<pdat::CellData<double> > v_volume = patch.getPatchData(d_volume, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v_density0 = patch.getPatchData(d_density, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v_energy0 = patch.getPatchData(d_energy, getCurrentDataContext());
+    tbox::Pointer<pdat::CellData<double> > v_pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
+    tbox::Pointer<pdat::NodeData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
+
+    const hier::Index ifirst = patch.getBox().lower();
+    const hier::Index ilast = patch.getBox().upper();
+
+    hier::IntVector ghosts = v_density0->getGhostCellWidth();
+
+    int xmin = ifirst(0) - ghosts(0);
+    int xmax = ilast(0) + ghosts(0);
+    int ymin = ifirst(1) - ghosts(1);
+    int ymax = ilast(1) + ghosts(1);
+
+    int nx = xmax - xmin + 1;
+    int ny = ymax - ymin + 1;
+
+    double* volume = v_volume->getPointer();
+    double* density0 = v_density0->getPointer();
+    double* energy0 = v_energy0->getPointer();
+    double* pressure = v_pressure->getPointer();
+    double* xvel0 = v_vel0->getPointer(0);
+    double* yvel0 = v_vel0->getPointer(1);
+
+    double vsqrd;
+    double cell_vol;
+    double cell_mass;
+
+    *vol=0.0;
+    *mass=0.0;
+    *ie=0.0;
+    *ke=0.0;
+    *press=0.0;
+
+    for(int k = ifirst(1); k <= ilast(1); k++) {
+        for(int j = ifirst(0); j <= ilast(0); j++) {
+            vsqrd=0.0;
+
+            vsqrd=vsqrd+0.25*(pow(xvel0(j,k),2)+pow(yvel0(j,k),2));
+            vsqrd=vsqrd+0.25*(pow(xvel0(j+1,k),2)+pow(yvel0(j+1,k),2));
+            vsqrd=vsqrd+0.25*(pow(xvel0(j,k+1),2)+pow(yvel0(j,k+1),2));
+            vsqrd=vsqrd+0.25*(pow(xvel0(j+1,k+1),2)+pow(yvel0(j+1,k+1),2));
+
+            cell_vol=volume(j,k);
+            cell_mass=cell_vol*density0(j,k);
+
+            *vol=*vol+cell_vol;
+            *mass=*mass+cell_mass;
+            *ie=*ie+cell_mass*energy0(j,k);
+            *ke=*ke+cell_mass*0.5*vsqrd;
+            *press=*press+cell_vol*pressure(j,k);
+        }
+    }
+}

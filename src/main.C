@@ -64,6 +64,7 @@ int main(int argc, char* argv[]) {
         const tbox::Dimension dim(static_cast<unsigned short>(main_db->getInteger("dim")));
 
         int vis_dump_interval = main_db->getIntegerWithDefault("vis_dump_interval", 1);
+        int field_summary_interval = main_db->getIntegerWithDefault("field_summary_interval", 10);
 
         /*
          * Create data and algorithm objects.
@@ -214,6 +215,12 @@ int main(int argc, char* argv[]) {
                 visit_data_writer->writePlotData(patch_hierarchy,
                         iteration_num,
                         loop_time);
+            }
+
+            if ((field_summary_interval > 0)
+                    && (iteration_num % field_summary_interval) == 0) {
+                tbox::pout << "Writing field summary..." << endl;
+                lagrangian_eulerian_integrator->printFieldSummary(loop_time, iteration_num);
             }
         }
 

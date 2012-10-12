@@ -143,6 +143,14 @@ class LagrangianEulerianPatchStrategy:
                 ADVEC_DIR direction,
                 ADVEC_DIR which_vel) = 0;
 
+        virtual void field_summary(
+                hier::Patch& patch,
+                double* vol,
+                double* mass,
+                double* press,
+                double* ie,
+                double* ke) = 0;
+
         virtual void tagGradientDetectorCells(
                 hier::Patch& patch,
                 const double regrid_time,

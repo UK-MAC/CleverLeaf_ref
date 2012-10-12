@@ -100,6 +100,14 @@ class Cleverleaf:
                     const double fill_time,
                     const hier::IntVector& ghost_width_to_fill);
 
+        void field_summary(
+                hier::Patch& patch,
+                double* vol,
+                double* mass,
+                double* press,
+                double* ie,
+                double* ke);
+
         /**
          * 
          * Reflect data at physical boundaries.

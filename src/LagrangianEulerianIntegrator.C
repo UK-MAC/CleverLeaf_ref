@@ -185,6 +185,8 @@ double LagrangianEulerianIntegrator::advanceLevel(
 
     double dt = new_time - current_time;
 
+    d_current_hierarchy = hierarchy;
+
     /*
      * This routine performs the required steps for the predictor and corrector,
      * and the advection. It mirrors the following routines occuring in Cloverleaf
@@ -352,6 +354,8 @@ void LagrangianEulerianIntegrator::initializeLevelData (
         const bool allocate_data)
 {
 
+    d_current_hierarchy = hierarchy;
+
     tbox::Pointer<hier::PatchLevel> level(
             hierarchy->getPatchLevel(level_number));
 
@@ -385,6 +389,8 @@ void LagrangianEulerianIntegrator::initializeLevelData (
     //tbox::pout << "Exchanged initial data" << std::endl;
     level->deallocatePatchData(d_var_scratch_data);
     d_patch_strategy->setCurrentDataContext(d_current);
+
+    printFieldSummary(init_data_time, 0.04);
 
 
 }
@@ -718,6 +724,36 @@ void LagrangianEulerianIntegrator::advection(
 #if LOOPPRINT
     tbox::pout << "}}}" << std::endl;
 #endif
+}
+
+void LagrangianEulerianIntegrator::printFieldSummary(
+        double time,
+        int step)
+{
+    tbox::Pointer<hier::PatchLevel> level = d_current_hierarchy->getPatchLevel(0);
+
+    double vol;
+    double mass;
+    double press;
+    double ie;
+    double ke;
+
+    for(hier::PatchLevel::Iterator p(level);p;p++){
+
+        tbox::Pointer<hier::Patch>patch=*p;
+
+        d_patch_strategy->ideal_gas_knl(*patch, false);
+
+        d_patch_strategy->field_summary(*patch, &vol, &mass, &press, &ie, &ke);
+    }
+
+    const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
+
+    if (mpi.getRank() == 0) {
+        printf("%13s%16s %16s %16s %16s %16s %16s %16s\n", " ", "Volume", "Mass", "Density", "Pressure", "Interna Energy", "Kinetic Energy", "Total Energy");
+        printf("%6s %7d %16.4E %16.4E %16.4E %16.4E %16.4E %16.4E %16.4E\n", "step:", step, vol, mass, mass/vol, press/vol, ie, ke, ie+ke);
+
+    }
 }
 
 
