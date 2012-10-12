@@ -434,18 +434,30 @@ void Cleverleaf::initializeDataOnPatch(
         for(int j = ymin; j <= ymax; j++) {
             for(int i = xmin; i <= xmax; i++) {
                 int n1 = POLY2(i,j,xmin,ymin,nx);
+                int v1 = POLY2(i,j,vimin,vjmin,vnx);
 
                 /*
                  * Produces square of size 60x60 in the centre of the domain
                  */
-                if ((cellx[n1] >= 0.0 && cellx[n1] <= 5.0)
-                        && (celly[n1] >= 0.0 && celly[n1] <= 2.0)) {
-                    density(i,j) = 1.0;
-                    energy(i,j) = 2.5;
+//                if ((cellx[n1] >= 0.0 && cellx[n1] <= 5.0)
+//                        && (celly[n1] >= 0.0 && celly[n1] <= 2.0)) {
+//                    density(i,j) = 1.0;
+//                    energy(i,j) = 2.5;
+//                } else {
+//                    density(i,j) = 0.2;
+//                    energy(i,j) = 1.0;
+//                }
+
+                if ((vertexx[v1] >= 0.0 && vertexx[v1] < 5.0)) {
+                    if ((vertexy[v1] >= 0.0 && vertexy[v1] > 2.0)) {
+                        density(i,j) = 1.0;
+                        energy(i,j) = 2.5;
+                    }
                 } else {
                     density(i,j) = 0.2;
                     energy(i,j) = 1.0;
                 }
+
 
                 /*
                  * Produces square of size 60x60 in the centre of the domain
@@ -831,91 +843,145 @@ double Cleverleaf::calc_dt_knl(
     double dtv_safe = 0.5;
     double dtdiv_safe = 0.7;
 
+    /*
+     * Original timestep
+     */
+//    for(int k = ifirst(1); k <= ilast(1); k++) {
+//        for(int j = ifirst(0); j <= ilast(0); j++){
+//
+//            dsx=celldx(j,k);
+//            dsy=celldy(j,k);
+//
+//            cc=soundspeed(j,k)*soundspeed(j,k);
+//            cc=cc+2.0*viscosity(j,k)/density0(j,k);
+//            cc=max(sqrt(cc),1.0e-16);
+//
+//            dtct=min(dsx,dsy)/cc;
+//
+//            div=0.0;
+//
+//            dv1=(xvel0(j  ,k)+xvel0(j  ,k+1))*xarea(j  ,k);
+//            dv2=(xvel0(j+1,k)+xvel0(j+1,k+1))*xarea(j+1,k);
+//
+//            div=div+dv2-dv1;
+//
+//            dtut=2.0*volume(j,k)/max(abs(dv1),max(abs(dv2),1.0e-16*volume(j,k)));
+//
+//            dv1=(yvel0(j,k  )+yvel0(j+1,k  ))*yarea(j,k  );
+//            dv2=(yvel0(j,k+1)+yvel0(j+1,k+1))*yarea(j,k+1);
+//
+//            div=div+dv2-dv1;
+//
+//            dtvt=2.0*volume(j,k)/max(abs(dv1),max(abs(dv2),1.0e-16*volume(j,k)));
+//
+//            div=div/(2.0*volume(j,k));
+//
+//            if (div < -1.0e-16) {
+//                dtdivt=-1.0/div;
+//            } else {
+//                dtdivt=1.0e+21;
+//            } 
+//
+//            if (dtct*dtc_safe < dt_min_val) {
+//                jldt=j;
+//                kldt=k;
+//                dt_min_val=dtct*dtc_safe;
+//                dtl_control=1;
+//                xl_pos=cellx(j,k);
+//                yl_pos=celly(j,k);
+//            } 
+//
+//            if (dtut*dtu_safe < dt_min_val) {
+//                jldt=j;
+//                kldt=k;
+//                dt_min_val=dtut*dtu_safe;
+//                dtl_control=2;
+//                xl_pos=cellx(j,k);
+//                yl_pos=celly(j,k);
+//            } 
+//
+//            if (dtvt*dtv_safe < dt_min_val) {
+//                jldt=j;
+//                kldt=k;
+//                dt_min_val=dtvt*dtv_safe;
+//                dtl_control=3;
+//                xl_pos=cellx(j,k);
+//                yl_pos=celly(j,k);
+//            } 
+//
+//            if (dtdivt*dtdiv_safe < dt_min_val) {
+//                jldt=j;
+//                kldt=k;
+//                dt_min_val=dtdivt*dtdiv_safe;
+//                dtl_control=4;
+//                xl_pos=cellx(j,k);
+//                yl_pos=celly(j,k);
+//            } 
+//        }
+//    }
+
+    /*
+     * new timestep
+     */
     for(int k = ifirst(1); k <= ilast(1); k++) {
         for(int j = ifirst(0); j <= ilast(0); j++){
 
-            dsx=celldx(j,k);
-            dsy=celldy(j,k);
+       dsx=celldx(j,k);
+       dsy=celldy(j,k);
 
-            cc=soundspeed(j,k)*soundspeed(j,k);
-            cc=cc+2.0*viscosity(j,k)/density0(j,k);
-            cc=max(sqrt(cc),1.0e-16);
+       cc=soundspeed(j,k)*soundspeed(j,k);
+       cc=cc+2.0*viscosity(j,k)/density0(j,k);
+       cc=max(sqrt(cc),1.0e-16);
 
-            dtct=min(dsx,dsy)/cc;
+       dtct=dtc_safe*min(dsx,dsy)/cc;
 
-            div=0.0;
+       div=0.0;
 
-            dv1=(xvel0(j  ,k)+xvel0(j  ,k+1))*xarea(j  ,k);
-            dv2=(xvel0(j+1,k)+xvel0(j+1,k+1))*xarea(j+1,k);
+       dv1=(xvel0(j  ,k)+xvel0(j  ,k+1))*xarea(j  ,k);
+       dv2=(xvel0(j+1,k)+xvel0(j+1,k+1))*xarea(j+1,k);
 
-            div=div+dv2-dv1;
+       div=div+dv2-dv1;
 
-            dtut=2.0*volume(j,k)/max(abs(dv1),max(abs(dv2),1.0e-16*volume(j,k)));
+       dtut=dtu_safe*2.0*volume(j,k)/max(abs(dv1),max(abs(dv2),1.0e-16*volume(j,k)));
 
-            dv1=(yvel0(j,k  )+yvel0(j+1,k  ))*yarea(j,k  );
-            dv2=(yvel0(j,k+1)+yvel0(j+1,k+1))*yarea(j,k+1);
+       dv1=(yvel0(j,k  )+yvel0(j+1,k  ))*yarea(j,k  );
+       dv2=(yvel0(j,k+1)+yvel0(j+1,k+1))*yarea(j,k+1);
 
-            div=div+dv2-dv1;
+       div=div+dv2-dv1;
 
-            dtvt=2.0*volume(j,k)/max(abs(dv1),max(abs(dv2),1.0e-16*volume(j,k)));
+       dtvt=dtv_safe*2.0*volume(j,k)/max(abs(dv1),max(abs(dv2),1.0e-16*volume(j,k)));
 
-            div=div/(2.0*volume(j,k));
+       div=div/(2.0*volume(j,k));
 
-            if (div < -1.0e-16) {
-                dtdivt=-1.0/div;
-            } else {
-                dtdivt=1.0e+21;
-            } 
+       if (div < -1.0e-16) {
+         dtdivt=dtdiv_safe*(-1.0/div);
+       } else {
+         dtdivt=1.0e+21;
+       }
 
-            if (dtct*dtc_safe < dt_min_val) {
-                jldt=j;
-                kldt=k;
-                dt_min_val=dtct*dtc_safe;
-                dtl_control=1;
-                xl_pos=cellx(j,k);
-                yl_pos=celly(j,k);
-            } 
+       dt_min_val=min(dtct,min(dtut,min(dtvt,min(dtdivt, dt_min_val))));
 
-            if (dtut*dtu_safe < dt_min_val) {
-                jldt=j;
-                kldt=k;
-                dt_min_val=dtut*dtu_safe;
-                dtl_control=2;
-                xl_pos=cellx(j,k);
-                yl_pos=celly(j,k);
-            } 
-
-            if (dtvt*dtv_safe < dt_min_val) {
-                jldt=j;
-                kldt=k;
-                dt_min_val=dtvt*dtv_safe;
-                dtl_control=3;
-                xl_pos=cellx(j,k);
-                yl_pos=celly(j,k);
-            } 
-
-            if (dtdivt*dtdiv_safe < dt_min_val) {
-                jldt=j;
-                kldt=k;
-                dt_min_val=dtdivt*dtdiv_safe;
-                dtl_control=4;
-                xl_pos=cellx(j,k);
-                yl_pos=celly(j,k);
-            } 
         }
     }
 
+//    for(int k = ifirst(1); k <= ilast(1); k++) {
+//        for(int j = ifirst(0); j <= ilast(0); j++){
+//          if(dt_min(j,k) < dt_min_val)
+//              dt_min_val=dt_min(j,k);
+//        }
+//    }
+
     tbox::pout << "Timestep information:" << std::endl;
-    tbox::pout << "\tj, k  : " << jldt << "," << kldt << std::endl;
-    tbox::pout << "\tx, y  : " << cellx(jldt,kldt) << "," << celly(jldt,kldt) << std::endl;
+//    tbox::pout << "\tj, k  : " << jldt << "," << kldt << std::endl;
+//    tbox::pout << "\tx, y  : " << cellx(jldt,kldt) << "," << celly(jldt,kldt) << std::endl;
     tbox::pout << "\ttimestep : " << dt_min_val << std::endl;
-    tbox::pout << "\tCell velocities:" << std::endl;
-    tbox::pout << "\t\t" << xvel0(jldt  ,kldt  ) << "," << yvel0(jldt  ,kldt  ) << std::endl;
-    tbox::pout << "\t\t" << xvel0(jldt+1,kldt  ) << "," << yvel0(jldt+1,kldt  ) << std::endl;
-    tbox::pout << "\t\t" << xvel0(jldt+1,kldt+1) << "," << yvel0(jldt+1,kldt+1) << std::endl;
-    tbox::pout << "\t\t" << xvel0(jldt  ,kldt+1) << "," << yvel0(jldt  ,kldt+1) << std::endl;
-    tbox::pout << "\tdensity, energy, pressure, soundspeed " << std::endl;
-    tbox::pout << "\t" << density0(jldt, kldt) << "," << energy(jldt,kldt) << "," << pressure(jldt,kldt) << "," << soundspeed(jldt,kldt) << std::endl;
+//    tbox::pout << "\tCell velocities:" << std::endl;
+//    tbox::pout << "\t\t" << xvel0(jldt  ,kldt  ) << "," << yvel0(jldt  ,kldt  ) << std::endl;
+//    tbox::pout << "\t\t" << xvel0(jldt+1,kldt  ) << "," << yvel0(jldt+1,kldt  ) << std::endl;
+//    tbox::pout << "\t\t" << xvel0(jldt+1,kldt+1) << "," << yvel0(jldt+1,kldt+1) << std::endl;
+//    tbox::pout << "\t\t" << xvel0(jldt  ,kldt+1) << "," << yvel0(jldt  ,kldt+1) << std::endl;
+//    tbox::pout << "\tdensity, energy, pressure, soundspeed " << std::endl;
+//    tbox::pout << "\t" << density0(jldt, kldt) << "," << energy(jldt,kldt) << "," << pressure(jldt,kldt) << "," << soundspeed(jldt,kldt) << std::endl;
 
     //cout << "RETURNING " << dt_min_val << " FROM calc_dt_knl()" << endl;
     return dt_min_val;

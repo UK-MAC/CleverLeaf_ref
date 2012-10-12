@@ -4,7 +4,7 @@
 #include "SAMRAI/hier/VariableDatabase.h"
 #include "SAMRAI/hier/Patch.h"
 
-#define LOOPPRINT 1
+#define LOOPPRINT 0
 
 LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
         const std::string& object_name,
@@ -146,6 +146,8 @@ double LagrangianEulerianIntegrator::getLevelDt(
         patch_dt = d_patch_strategy->
             calc_dt_knl(*patch);
 
+        std::cout << " patch_dt = " << patch_dt << std::endl;
+
         dt = tbox::MathUtilities<double>::Min(dt, patch_dt);
     }
 #if LOOPPRINT
@@ -166,11 +168,11 @@ double LagrangianEulerianIntegrator::getLevelDt(
     /*
      * TODO: Hard code the max_timestep here for now...
      */
-//    if (global_dt > 0.04) {
-//        return 0.04;
-//    } else {
+    if (global_dt > 0.04) {
+        return 0.04;
+    } else {
         return global_dt;
-//    }
+    }
 }
 
 double LagrangianEulerianIntegrator::advanceLevel(
