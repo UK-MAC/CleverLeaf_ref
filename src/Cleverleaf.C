@@ -448,11 +448,11 @@ void Cleverleaf::initializeDataOnPatch(
 //                    energy(i,j) = 1.0;
 //                }
 
-                if ((vertexx[v1] >= 0.0 && vertexx[v1] < 5.0)) {
-                    if ((vertexy[v1] >= 0.0 && vertexy[v1] > 2.0)) {
+
+                if ((vertexx[v1] >= 0.0 && vertexx[v1] < 5.0) && 
+                    (vertexy[v1] >= 0.0 && vertexy[v1] < 5.0)) {
                         density(i,j) = 1.0;
                         energy(i,j) = 2.5;
-                    }
                 } else {
                     density(i,j) = 0.2;
                     energy(i,j) = 1.0;
