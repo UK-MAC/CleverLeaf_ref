@@ -449,7 +449,7 @@ void Cleverleaf::initializeDataOnPatch(
 //                }
 
 
-                if ((vertexx[v1] >= 0.0 && vertexx[v1] < 5.0) && 
+                if ((vertexx[v1] >= 0.0 && vertexx[v1] < 2.0) && 
                     (vertexy[v1] >= 0.0 && vertexy[v1] < 5.0)) {
                         density(i,j) = 1.0;
                         energy(i,j) = 2.5;
@@ -1804,56 +1804,56 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                         ifirst, ilast,
                         xmin, xmax, ymin, ymax, nx);
 
-                reflectPhysicalBoundary(
+                reflectXNodeBoundary(
                         xvel0,
                         BdryLoc::YLO,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax+1, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectXNodeBoundary(
                         xvel1,
                         BdryLoc::YLO,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax+1, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectYNodeBoundary(
                         yvel0,
                         BdryLoc::YLO,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax+1, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectYNodeBoundary(
                         yvel1,
                         BdryLoc::YLO,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax+1, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectXEdgeBoundary(
                         vol_flux_x,
                         BdryLoc::YLO,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectYEdgeBoundary(
                         vol_flux_y,
                         BdryLoc::YLO,
                         depth,
                         ifirst, ilast,
                         xmin, xmax, ymin, ymax+1, nx);
 
-                reflectPhysicalBoundary(
+                reflectXEdgeBoundary(
                         mass_flux_x,
                         BdryLoc::YLO,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectYEdgeBoundary(
                         mass_flux_y,
                         BdryLoc::YLO,
                         depth,
@@ -1915,56 +1915,56 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                         xmin, xmax, ymin, ymax,
                         nx);
 
-                reflectPhysicalBoundary(
+                reflectXNodeBoundary(
                         xvel0,
                         BdryLoc::YHI,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax+1, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectXNodeBoundary(
                         xvel1,
                         BdryLoc::YHI,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax+1, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectYNodeBoundary(
                         yvel0,
                         BdryLoc::YHI,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax+1, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectYNodeBoundary(
                         yvel1,
                         BdryLoc::YHI,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax+1, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectXEdgeBoundary(
                         vol_flux_x,
                         BdryLoc::YHI,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectYEdgeBoundary(
                         vol_flux_y,
                         BdryLoc::YHI,
                         depth,
                         ifirst, ilast,
                         xmin, xmax, ymin, ymax+1, nx);
 
-                reflectPhysicalBoundary(
+                reflectXEdgeBoundary(
                         mass_flux_x,
                         BdryLoc::YHI,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectYEdgeBoundary(
                         mass_flux_y,
                         BdryLoc::YHI,
                         depth,
@@ -2022,56 +2022,56 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                         xmin, xmax, ymin, ymax,
                         nx);
 
-                reflectPhysicalBoundary(
+                reflectXNodeBoundary(
                         xvel0,
                         BdryLoc::XLO,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax+1, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectXNodeBoundary(
                         xvel1,
                         BdryLoc::XLO,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax+1, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectYNodeBoundary(
                         yvel0,
                         BdryLoc::XLO,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax+1, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectYNodeBoundary(
                         yvel1,
                         BdryLoc::XLO,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax+1, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectXEdgeBoundary(
                         vol_flux_x,
                         BdryLoc::XLO,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectYEdgeBoundary(
                         vol_flux_y,
                         BdryLoc::XLO,
                         depth,
                         ifirst, ilast,
                         xmin, xmax, ymin, ymax+1, nx);
 
-                reflectPhysicalBoundary(
+                reflectXEdgeBoundary(
                         mass_flux_x,
                         BdryLoc::XLO,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectYEdgeBoundary(
                         mass_flux_y,
                         BdryLoc::XLO,
                         depth,
@@ -2131,56 +2131,56 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                         xmin, xmax, ymin, ymax,
                         nx);
 
-                reflectPhysicalBoundary(
+                reflectXNodeBoundary(
                         xvel0,
                         BdryLoc::XHI,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax+1, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectXNodeBoundary(
                         xvel1,
                         BdryLoc::XHI,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax+1, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectYNodeBoundary(
                         yvel0,
                         BdryLoc::XHI,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax+1, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectYNodeBoundary(
                         yvel1,
                         BdryLoc::XHI,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax+1, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectXEdgeBoundary(
                         vol_flux_x,
                         BdryLoc::XHI,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectYEdgeBoundary(
                         vol_flux_y,
                         BdryLoc::XHI,
                         depth,
                         ifirst, ilast,
                         xmin, xmax, ymin, ymax+1, nx);
 
-                reflectPhysicalBoundary(
+                reflectXEdgeBoundary(
                         mass_flux_x,
                         BdryLoc::XHI,
                         depth,
                         ifirst, ilast,
                         xmin, xmax+1, ymin, ymax, nx+1);
 
-                reflectPhysicalBoundary(
+                reflectYEdgeBoundary(
                         mass_flux_y,
                         BdryLoc::XHI,
                         depth,
@@ -2254,6 +2254,233 @@ void Cleverleaf::reflectPhysicalBoundary(
                 break;
 
             default : tbox::perr << "[ERROR] Unknown edge location in reflectPhysicalBoundary... " << std::endl;
+                      exit(-1);
+        }
+}
+
+
+void Cleverleaf::reflectXNodeBoundary(
+        double* data,
+        BdryLoc::Type boundary,
+        int depth,
+        hier::Index ifirst,
+        hier::Index ilast,
+        int xmin,
+        int xmax,
+        int ymin,
+        int ymax,
+        int nx)
+{
+        switch(boundary) {
+            case (BdryLoc::YLO) :
+                /*
+                 * Reflect bottom edge...
+                 */
+                for (int k=1; k <= depth; k++) {
+                    for (int j= ifirst(0)-depth; j <= ilast(0)+depth; j++) {
+                        data(j, ifirst(1)-k) = data(j, (ifirst(1)+(k)));
+                    }
+                }
+                break;
+
+            case (BdryLoc::YHI) :
+                
+                /*
+                 * Reflect top edge...
+                 */
+                for (int k=1; k <= depth; k++) {
+                    for (int j=ifirst(0)-depth; j <= ilast(0)+1+depth; j++) {
+                        data(j,ilast(1)+1+k) = data(j,ilast(1)+1-k);
+                    }
+                }
+                break;
+
+            case (BdryLoc::XLO) :
+
+                for (int k=ifirst(1)-depth; k <= ilast(1)+1+depth; k++) {
+                    for (int j=1; j <= depth; j++) {
+                        data(ifirst(0)-j,k)= -data(ifirst(0)+j,k);
+
+                        //std::cerr << "q(" << j << "," << ifirst(1)-k << ") = " << data(j,ifirst(1)-k) << ", setting q(" << j << "," << ifirst(1)+(k-1) << ") = " << -data(j, (ifirst(1)+(k-1))) << std::endl;
+                    }
+                }
+                break;
+
+            case (BdryLoc::XHI) :
+                for (int k=ifirst(1)-depth; k <= ilast(1)+1+depth; k++) {
+                    for (int j=1; j <= depth; j++) {
+                        data(ilast(0)+1+j,k)= -data(ilast(0)+1-j,k);
+                    }
+                }
+                break;
+
+            default : tbox::perr << "[ERROR] Unknown edge location in reflectXQuantBoundary... " << std::endl;
+                      exit(-1);
+        }
+}
+
+void Cleverleaf::reflectYNodeBoundary(
+        double* data,
+        BdryLoc::Type boundary,
+        int depth,
+        hier::Index ifirst,
+        hier::Index ilast,
+        int xmin,
+        int xmax,
+        int ymin,
+        int ymax,
+        int nx)
+{
+        switch(boundary) {
+            case (BdryLoc::YLO) :
+                /*
+                 * Reflect bottom edge...
+                 */
+                for (int k=1; k <= depth; k++) {
+                    for (int j=ifirst(0)-depth; j <= ilast(0)+1+depth; j++) {
+                        data(j, ifirst(1)-k) = -data(j, ifirst(1)+k);
+                    }
+                }
+                break;
+
+            case (BdryLoc::YHI) :
+                
+                /*
+                 * Reflect top edge...
+                 */
+                for (int k=1; k <= depth; k++) {
+                    for (int j=ifirst(0)-depth; j <= ilast(0)+1+depth; j++) {
+                        data(j,ilast(1)+1+k) = -data(j,ilast(1)+1-k);
+                    }
+                }
+                break;
+
+            case (BdryLoc::XLO) :
+
+                for (int k=ifirst(1)-depth; k <= ilast(1)+1+depth; k++) {
+                    for (int j=1; j <= depth; j++) {
+                        data(ifirst(0)-j,k) = data(ifirst(0)+j,k);
+                    }
+                }
+                break;
+
+            case (BdryLoc::XHI) :
+                for (int k=ifirst(1)-depth; k <= ilast(1)+1+depth; k++) {
+                    for (int j=1; j <= depth; j++) {
+                        data(ilast(0)+1+j,k) = data(ilast(0)+1-j,k);
+                    }
+                }
+                break;
+
+            default : tbox::perr << "[ERROR] Unknown edge location in reflectYQuantBoundary... " << std::endl;
+                      exit(-1);
+        }
+}
+
+void Cleverleaf::reflectXEdgeBoundary(
+        double* data,
+        BdryLoc::Type boundary,
+        int depth,
+        hier::Index ifirst,
+        hier::Index ilast,
+        int xmin,
+        int xmax,
+        int ymin,
+        int ymax,
+        int nx)
+{
+        switch(boundary) {
+            case (BdryLoc::YLO) :
+                for (int k=1; k <= depth; k++) {
+                    for (int j= ifirst(0)-depth; j <= ilast(0)+1+depth; j++) {
+                        data(j, ifirst(1)-k) = data(j, (ifirst(1)+(k)));
+                    }
+                }
+                break;
+
+            case (BdryLoc::YHI) :
+                for (int k=1; k <= depth; k++) {
+                    for (int j=ifirst(0)-depth; j <= ilast(0)+1+depth; j++) {
+                        data(j,ilast(1)+k) = data(j,ilast(1)-k);
+                    }
+                }
+                break;
+
+            case (BdryLoc::XLO) :
+                for (int k=ifirst(1)-depth; k <= ilast(1)+depth; k++) {
+                    for (int j=1; j <= depth; j++) {
+                        data(ifirst(0)-j,k)= -data(ifirst(0)+j,k);
+                    }
+                }
+                break;
+
+            case (BdryLoc::XHI) :
+                for (int k=ifirst(1)-depth; k <= ilast(1)+depth; k++) {
+                    for (int j=1; j <= depth; j++) {
+                        data(ilast(0)+1+j,k)= -data(ilast(0)+1-j,k);
+                    }
+                }
+                break;
+
+            default : tbox::perr << "[ERROR] Unknown edge location in reflectXQuantBoundary... " << std::endl;
+                      exit(-1);
+        }
+}
+
+void Cleverleaf::reflectYEdgeBoundary(
+        double* data,
+        BdryLoc::Type boundary,
+        int depth,
+        hier::Index ifirst,
+        hier::Index ilast,
+        int xmin,
+        int xmax,
+        int ymin,
+        int ymax,
+        int nx)
+{
+        switch(boundary) {
+            case (BdryLoc::YLO) :
+                /*
+                 * Reflect bottom edge...
+                 */
+                for (int k=1; k <= depth; k++) {
+                    for (int j=ifirst(0)-depth; j <= ilast(0)+depth; j++) {
+                        data(j, ifirst(1)-k) = -data(j, ifirst(1)+k);
+                    }
+                }
+                break;
+
+            case (BdryLoc::YHI) :
+                
+                /*
+                 * Reflect top edge...
+                 */
+                for (int k=1; k <= depth; k++) {
+                    for (int j=ifirst(0)-depth; j <= ilast(0)+depth; j++) {
+                        data(j,ilast(1)+1+k) = -data(j,ilast(1)+1-k);
+                    }
+                }
+                break;
+
+            case (BdryLoc::XLO) :
+
+                for (int k=ifirst(1)-depth; k <= ilast(1)+1+depth; k++) {
+                    for (int j=1; j <= depth; j++) {
+                        data(ifirst(0)-j,k) = data(ifirst(0)+j,k);
+                    }
+                }
+                break;
+
+            case (BdryLoc::XHI) :
+                for (int k=ifirst(1)-depth; k <= ilast(1)+1+depth; k++) {
+                    for (int j=1; j <= depth; j++) {
+                        data(ilast(0)+j,k) = data(ilast(0)-j,k);
+                    }
+                }
+                break;
+
+            default : tbox::perr << "[ERROR] Unknown edge location in reflectYQuantBoundary... " << std::endl;
                       exit(-1);
         }
 }
