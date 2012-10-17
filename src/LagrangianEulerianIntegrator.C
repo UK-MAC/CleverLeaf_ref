@@ -729,12 +729,19 @@ void LagrangianEulerianIntegrator::printFieldSummary(
         int step)
 {
     tbox::Pointer<hier::PatchLevel> level = d_current_hierarchy->getPatchLevel(0);
+    const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
 
     double vol;
     double mass;
     double press;
     double ie;
     double ke;
+
+    double global_vol;
+    double global_mass;
+    double global_press;
+    double global_ie;
+    double global_ke;
 
     for(hier::PatchLevel::Iterator p(level);p;p++){
 
@@ -745,11 +752,23 @@ void LagrangianEulerianIntegrator::printFieldSummary(
         d_patch_strategy->field_summary(*patch, &vol, &mass, &press, &ie, &ke);
     }
 
-    const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
+    global_vol = vol;
+    global_mass = mass;
+    global_press = press;
+    global_ie = ie;
+    global_ke = ke;
+
+    if (mpi.getSize() > 1) {
+        mpi.AllReduce(&global_vol, 1, MPI_SUM);
+        mpi.AllReduce(&global_mass, 1, MPI_SUM);
+        mpi.AllReduce(&global_press, 1, MPI_SUM);
+        mpi.AllReduce(&global_ie, 1, MPI_SUM);
+        mpi.AllReduce(&global_ke, 1, MPI_SUM);
+    }
 
     if (mpi.getRank() == 0) {
         printf("%13s%16s %16s %16s %16s %16s %16s %16s\n", " ", "Volume", "Mass", "Density", "Pressure", "Internal Energy", "Kinetic Energy", "Total Energy");
-        printf("%6s %7d %16.4E %16.4E %16.4E %16.4E %16.4E %16.4E %16.4E\n", "step:", step, vol, mass, mass/vol, press/vol, ie, ke, ie+ke);
+        printf("%6s %7d %16.4E %16.4E %16.4E %16.4E %16.4E %16.4E %16.4E\n", "step:", step, global_vol, global_mass, global_mass/global_vol, global_press/global_vol, global_ie, global_ke, global_ie+global_ke);
 
     }
 }
