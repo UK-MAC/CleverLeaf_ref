@@ -448,9 +448,14 @@ void Cleverleaf::initializeDataOnPatch(
 //                    energy(i,j) = 1.0;
 //                }
 
+                if ((vertexx[v1] >= 0.0 && vertexx[v1] < 5.0) && 
+                    (vertexy[v1] >= 0.0 && vertexy[v1] < 1.9999999999)) {
 
-                if ((vertexx[v1] >= 0.0 && vertexx[v1] < 2.0) && 
-                    (vertexy[v1] >= 0.0 && vertexy[v1] < 5.0)) {
+                       if ((vertexy[v1] > 1.8 && i == 1)) {
+                           std::cout << "vertexy[" << i << "," << j << "]" << std::endl;
+                           std::cout << vertexy[v1] << std::endl;
+                       }
+
                         density(i,j) = 1.0;
                         energy(i,j) = 2.5;
                 } else {
@@ -837,7 +842,7 @@ double Cleverleaf::calc_dt_knl(
 
     double dt_min_val = 1.0e+21;
     double small=0;
-    double dtc_safe = 0.9;
+    double dtc_safe = 0.7;
     int dtl_control;
     double dtu_safe = 0.5;
     double dtv_safe = 0.5;
