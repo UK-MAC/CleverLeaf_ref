@@ -161,10 +161,6 @@ double LagrangianEulerianIntegrator::getLevelDt(
     }
 
 
-    if (initial_time) {
-        return 0.04;
-    }
-
     /*
      * TODO: Hard code the max_timestep here for now...
      */
