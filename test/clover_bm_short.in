@@ -1,6 +1,6 @@
 Main {
     dim = 2
-    vis_dump_interval = 1
+    vis_dump_interval = 5
     field_summary_interval = 1
 }
 
@@ -28,6 +28,7 @@ PatchHierarchy {
 
 Cleverleaf {
     vis = TRUE
+    vis_dump_interval = 5
 }
 
 LagrangianEulerianIntegrator{}
@@ -49,7 +50,7 @@ GriddingAlgorithm {
 
 TimeRefinementIntegrator {
     start_time = 0.e0
-    end_time = 0.5e0
+    end_time = 0.8e0
     grow_dt = 1.5e0
-    max_integrator_steps=100
+    max_integrator_steps=87
 }
