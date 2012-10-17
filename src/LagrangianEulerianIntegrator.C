@@ -589,9 +589,9 @@ void LagrangianEulerianIntegrator::revert(
 #if DEBUG
           tbox::pout << "Copying " << revert_var()->getName() << " back to tl0" << std::endl;
 #endif
-         tbox::Pointer<hier::PatchData> src_data =
-            patch->getPatchData(revert_var(), d_new);
          tbox::Pointer<hier::PatchData> dst_data =
+            patch->getPatchData(revert_var(), d_new);
+         tbox::Pointer<hier::PatchData> src_data =
             patch->getPatchData(revert_var(), d_current);
 
         dst_data->copy(*src_data);
