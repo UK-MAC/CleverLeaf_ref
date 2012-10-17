@@ -748,7 +748,7 @@ void LagrangianEulerianIntegrator::printFieldSummary(
     const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
 
     if (mpi.getRank() == 0) {
-        printf("%13s%16s %16s %16s %16s %16s %16s %16s\n", " ", "Volume", "Mass", "Density", "Pressure", "Interna Energy", "Kinetic Energy", "Total Energy");
+        printf("%13s%16s %16s %16s %16s %16s %16s %16s\n", " ", "Volume", "Mass", "Density", "Pressure", "Internal Energy", "Kinetic Energy", "Total Energy");
         printf("%6s %7d %16.4E %16.4E %16.4E %16.4E %16.4E %16.4E %16.4E\n", "step:", step, vol, mass, mass/vol, press/vol, ie, ke, ie+ke);
 
     }
