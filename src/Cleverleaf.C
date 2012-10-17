@@ -1504,9 +1504,6 @@ void Cleverleaf::advec_mom(hier::Patch& patch,
 
     int mom_sweep=direction+2*(sweep_number-1);
 
-    tbox::perr << mom_sweep << std::endl;
-
-
     if (mom_sweep == 1) { //! x 1
         for(int k=ifirst(1)-2; k <= ilast(1)+2; k++) {
             for(int j=ifirst(0)-2; j <= ilast(0)+2; j++) {
