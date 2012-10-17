@@ -1,6 +1,6 @@
 Main {
     dim = 2
-    vis_dump_interval = 5
+    vis_dump_interval = 0
     field_summary_interval = 1
 }
 
@@ -27,8 +27,8 @@ PatchHierarchy {
 }
 
 Cleverleaf {
-    vis = TRUE
-    vis_dump_interval = 5
+    vis = FALSE
+    vis_dump_interval = 0
 }
 
 LagrangianEulerianIntegrator{}
