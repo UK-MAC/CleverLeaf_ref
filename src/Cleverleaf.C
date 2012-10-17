@@ -450,12 +450,6 @@ void Cleverleaf::initializeDataOnPatch(
 
                 if ((vertexx[v1] >= 0.0 && vertexx[v1] < 5.0) && 
                     (vertexy[v1] >= 0.0 && vertexy[v1] < 1.9999999999)) {
-
-                       if ((vertexy[v1] > 1.8 && i == 1)) {
-                           std::cout << "vertexy[" << i << "," << j << "]" << std::endl;
-                           std::cout << vertexy[v1] << std::endl;
-                       }
-
                         density(i,j) = 1.0;
                         energy(i,j) = 2.5;
                 } else {
