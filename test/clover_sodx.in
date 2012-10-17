@@ -51,5 +51,5 @@ TimeRefinementIntegrator {
     start_time = 0.e0
     end_time = 3.0e0
     grow_dt = 1.5e0
-    max_integrator_steps=6
+    max_integrator_steps=75
 }
