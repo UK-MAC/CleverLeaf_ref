@@ -473,6 +473,16 @@ void LagrangianEulerianIntegrator::registerVariable(
                 cur_id,
                 scr_id,
                 refine_op);
+
+        if(var->getName() == "denisty" ||
+                var->getName() == "energy" ||
+                var->getName() == "velocity") {
+            d_bdry_fill_prime_halos->registerRefine(
+                    new_id,
+                    new_id,
+                    scr_id,
+                    refine_op);
+        }
     }
 
     if((var_exchanges & PRE_LAGRANGE_EXCH) == PRE_LAGRANGE_EXCH) {
@@ -514,33 +524,57 @@ void LagrangianEulerianIntegrator::registerVariable(
 #ifdef DEBUG
         tbox::pout << "Registering " << var->getName() << " for pre-sweep1 cell exchange" << std::endl;
 #endif
-        d_bdry_fill_pre_sweep1_cell->registerRefine(
-                cur_id,
-                cur_id,
-                scr_id,
-                refine_op);
+        if(var->getName() == "volflux") {
+            d_bdry_fill_pre_sweep1_cell->registerRefine(
+                    cur_id,
+                    cur_id,
+                    scr_id,
+                    refine_op);
+        } else {
+            d_bdry_fill_pre_sweep1_cell->registerRefine(
+                    new_id,
+                    new_id,
+                    scr_id,
+                    refine_op);
+        }
     }
 
     if((var_exchanges & PRE_SWEEP_1_MOM_EXCH) == PRE_SWEEP_1_MOM_EXCH) {
 #ifdef DEBUG
         tbox::pout << "Registering " << var->getName() << " for pre-sweep1 mom exchange" << std::endl;
 #endif
+        if(var->getName() == "massflux") {
         d_bdry_fill_pre_sweep1_mom->registerRefine(
                 cur_id,
                 cur_id,
                 scr_id,
                 refine_op);
+        } else {
+            d_bdry_fill_pre_sweep1_cell->registerRefine(
+                    new_id,
+                    new_id,
+                    scr_id,
+                    refine_op);
+        }
     }
 
     if((var_exchanges & PRE_SWEEP_2_MOM_EXCH) == PRE_SWEEP_2_MOM_EXCH) {
 #ifdef DEBUG
         tbox::pout << "Registering " << var->getName() << " for pre-sweep1 mom exchange" << std::endl;
 #endif
-        d_bdry_fill_pre_sweep2_mom->registerRefine(
-                cur_id,
-                cur_id,
-                scr_id,
-                refine_op);
+        if(var->getName() == "massflux") {
+            d_bdry_fill_pre_sweep2_mom->registerRefine(
+                    cur_id,
+                    cur_id,
+                    scr_id,
+                    refine_op);
+        } else {
+            d_bdry_fill_pre_sweep2_mom->registerRefine(
+                    new_id,
+                    new_id,
+                    scr_id,
+                    refine_op);
+        }
     }
 
     d_var_cur_data.setFlag(cur_id);
