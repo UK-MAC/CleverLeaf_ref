@@ -404,7 +404,24 @@ void LagrangianEulerianIntegrator::applyGradientDetector (
         const double error_data_time,
         const int tag_index,
         const bool initial_time,
-        const bool uses_richardson_extrapolation_too){}
+        const bool uses_richardson_extrapolation_too)
+{
+
+   tbox::Pointer<hier::PatchLevel> level(hierarchy->getPatchLevel(level_number));
+
+   const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
+
+   //d_bdry_sched_advance[level_number]->fillData(error_data_time);
+
+   for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
+      tbox::Pointer<hier::Patch> patch(*ip);
+      d_patch_strategy->
+      tagGradientDetectorCells(*patch,
+         error_data_time,
+         initial_time,
+         tag_index);
+   }
+}
 
 /*
  * Serializable methods.

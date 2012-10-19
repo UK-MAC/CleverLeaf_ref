@@ -155,7 +155,7 @@ class LagrangianEulerianPatchStrategy:
                 hier::Patch& patch,
                 const double regrid_time,
                 const bool initial_error,
-                const int tag_index);
+                const int tag_index) = 0;
 
         /**
          * Get the data context corresponding to the current time.

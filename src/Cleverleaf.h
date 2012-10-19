@@ -219,6 +219,12 @@ class Cleverleaf:
                 int ymax,
                 int nx);
 
+        virtual void tagGradientDetectorCells(
+                hier::Patch& patch,
+                const double regrid_time,
+                const bool initial_error,
+                const int tag_index);
+
     private:
 
         tbox::Pointer<hier::PatchHierarchy> d_hierarchy;

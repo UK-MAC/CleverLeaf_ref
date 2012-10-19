@@ -7,17 +7,6 @@ LagrangianEulerianPatchStrategy::LagrangianEulerianPatchStrategy(
 {
 }
 
-void LagrangianEulerianPatchStrategy::tagGradientDetectorCells(
-                hier::Patch& patch,
-                const double regrid_time,
-                const bool initial_error,
-                const int tag_index)
-{
-    /*
-     * Do nothing!
-     */
-}
-
 void LagrangianEulerianPatchStrategy::setCurrentDataContext(
         tbox::Pointer<hier::VariableContext> context)
 {

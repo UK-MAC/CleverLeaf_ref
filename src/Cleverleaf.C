@@ -2545,3 +2545,71 @@ void Cleverleaf::field_summary(
         }
     }
 }
+
+void Cleverleaf::tagGradientDetectorCells(
+        hier::Patch& patch,
+        const double regrid_time,
+        const bool initial_error,
+        const int tag_index)
+{
+
+    const int error_level_number = patch.getPatchLevelNumber();
+
+    const tbox::Pointer<geom::CartesianPatchGeometry> patch_geom =
+        patch.getPatchGeometry();
+    const double* dx = patch_geom->getDx();
+
+    tbox::Pointer<pdat::CellData<int> > tags = patch.getPatchData(tag_index);
+
+    hier::Box pbox = patch.getBox();
+    hier::BoxContainer domain_boxes;
+    d_grid_geometry->computePhysicalDomain(domain_boxes, patch_geom->getRatio(), hier::BlockId::zero());
+
+    /*
+     * Construct domain bounding box
+     */
+    hier::Box domain(d_dim);
+    for (hier::BoxContainer::Iterator i(domain_boxes); i != domain_boxes.end(); ++i) {
+        domain += *i;
+    }
+
+    const hier::Index domfirst = domain.lower();
+    const hier::Index domlast = domain.upper();
+    const hier::Index ifirst = patch.getBox().lower();
+    const hier::Index ilast = patch.getBox().upper();
+
+    /*
+     * Create a set of temporary tags and set to untagged value.
+     */
+
+    tbox::Pointer<pdat::CellData<int> > temp_tags(new pdat::CellData<int>(
+                pbox,
+                1,
+                d_nghosts));
+
+    temp_tags->fillAll(0);
+
+    /*
+     * Problem specific criteria for step case.
+     */
+    if (error_level_number < 2) {
+        hier::Box tagbox(hier::Index(4, 0), hier::Index(5, 2));
+
+        if (error_level_number == 1) {
+            tagbox.refine(hier::IntVector(d_dim, 2));
+        }
+
+        hier::Box ibox = pbox * tagbox;
+
+        for (pdat::CellIterator itc(ibox); itc; itc++) {
+            (*temp_tags)(itc(), 0) = 1;
+        }
+    }
+
+    /*
+     * Update tags
+     */
+    for (pdat::CellIterator ic(pbox); ic; ic++) {
+        (*tags)(ic(), 0) = (*temp_tags)(ic(), 0);
+    }
+}
