@@ -33,6 +33,8 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
     d_bdry_fill_pre_sweep1_mom = new xfer::RefineAlgorithm(d_dim);
     d_bdry_fill_pre_sweep2_mom = new xfer::RefineAlgorithm(d_dim);
 
+    d_fill_new_level = new xfer::RefineAlgorithm(d_dim);
+
     /*
      * Variable contexts
      *
@@ -200,8 +202,8 @@ double LagrangianEulerianIntegrator::advanceLevel(
      * All halo exchanges are handled by this routine, as well as ensuring correcting
      * stepping over all levels of the AMR hierarchy.
      */
-    level->allocatePatchData(d_var_new_data, new_time);
     level->allocatePatchData(d_var_cur_data, current_time);
+    level->allocatePatchData(d_var_new_data, current_time);
 
     /*
      * PdV kernel, predictor.
@@ -311,7 +313,7 @@ double LagrangianEulerianIntegrator::advanceLevel(
     /*
      * Compute our next dt.
      */
-    return getLevelDt(level,dt,false);
+    return getLevelDt(hierarchy->getPatchLevel(0),dt,false);
 }
 
 void LagrangianEulerianIntegrator::standardLevelSynchronization(
@@ -357,6 +359,8 @@ void LagrangianEulerianIntegrator::initializeLevelData (
     tbox::Pointer<hier::PatchLevel> level(
             hierarchy->getPatchLevel(level_number));
 
+    std::cout << "FILLING LEVEL " << level_number << std::endl;
+
     /* 
      * Allocate storage needed to initialize level and fill data
      * from coarser levels in AMR hierarchy, potentially. Since
@@ -369,6 +373,32 @@ void LagrangianEulerianIntegrator::initializeLevelData (
     } else {
         level->setTime(init_data_time, d_var_cur_data); 
     }
+
+   level->allocatePatchData(d_var_scratch_data, init_data_time);
+
+   const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
+
+   if ((level_number > 0) || !old_level.isNull()) {
+      const tbox::Pointer<hier::PatchHierarchy> patch_hierarchy(hierarchy);
+
+      d_patch_strategy->setCurrentDataContext(d_scratch);
+
+      tbox::Pointer<xfer::RefineSchedule> sched(
+         d_fill_new_level->createSchedule(level,
+            old_level,
+            level_number - 1,
+            hierarchy,
+            NULL));
+
+      mpi.Barrier();
+
+      sched->fillData(init_data_time);
+
+      d_patch_strategy->setCurrentDataContext(d_current);
+
+      mpi.Barrier();
+
+   }
 
     for (hier::PatchLevel::Iterator p(level); p; p++) {
         tbox::Pointer<hier::Patch> patch(*p);
@@ -388,7 +418,7 @@ void LagrangianEulerianIntegrator::initializeLevelData (
     level->deallocatePatchData(d_var_scratch_data);
     d_patch_strategy->setCurrentDataContext(d_current);
 
-    printFieldSummary(init_data_time, 0.04);
+    //printFieldSummary(init_data_time, 0.04);
 
 
 }
@@ -479,7 +509,17 @@ void LagrangianEulerianIntegrator::registerVariable(
         //tbox::pout << "Using LINEAR_REFINE..." << std::endl;
         refine_op = transfer_geom->lookupRefineOperator(var, "LINEAR_REFINE");
     }
-    
+
+    if((var_type & FIELD) == FIELD) {
+
+        d_fill_new_level->registerRefine(
+                cur_id,
+                cur_id,
+                scr_id,
+                refine_op);
+
+    }
+
     if((var_exchanges & PRIME_CELLS_EXCH) == PRIME_CELLS_EXCH) {
 #ifdef DEBUG
         tbox::pout << "Registering " << var->getName() << " for initial exchange..." << std::endl;
