@@ -34,6 +34,7 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
     d_bdry_fill_pre_sweep2_mom = new xfer::RefineAlgorithm(d_dim);
 
     d_fill_new_level = new xfer::RefineAlgorithm(d_dim);
+    d_coarsen_field_data = new xfer::CoarsenAlgorithm(d_dim);
 
     /*
      * Variable contexts
@@ -87,13 +88,14 @@ double LagrangianEulerianIntegrator::getLevelDt(
         const double dt_time,
         const bool initial_time)
 {
+
     const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
 
     double dt = tbox::MathUtilities<double>::getMax();
     double patch_dt;
 
     level->allocatePatchData(d_var_cur_data, dt_time);
-    //level->allocatePatchData(d_var_new_data, dt_time);
+    level->allocatePatchData(d_var_new_data, dt_time);
 
 #if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: getLevelDt: ideal_gas corrector {{{" << std::endl;
@@ -113,9 +115,19 @@ double LagrangianEulerianIntegrator::getLevelDt(
 
     d_patch_strategy->setCurrentDataContext(d_scratch);
     level->allocatePatchData(d_var_scratch_data, dt_time);
+    
+
+    d_bdry_fill_prime_halos->createSchedule(
+                level,
+                level->getLevelNumber()-1,
+                d_current_hierarchy,
+                d_patch_strategy)->fillData(dt_time);
+
     d_bdry_fill_pre_lagrange->createSchedule(level, d_patch_strategy)->fillData(dt_time);
+
     level->deallocatePatchData(d_var_scratch_data);
     d_patch_strategy->setCurrentDataContext(d_current);
+
 
 
 #if LOOPPRINT
@@ -135,7 +147,15 @@ double LagrangianEulerianIntegrator::getLevelDt(
      */
     d_patch_strategy->setCurrentDataContext(d_scratch);
     level->allocatePatchData(d_var_scratch_data, dt_time);
-    d_bdry_fill_post_viscosity->createSchedule(level, d_patch_strategy)->fillData(dt_time);
+
+    //d_bdry_fill_post_viscosity->createSchedule(level, d_patch_strategy)->fillData(dt_time);
+
+    d_bdry_fill_post_viscosity->createSchedule(
+                level,
+                level->getLevelNumber()-1,
+                d_current_hierarchy,
+                d_patch_strategy)->fillData(dt_time);
+
     level->deallocatePatchData(d_var_scratch_data);
     d_patch_strategy->setCurrentDataContext(d_current);
 
@@ -148,7 +168,6 @@ double LagrangianEulerianIntegrator::getLevelDt(
         patch_dt = d_patch_strategy->
             calc_dt_knl(*patch);
 
-        std::cout << " patch_dt = " << patch_dt << std::endl;
 
         dt = tbox::MathUtilities<double>::Min(dt, patch_dt);
     }
@@ -242,7 +261,14 @@ double LagrangianEulerianIntegrator::advanceLevel(
      */
     d_patch_strategy->setCurrentDataContext(d_scratch);
     level->allocatePatchData(d_var_scratch_data, current_time);
-    d_bdry_fill_half_step->createSchedule(level, d_patch_strategy)->fillData(current_time);
+    //d_bdry_fill_half_step->createSchedule(level, d_patch_strategy)->fillData(current_time);
+
+    d_bdry_fill_half_step->createSchedule(
+                level,
+                level->getLevelNumber()-1,
+                hierarchy,
+                d_patch_strategy)->fillData(current_time);
+
     //tbox::pout << "Pressure halo updated!" << std::endl;
     d_patch_strategy->setCurrentDataContext(d_current);
     
@@ -313,7 +339,7 @@ double LagrangianEulerianIntegrator::advanceLevel(
     /*
      * Compute our next dt.
      */
-    return getLevelDt(hierarchy->getPatchLevel(0),dt,false);
+    return getLevelDt(level,dt,false);
 }
 
 void LagrangianEulerianIntegrator::standardLevelSynchronization(
@@ -321,14 +347,38 @@ void LagrangianEulerianIntegrator::standardLevelSynchronization(
         const int coarsest_level,
         const int finest_level,
         const double sync_time,
-        const double old_time){}
+        const double old_time)
+{
+    d_current_hierarchy = hierarchy;
+
+    for (int fine_ln = finest_level; fine_ln > coarsest_level; fine_ln--) {
+       const int coarse_ln = fine_ln - 1;
+
+       tbox::Pointer<hier::PatchLevel> fine_level = hierarchy->getPatchLevel(fine_ln);
+       tbox::Pointer<hier::PatchLevel> coarse_level = hierarchy->getPatchLevel(coarse_ln);
+
+       const tbox::Pointer<hier::PatchHierarchy> patch_hierarchy = hierarchy;
+
+ /*
+  * Sync
+  */
+       d_coarsen_field_data->createSchedule(
+               coarse_level,
+               fine_level)->coarsenData();
+
+
+    }
+}
 
 void LagrangianEulerianIntegrator::synchronizeNewLevels(
         const tbox::Pointer<hier::PatchHierarchy> hierarchy,
         const int coarsest_level,
         const int finest_level,
         const double sync_time,
-        const bool initial_time){}
+        const bool initial_time)
+{
+    d_current_hierarchy = hierarchy;
+}
 
 void LagrangianEulerianIntegrator::resetTimeDependentData(
         const tbox::Pointer<hier::PatchLevel> level,
@@ -359,7 +409,6 @@ void LagrangianEulerianIntegrator::initializeLevelData (
     tbox::Pointer<hier::PatchLevel> level(
             hierarchy->getPatchLevel(level_number));
 
-    std::cout << "FILLING LEVEL " << level_number << std::endl;
 
     /* 
      * Allocate storage needed to initialize level and fill data
@@ -372,6 +421,7 @@ void LagrangianEulerianIntegrator::initializeLevelData (
         level->allocatePatchData(d_var_new_data, init_data_time); 
     } else {
         level->setTime(init_data_time, d_var_cur_data); 
+        level->setTime(init_data_time, d_var_new_data); 
     }
 
    level->allocatePatchData(d_var_scratch_data, init_data_time);
@@ -379,6 +429,7 @@ void LagrangianEulerianIntegrator::initializeLevelData (
    const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
 
    if ((level_number > 0) || !old_level.isNull()) {
+
       const tbox::Pointer<hier::PatchHierarchy> patch_hierarchy(hierarchy);
 
       d_patch_strategy->setCurrentDataContext(d_scratch);
@@ -386,18 +437,14 @@ void LagrangianEulerianIntegrator::initializeLevelData (
       tbox::Pointer<xfer::RefineSchedule> sched(
          d_fill_new_level->createSchedule(level,
             old_level,
-            level_number - 1,
+            level_number-1,
             hierarchy,
-            NULL));
+            d_patch_strategy));
 
-      mpi.Barrier();
 
       sched->fillData(init_data_time);
 
       d_patch_strategy->setCurrentDataContext(d_current);
-
-      mpi.Barrier();
-
    }
 
     for (hier::PatchLevel::Iterator p(level); p; p++) {
@@ -409,14 +456,42 @@ void LagrangianEulerianIntegrator::initializeLevelData (
     }
 
    // TODO: prime_halos_exch here. 
+
+
+//    } else {
+//
+    tbox::Pointer<xfer::RefineSchedule> refine_sched;
+
     d_patch_strategy->setCurrentDataContext(d_scratch);
-    level->allocatePatchData(d_var_scratch_data, init_data_time);
-    tbox::Pointer<xfer::RefineSchedule> refine_sched = d_bdry_fill_prime_halos->createSchedule(level, d_patch_strategy);
+
+    refine_sched = d_bdry_fill_prime_halos->createSchedule(level, d_patch_strategy);
     //refine_sched->printClassData(tbox::pout);
-    refine_sched->fillData(init_data_time);
     //tbox::pout << "Exchanged initial data" << std::endl;
-    level->deallocatePatchData(d_var_scratch_data);
+    refine_sched->fillData(init_data_time);
+    //level->deallocatePatchData(d_var_scratch_data);
     d_patch_strategy->setCurrentDataContext(d_current);
+//   }
+
+    if ((level_number > 0) || !old_level.isNull()) {
+
+        d_patch_strategy->setCurrentDataContext(d_scratch);
+        level->allocatePatchData(d_var_scratch_data, init_data_time);
+
+        const tbox::Pointer<hier::PatchHierarchy> patch_hierarchy(hierarchy);
+
+        d_patch_strategy->setCurrentDataContext(d_scratch);
+
+        tbox::Pointer<xfer::RefineSchedule> sched(
+                d_bdry_fill_prime_halos->createSchedule(level,
+                    old_level,
+                    level_number-1,
+                    hierarchy,
+                    d_patch_strategy));
+
+        sched->fillData(init_data_time);
+
+        d_patch_strategy->setCurrentDataContext(d_current);
+    }
 
     //printFieldSummary(init_data_time, 0.04);
 
@@ -498,16 +573,25 @@ void LagrangianEulerianIntegrator::registerVariable(
             ghosts);
 
     tbox::Pointer<hier::RefineOperator> refine_op;
+    tbox::Pointer<hier::CoarsenOperator> coarsen_op;
 
-    if (var->getName() == "massflux") {
-        //tbox::pout << "Using CONSERVATIVE_LINEAR_REFINE..." << std::endl;
-        refine_op = transfer_geom->lookupRefineOperator(var, "CONSERVATIVE_LINEAR_REFINE");
-    } else if (var->getName() == "volflux") {
-        //tbox::pout << "Using CONSERVATIVE_LINEAR_REFINE..." << std::endl;
-        refine_op = transfer_geom->lookupRefineOperator(var, "CONSERVATIVE_LINEAR_REFINE");
-    } else {
-        //tbox::pout << "Using LINEAR_REFINE..." << std::endl;
+//    if (var->getName() == "massflux") {
+//        //tbox::pout << "Using CONSERVATIVE_LINEAR_REFINE..." << std::endl;
+//        refine_op = transfer_geom->lookupRefineOperator(var, "CONSERVATIVE_LINEAR_REFINE");
+//    } else if (var->getName() == "volflux") {
+//        //tbox::pout << "Using CONSERVATIVE_LINEAR_REFINE..." << std::endl;
+//        refine_op = transfer_geom->lookupRefineOperator(var, "CONSERVATIVE_LINEAR_REFINE");
+//    } else if (var->getName() == "velocity") {
+//        //tbox::pout << "Using LINEAR_REFINE..." << std::endl;
+//        refine_op = transfer_geom->lookupRefineOperator(var, "LINEAR_REFINE");
+//    }
+
+    if(var->getName() == "velocity" || var->getName()=="vertexdeltas" || var->getName()=="vertexcoords") {
         refine_op = transfer_geom->lookupRefineOperator(var, "LINEAR_REFINE");
+        coarsen_op = transfer_geom->lookupCoarsenOperator(var, "CONSTANT_COARSEN");
+
+    } else {
+        refine_op = transfer_geom->lookupRefineOperator(var, "CONSERVATIVE_LINEAR_REFINE");
     }
 
     if((var_type & FIELD) == FIELD) {
@@ -518,6 +602,22 @@ void LagrangianEulerianIntegrator::registerVariable(
                 scr_id,
                 refine_op);
 
+        if (var->getName() == "velocity") {
+            d_coarsen_field_data->registerCoarsen(
+                    cur_id,
+                    cur_id,
+                    coarsen_op);
+        } else if (var->getName() == "density") {
+                d_coarsen_field_data->registerCoarsen(
+                        cur_id,
+                        cur_id,
+                        transfer_geom->lookupCoarsenOperator(var, "VOLUME_WEIGHTED_COARSEN"));
+        } else if (var->getName() == "energy") {
+            d_coarsen_field_data->registerCoarsen(
+                    cur_id,
+                    cur_id,
+                    transfer_geom->lookupCoarsenOperator(var, "MASS_WEIGHTED_COARSEN"));
+        }
     }
 
     if((var_exchanges & PRIME_CELLS_EXCH) == PRIME_CELLS_EXCH) {
@@ -706,7 +806,13 @@ void LagrangianEulerianIntegrator::advection(
   /*
    * TODO: update energy, density and volflux halos
    */
-    d_bdry_fill_pre_sweep1_cell->createSchedule(level, d_patch_strategy)->fillData(current_time);
+    //d_bdry_fill_pre_sweep1_cell->createSchedule(level, d_patch_strategy)->fillData(current_time);
+
+    d_bdry_fill_pre_sweep1_cell->createSchedule(
+                level,
+                level->getLevelNumber()-1,
+                hierarchy,
+                d_patch_strategy)->fillData(current_time);
 
 #if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advection: advec_cell {{{" << std::endl;
@@ -725,7 +831,12 @@ void LagrangianEulerianIntegrator::advection(
   /*
    * TODO: update density1, energy1, velocity1 and mass_flux halos
    */
-    d_bdry_fill_pre_sweep1_mom->createSchedule(level, d_patch_strategy)->fillData(current_time);
+    //d_bdry_fill_pre_sweep1_mom->createSchedule(level, d_patch_strategy)->fillData(current_time);
+    d_bdry_fill_pre_sweep1_mom->createSchedule(
+                level,
+                level->getLevelNumber()-1,
+                hierarchy,
+                d_patch_strategy)->fillData(current_time);
 
 #if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advection: advec_mom x {{{" << std::endl;
@@ -780,7 +891,12 @@ void LagrangianEulerianIntegrator::advection(
   /*
    * TODO: Update density1, energy1, vel1 and mass flux halos
    */
-    d_bdry_fill_pre_sweep2_mom->createSchedule(level, d_patch_strategy)->fillData(current_time);
+    //d_bdry_fill_pre_sweep2_mom->createSchedule(level, d_patch_strategy)->fillData(current_time);
+    d_bdry_fill_pre_sweep2_mom->createSchedule(
+                level,
+                level->getLevelNumber()-1,
+                hierarchy,
+                d_patch_strategy)->fillData(current_time);
 
 #if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advection: advec_mom x {{{" << std::endl;

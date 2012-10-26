@@ -13,6 +13,7 @@
 #include "SAMRAI/tbox/Database.h"
 #include "SAMRAI/tbox/List.h"
 #include "SAMRAI/xfer/RefineAlgorithm.h"
+#include "SAMRAI/xfer/CoarsenAlgorithm.h"
 
 #include <string>
 
@@ -333,6 +334,8 @@ class LagrangianEulerianIntegrator:
         tbox::Pointer<xfer::RefineAlgorithm> d_bdry_fill_pre_sweep2_mom;
 
         tbox::Pointer<xfer::RefineAlgorithm> d_fill_new_level;
+        tbox::Pointer<xfer::CoarsenAlgorithm> d_coarsen_field_data;
+
         /**
          * @}
          */

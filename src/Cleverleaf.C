@@ -1,4 +1,6 @@
 #include "Cleverleaf.h"
+#include "CartesianCellDoubleVolumeWeightedAverage.h"
+#include "CartesianCellDoubleMassWeightedAverage.h"
 
 #include "SAMRAI/hier/VariableDatabase.h"
 #include "SAMRAI/geom/CartesianPatchGeometry.h"
@@ -104,6 +106,16 @@ Cleverleaf::Cleverleaf(
 
     d_vertexdeltas = new pdat::NodeVariable<double>(d_dim, "vertexdeltas", d_dim.getValue());
     d_vertexcoords = new pdat::NodeVariable<double>(d_dim, "vertexcoords", d_dim.getValue());
+
+    /*
+     * Add our coarsen operators to the registry.
+     */
+    tbox::Pointer<hier::CoarsenOperator> vol_weighted_avg(new CartesianCellDoubleVolumeWeightedAverage(dim));
+    tbox::Pointer<hier::CoarsenOperator> mass_weighted_avg(new CartesianCellDoubleMassWeightedAverage(dim));
+
+    d_grid_geometry->addCoarsenOperator(vol_weighted_avg);
+    d_grid_geometry->addCoarsenOperator(mass_weighted_avg);
+
 }
 
 void Cleverleaf::registerModelVariables(
@@ -348,6 +360,9 @@ void Cleverleaf::initializeDataOnPatch(
         double dy = dxs[1];
         double vol = dx*dy;
 
+        //std::cout << "density (pre-fill) ==" << v_density->getPointer()[POLY2(1, 1, -2, -2, nx)] << std::endl;
+
+
         /*
          * Use the fillAll() methods to initialise other variables for now...
          */
@@ -484,9 +499,126 @@ void Cleverleaf::initializeDataOnPatch(
                 
             }
         }
+    } else {
+        tbox::Pointer<pdat::CellData<double> > celldeltas = patch.getPatchData(
+                d_celldeltas,
+                getCurrentDataContext());
+        tbox::Pointer<pdat::CellData<double> > cellcoords = patch.getPatchData(
+                d_cellcoords,
+                getCurrentDataContext());
 
-        ideal_gas_knl(patch, false);
+        tbox::Pointer<pdat::NodeData<double> > vertexdeltas = patch.getPatchData(
+                d_vertexdeltas,
+                getCurrentDataContext());
+        tbox::Pointer<pdat::NodeData<double> > vertexcoords = patch.getPatchData(
+                d_vertexcoords,
+                getCurrentDataContext());
+
+        tbox::Pointer<pdat::CellData<double> > volume = patch.getPatchData(d_volume, getCurrentDataContext());
+
+        /*
+         * Fill in the volume array...
+         */
+        const hier::Index ifirst = patch.getBox().lower();
+        const hier::Index ilast = patch.getBox().upper();
+
+        hier::IntVector ghosts = celldeltas->getGhostCellWidth();
+
+        int xmin = ifirst(0) - ghosts(0);
+        int xmax = ilast(0) + ghosts(0);
+        int ymin = ifirst(1) - ghosts(1);
+        int ymax = ilast(1) + ghosts(1);
+
+        int xminng = ifirst(0);
+        int xmaxng = ilast(0);
+        int yminng = ifirst(1);
+        int ymaxng = ilast(1);
+
+        int nx = xmax - xmin + 1;
+        int ny = ymax - ymin + 1;
+
+        const tbox::Pointer<geom::CartesianPatchGeometry> pgeom = patch.getPatchGeometry();
+        const double* dxs = pgeom->getDx();
+        const double* coords = pgeom->getXLower();
+
+        double rxmin = coords[0];
+        double rymin = coords[1];
+
+        double dx = dxs[0];
+        double dy = dxs[1];
+        double vol = dx*dy;
+
+        /*
+         * Use the fillAll() methods to initialise other variables for now...
+         */
+        volume->fillAll(vol);
+
+        /*
+         * Fill in arrays of dx/dy
+         */
+        celldeltas->fill(dx, 0);
+        celldeltas->fill(dy, 1);
+
+        vertexdeltas->fill(dx, 0);
+        vertexdeltas->fill(dy, 1);
+        
+        double* vertexx = vertexcoords->getPointer(0);
+        double* vertexy = vertexcoords->getPointer(1);
+
+        int xcount = 0;
+        int ycount = 0;
+
+        hier::IntVector vertex_ghosts = vertexcoords->getGhostCellWidth();
+
+        int vimin = ifirst(0) - vertex_ghosts(0);
+        int vimax = ilast(0) + vertex_ghosts(0);
+        int vjmin = ifirst(1) - vertex_ghosts(1);
+        int vjmax = ilast(1) + vertex_ghosts(1);
+
+        vimax+=1;
+        vjmax+=1;
+
+        int vnx = vimax - vimin + 1;
+
+        for(int j = vjmin; j <= vjmax; j++) {
+
+            xcount = 0;
+
+            for(int i = vimin; i <= vimax; i++) {
+                int ind = POLY2(i,j,vimin,vjmin,vnx);
+
+                /*
+                 * Start at rxmin-2dx because we have 2 ghost cells!
+                 */
+                vertexx[ind] = (rxmin-2*dx) + dx*(xcount);
+                vertexy[ind] = (rymin-2*dy) + dy*(ycount);
+
+                xcount++;
+            }
+
+            ycount++;
+        }
+
+        double* cellx = cellcoords->getPointer(0);
+        double* celly = cellcoords->getPointer(1);
+
+        for(int j = ymin; j <= ymax; j++) {
+            for(int i = xmin; i <= xmax; i++) {
+                int vind = POLY2(i,j,vimin,vjmin,vnx);
+                int vind2 = POLY2(i+1,j,vimin,vjmin,vnx);
+                int vind3 = POLY2(i,j+1,vimin,vjmin,vnx);
+
+                int ind = POLY2(i,j,xmin,ymin,nx);
+
+                cellx[ind] = 0.5*(vertexx[vind]+vertexx[vind2]);
+                celly[ind] = 0.5*(vertexy[vind]+vertexy[vind3]);
+
+            }
+        }
     }
+
+    ideal_gas_knl(patch, false);
+
 }
 
 void Cleverleaf::accelerate(
@@ -677,6 +809,7 @@ void Cleverleaf::ideal_gas_knl(
             soundspeed(j,k)=sqrt(sound_speed_squared);
 
 #ifdef DEBUG
+            tbox::pout << predict << " ";
             tbox::pout << "Updating pressure[" << j << "][" << k << "]=" << pressure(j,k) << ", soundspeed[" << j << "][" << k << "]=" << soundspeed(j,k) << std::endl;
 #endif
         }
@@ -1678,6 +1811,11 @@ void Cleverleaf::setPhysicalBoundaryConditions(
 
     //tbox::pout << "In Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
 
+    if(!patch.inHierarchy()) {
+    //    std::cerr << "PATCH NOT IN HIERARCHY" << std::endl;
+        return;
+    }
+
     tbox::Pointer<pdat::CellData<double> > v_pressure =
         patch.getPatchData(d_pressure, getScratchDataContext());
 
@@ -2561,9 +2699,13 @@ void Cleverleaf::tagGradientDetectorCells(
 
     tbox::Pointer<pdat::CellData<int> > tags = patch.getPatchData(tag_index);
 
+    tbox::Pointer<pdat::NodeData<double> > v_velocity = patch.getPatchData(d_velocity, getCurrentDataContext());
+
     hier::Box pbox = patch.getBox();
     hier::BoxContainer domain_boxes;
     d_grid_geometry->computePhysicalDomain(domain_boxes, patch_geom->getRatio(), hier::BlockId::zero());
+
+    // IF xvel > 0.1 tag a cell!
 
     /*
      * Construct domain bounding box
@@ -2573,10 +2715,26 @@ void Cleverleaf::tagGradientDetectorCells(
         domain += *i;
     }
 
-    const hier::Index domfirst = domain.lower();
-    const hier::Index domlast = domain.upper();
-    const hier::Index ifirst = patch.getBox().lower();
-    const hier::Index ilast = patch.getBox().upper();
+    hier::Index domfirst = domain.lower();
+    hier::Index domlast = domain.upper();
+    hier::Index ifirst = patch.getBox().lower();
+    hier::Index ilast = patch.getBox().upper();
+
+    hier::IntVector nghosts = v_velocity->getGhostCellWidth();
+    hier::IntVector tnghosts = tags->getGhostCellWidth();
+
+    int x_min = ifirst(0) - nghosts[0];
+    int y_min = ifirst(1) - nghosts[1];
+    int x_max = ilast(0) + nghosts[0];
+    int y_max = ilast(1) + nghosts[1];
+
+    int tx_min = ifirst(0) - tnghosts[0];
+    int ty_min = ifirst(1) - tnghosts[1];
+    int tx_max = ilast(0) + tnghosts[0];
+    int ty_max = ilast(1) + tnghosts[1];
+
+    int nx = (x_max - x_min) + 1;
+    int tnx = (tx_max - tx_min) + 1;
 
     /*
      * Create a set of temporary tags and set to untagged value.
@@ -2585,31 +2743,71 @@ void Cleverleaf::tagGradientDetectorCells(
     tbox::Pointer<pdat::CellData<int> > temp_tags(new pdat::CellData<int>(
                 pbox,
                 1,
-                d_nghosts));
+                nghosts));
 
     temp_tags->fillAll(0);
+    tags->fillAll(0);
+
+    double* xvel0 = v_velocity->getPointer(0);
+    double* yvel0 = v_velocity->getPointer(1);
+
+    for(int k = ifirst(1); k <= ilast(1)+1; k++) {
+        for(int j = ifirst(0); j <= ilast(0)+1; j++) {
+
+            int xv1 = POLY2(j,k, x_min, y_min, (nx+1));
+            int yv1 = POLY2(j,k, x_min, y_min, (nx+1));
+
+
+            int n1 = POLY2(j,k, x_min, y_min, nx);
+            int n2 = POLY2(j-1,k, x_min, y_min, nx);
+            int n3 = POLY2(j,k-1, x_min, y_min, nx);
+            int n4 = POLY2(j-1,k-1, x_min, y_min, nx);
+
+            if (abs(xvel0[xv1]) > 0.4 || abs(yvel0[yv1]) > 0.4) {
+                temp_tags->getPointer()[n1] = 1;
+                temp_tags->getPointer()[n2] = 1;
+                temp_tags->getPointer()[n3] = 1;
+                temp_tags->getPointer()[n4] = 1;
+                //std::cout << "tagging node: " << j << "," << k << std::endl;
+            }
+        }
+    }
+
+
 
     /*
      * Problem specific criteria for step case.
      */
-    if (error_level_number < 2) {
-        hier::Box tagbox(hier::Index(4, 0), hier::Index(5, 2));
+//    if (error_level_number < 2) {
+//        hier::Box tagbox(hier::Index(0, 0), hier::Index(10, 2));
+//
+//        if (error_level_number == 1) {
+//            tagbox.refine(hier::IntVector(d_dim, 2));
+//        }
+//
+//        hier::Box ibox = pbox * tagbox;
+//
+//        for (pdat::CellIterator itc(ibox); itc; itc++) {
+//            (*temp_tags)(itc(), 0) = 1;
+//        }
+//    }
 
-        if (error_level_number == 1) {
-            tagbox.refine(hier::IntVector(d_dim, 2));
-        }
-
-        hier::Box ibox = pbox * tagbox;
-
-        for (pdat::CellIterator itc(ibox); itc; itc++) {
-            (*temp_tags)(itc(), 0) = 1;
-        }
-    }
+    
 
     /*
      * Update tags
      */
-    for (pdat::CellIterator ic(pbox); ic; ic++) {
-        (*tags)(ic(), 0) = (*temp_tags)(ic(), 0);
+//    for (pdat::CellIterator ic(pbox); ic; ic++) {
+//        (*tags)(ic(), 0) = (*temp_tags)(ic(), 0);
+//    }
+
+    for (int k = ifirst(1); k <= ilast(1); k++) {
+        for (int j = ifirst(0); j <= ilast(0); j++) {
+
+            int n1 = POLY2(j,k, x_min, y_min, nx);
+            int t1 = POLY2(j,k, tx_min, ty_min, tnx);
+
+            tags->getPointer(0)[t1] = temp_tags->getPointer(0)[n1];
+        }
     }
 }
