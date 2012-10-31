@@ -143,11 +143,19 @@ class LagrangianEulerianPatchStrategy:
                 ADVEC_DIR direction,
                 ADVEC_DIR which_vel) = 0;
 
+        virtual void field_summary(
+                hier::Patch& patch,
+                double* vol,
+                double* mass,
+                double* press,
+                double* ie,
+                double* ke) = 0;
+
         virtual void tagGradientDetectorCells(
                 hier::Patch& patch,
                 const double regrid_time,
                 const bool initial_error,
-                const int tag_index);
+                const int tag_index) = 0;
 
         /**
          * Get the data context corresponding to the current time.
@@ -162,6 +170,13 @@ class LagrangianEulerianPatchStrategy:
          * @returns New data context.
          */
         tbox::Pointer<hier::VariableContext> getNewDataContext();
+
+        /**
+         * Get the data context corresponding to the scratch storage.
+         *
+         * @returns Scratch data context.
+         */
+        tbox::Pointer<hier::VariableContext> getScratchDataContext();
 
         /**
          * Set the data context for the current time.
@@ -181,6 +196,14 @@ class LagrangianEulerianPatchStrategy:
          * @param context Context for new time.
          */
         void setNewDataContext(
+                tbox::Pointer<hier::VariableContext> context);
+
+        /**
+         * Set the data context for the scratch space.
+         *
+         * @param context Context for scratch space.
+         */
+        void setScratchDataContext(
                 tbox::Pointer<hier::VariableContext> context);
 
         /**
@@ -262,7 +285,7 @@ class LagrangianEulerianPatchStrategy:
         const tbox::Dimension d_dim;
 
         tbox::Pointer<hier::VariableContext> d_new_data_context;
-
         tbox::Pointer<hier::VariableContext> d_current_data_context;
+        tbox::Pointer<hier::VariableContext> d_scratch_data_context;
 };
 #endif

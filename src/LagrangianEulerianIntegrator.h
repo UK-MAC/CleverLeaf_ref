@@ -13,6 +13,7 @@
 #include "SAMRAI/tbox/Database.h"
 #include "SAMRAI/tbox/List.h"
 #include "SAMRAI/xfer/RefineAlgorithm.h"
+#include "SAMRAI/xfer/CoarsenAlgorithm.h"
 
 #include <string>
 
@@ -268,6 +269,13 @@ class LagrangianEulerianIntegrator:
 
         void fillBoundaries();
 
+        /*
+         * Print out the field summary
+         */
+        void printFieldSummary(
+                double time,
+                int step);
+
     protected:
         /**
          * PatchStrategy contains user-specified methods needed for
@@ -303,9 +311,9 @@ class LagrangianEulerianIntegrator:
          * @}
          */
 
-        hier::ComponentSelector d_temp_var_scratch_data;
-        hier::ComponentSelector d_temp_var_cur_data;
-        hier::ComponentSelector d_temp_var_new_data;
+        hier::ComponentSelector d_var_scratch_data;
+        hier::ComponentSelector d_var_cur_data;
+        hier::ComponentSelector d_var_new_data;
 
         tbox::List<tbox::Pointer<hier::Variable> > d_field_vars;
         tbox::List<tbox::Pointer<hier::Variable> > d_revert_vars;
@@ -324,11 +332,17 @@ class LagrangianEulerianIntegrator:
         tbox::Pointer<xfer::RefineAlgorithm> d_bdry_fill_pre_sweep1_cell;
         tbox::Pointer<xfer::RefineAlgorithm> d_bdry_fill_pre_sweep1_mom;
         tbox::Pointer<xfer::RefineAlgorithm> d_bdry_fill_pre_sweep2_mom;
+
+        tbox::Pointer<xfer::RefineAlgorithm> d_fill_new_level;
+        tbox::Pointer<xfer::CoarsenAlgorithm> d_coarsen_field_data;
+
         /**
          * @}
          */
 
         bool advect_x;
+
+        tbox::Pointer<hier::PatchHierarchy> d_current_hierarchy;
 };
 
 #endif

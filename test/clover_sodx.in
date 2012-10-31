@@ -1,11 +1,13 @@
 Main {
     dim = 2
+    vis_dump_interval = 1
+    field_summary_interval = 1
 }
 
 CartesianGeometry {
-    domain_boxes = [ (0,0), (959,959) ]
+    domain_boxes = [ (0,0), (9,1) ]
     x_lo         = 0.e0, 0.e0
-    x_up         = 10.e0, 10.e0
+    x_up         = 10.e0, 2.e0
 }
 
 PatchHierarchy {
@@ -16,17 +18,16 @@ PatchHierarchy {
     }
     
     largest_patch_size {
-        level_0 = 960,960
+        level_0 = 10,2
     }
 
     smallest_patch_size {
-        level_0 = 960,960
+        level_0 = 5,2
     }
 }
 
 Cleverleaf {
     vis = TRUE
-    vis_dump_interval = 1
 }
 
 LagrangianEulerianIntegrator{}
@@ -48,7 +49,7 @@ GriddingAlgorithm {
 
 TimeRefinementIntegrator {
     start_time = 0.e0
-    end_time = 10.e0
+    end_time = 3.0e0
     grow_dt = 1.5e0
-    max_integrator_steps = 1000
+    max_integrator_steps=75
 }

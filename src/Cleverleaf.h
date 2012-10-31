@@ -100,11 +100,19 @@ class Cleverleaf:
                     const double fill_time,
                     const hier::IntVector& ghost_width_to_fill);
 
+        void field_summary(
+                hier::Patch& patch,
+                double* vol,
+                double* mass,
+                double* press,
+                double* ie,
+                double* ke);
+
         /**
          * 
          * Reflect data at physical boundaries.
          *
-         * This method applies the reflective boundary condition up to a give depth for the data passed in.
+         * This method applies the reflective boundary condition up to a give depth for the data passed in. Use this method for cell-centered quantities such as pressure. The reflected values are simply copies.
          *
          * @param data The data to array to reflect boundaries of.
          * @param boundary Which boundayr to reflect.
@@ -128,6 +136,94 @@ class Cleverleaf:
                 int ymin,
                 int ymax,
                 int nx);
+
+        /**
+         * 
+         * Reflect node/edge data at physical boundaries.
+         *
+         * This method applies the reflective boundary condition up to a give depth for the data passed in. Use this method for node and edge centered quantities such as velocities or fluxes. The reflected values are negated in the approriate direction copies.
+         *
+         * @param data The data to array to reflect boundaries of.
+         * @param boundary Which boundayr to reflect.
+         * @param depth The depth of cells to reflect the boundary over.
+         * @param ifirst The first non-ghost cell of each dimension.
+         * @param ilast The last non-ghost cell of each dimension.
+         * @param xmin The xmin index of the entire patch (including ghosts)
+         * @param xmax The xmax index of the entire patch (including ghosts)
+         * @param ymin The ymin index of the entire patch (including ghosts)
+         * @param ymax The ymax index of the entire patch (including ghosts)
+         * @param nx The number of cells in the x dimension
+         */
+        void reflectXNodeBoundary(
+                double* data,
+                BdryLoc::Type boundary,
+                int depth,
+                hier::Index ifirst,
+                hier::Index ilast,
+                int xmin,
+                int xmax,
+                int ymin,
+                int ymax,
+                int nx);
+
+        /**
+         * 
+         * Reflect node/edge data at physical boundaries.
+         *
+         * This method applies the reflective boundary condition up to a give depth for the data passed in. Use this method for node and edge centered quantities such as velocities or fluxes. The reflected values are negated in the approriate direction copies.
+         *
+         * @param data The data to array to reflect boundaries of.
+         * @param boundary Which boundayr to reflect.
+         * @param depth The depth of cells to reflect the boundary over.
+         * @param ifirst The first non-ghost cell of each dimension.
+         * @param ilast The last non-ghost cell of each dimension.
+         * @param xmin The xmin index of the entire patch (including ghosts)
+         * @param xmax The xmax index of the entire patch (including ghosts)
+         * @param ymin The ymin index of the entire patch (including ghosts)
+         * @param ymax The ymax index of the entire patch (including ghosts)
+         * @param nx The number of cells in the x dimension
+         */
+        void reflectYNodeBoundary(
+                double* data,
+                BdryLoc::Type boundary,
+                int depth,
+                hier::Index ifirst,
+                hier::Index ilast,
+                int xmin,
+                int xmax,
+                int ymin,
+                int ymax,
+                int nx);
+
+        void reflectXEdgeBoundary(
+                double* data,
+                BdryLoc::Type boundary,
+                int depth,
+                hier::Index ifirst,
+                hier::Index ilast,
+                int xmin,
+                int xmax,
+                int ymin,
+                int ymax,
+                int nx);
+
+        void reflectYEdgeBoundary(
+                double* data,
+                BdryLoc::Type boundary,
+                int depth,
+                hier::Index ifirst,
+                hier::Index ilast,
+                int xmin,
+                int xmax,
+                int ymin,
+                int ymax,
+                int nx);
+
+        virtual void tagGradientDetectorCells(
+                hier::Patch& patch,
+                const double regrid_time,
+                const bool initial_error,
+                const int tag_index);
 
     private:
 
