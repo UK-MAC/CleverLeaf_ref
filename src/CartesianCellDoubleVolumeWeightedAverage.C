@@ -19,14 +19,14 @@ CartesianCellDoubleVolumeWeightedAverage::~CartesianCellDoubleVolumeWeightedAver
 }
 
 bool CartesianCellDoubleVolumeWeightedAverage::findCoarsenOperator(
-   const tbox::Pointer<SAMRAI::hier::Variable>& var,
+   const boost::shared_ptr<SAMRAI::hier::Variable>& var,
    const std::string& op_name) const
 {
    TBOX_DIM_ASSERT_CHECK_ARGS2(*this, *var);
 
-   const tbox::Pointer<pdat::CellVariable<double> > cast_var(var);
+   const boost::shared_ptr<pdat::CellVariable<double> > cast_var(var, boost::detail::dynamic_cast_tag());
 
-   if (!cast_var.isNull() && (op_name == getOperatorName())) {
+   if (cast_var && (op_name == getOperatorName())) {
       return true;
    } else {
       return false;
@@ -53,16 +53,16 @@ void CartesianCellDoubleVolumeWeightedAverage::coarsen(
 {
    const tbox::Dimension& dim(getDim());
 
-   tbox::Pointer<pdat::CellData<double> > fdata = fine.getPatchData(src_component);
-   tbox::Pointer<pdat::CellData<double> > cdata = coarse.getPatchData(dst_component);
+   boost::shared_ptr<pdat::CellData<double> > fdata(fine.getPatchData(src_component), boost::detail::dynamic_cast_tag());
+   boost::shared_ptr<pdat::CellData<double> > cdata(coarse.getPatchData(dst_component), boost::detail::dynamic_cast_tag());
 
    const hier::Index filo = fdata->getGhostBox().lower();
    const hier::Index fihi = fdata->getGhostBox().upper();
    const hier::Index cilo = cdata->getGhostBox().lower();
    const hier::Index cihi = cdata->getGhostBox().upper();
 
-   const tbox::Pointer<geom::CartesianPatchGeometry> fgeom = fine.getPatchGeometry();
-   const tbox::Pointer<geom::CartesianPatchGeometry> cgeom = coarse.getPatchGeometry();
+   const boost::shared_ptr<geom::CartesianPatchGeometry> fgeom(fine.getPatchGeometry(), boost::detail::dynamic_cast_tag());
+   const boost::shared_ptr<geom::CartesianPatchGeometry> cgeom(coarse.getPatchGeometry(), boost::detail::dynamic_cast_tag());
 
    const hier::Index ifirstc = coarse_box.lower();
    const hier::Index ilastc = coarse_box.upper();
