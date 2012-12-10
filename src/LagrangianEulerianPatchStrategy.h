@@ -4,7 +4,6 @@
 #include "SAMRAI/hier/Patch.h"
 #include "SAMRAI/hier/VariableContext.h"
 #include "SAMRAI/tbox/Dimension.h"
-#include "SAMRAI/tbox/Pointer.h"
 #include "SAMRAI/xfer/RefinePatchStrategy.h"
 
 using namespace SAMRAI;
@@ -162,21 +161,21 @@ class LagrangianEulerianPatchStrategy:
          *
          * @returns Current data context.
          */
-        tbox::Pointer<hier::VariableContext> getCurrentDataContext();
+        boost::shared_ptr<hier::VariableContext> getCurrentDataContext();
 
         /**
          * Get the data context corresponding to the new time.
          *
          * @returns New data context.
          */
-        tbox::Pointer<hier::VariableContext> getNewDataContext();
+        boost::shared_ptr<hier::VariableContext> getNewDataContext();
 
         /**
          * Get the data context corresponding to the scratch storage.
          *
          * @returns Scratch data context.
          */
-        tbox::Pointer<hier::VariableContext> getScratchDataContext();
+        boost::shared_ptr<hier::VariableContext> getScratchDataContext();
 
         /**
          * Set the data context for the current time.
@@ -186,7 +185,7 @@ class LagrangianEulerianPatchStrategy:
          * @param context Context for current time.
          */
         void setCurrentDataContext(
-                tbox::Pointer<hier::VariableContext> context);
+                boost::shared_ptr<hier::VariableContext> context);
 
         /**
          * Set the data context for the new time.
@@ -196,7 +195,7 @@ class LagrangianEulerianPatchStrategy:
          * @param context Context for new time.
          */
         void setNewDataContext(
-                tbox::Pointer<hier::VariableContext> context);
+                boost::shared_ptr<hier::VariableContext> context);
 
         /**
          * Set the data context for the scratch space.
@@ -204,7 +203,7 @@ class LagrangianEulerianPatchStrategy:
          * @param context Context for scratch space.
          */
         void setScratchDataContext(
-                tbox::Pointer<hier::VariableContext> context);
+                boost::shared_ptr<hier::VariableContext> context);
 
         /**
          * Get the dimension of the problem.
@@ -284,8 +283,8 @@ class LagrangianEulerianPatchStrategy:
     private:
         const tbox::Dimension d_dim;
 
-        tbox::Pointer<hier::VariableContext> d_new_data_context;
-        tbox::Pointer<hier::VariableContext> d_current_data_context;
-        tbox::Pointer<hier::VariableContext> d_scratch_data_context;
+        boost::shared_ptr<hier::VariableContext> d_new_data_context;
+        boost::shared_ptr<hier::VariableContext> d_current_data_context;
+        boost::shared_ptr<hier::VariableContext> d_scratch_data_context;
 };
 #endif

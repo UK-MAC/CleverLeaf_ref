@@ -73,12 +73,25 @@
 #define data(i,j) data[((i-xmin)) + (j-ymin)*nx]
 
 Cleverleaf::Cleverleaf(
-        tbox::Pointer<hier::PatchHierarchy> hierarchy,
+        boost::shared_ptr<hier::PatchHierarchy> hierarchy,
         const tbox::Dimension& dim,
-        tbox::Pointer<geom::CartesianGridGeometry> grid_geometry):
+        boost::shared_ptr<geom::CartesianGridGeometry> grid_geometry):
     LagrangianEulerianPatchStrategy(dim),
     d_dim(dim),
-    d_nghosts(dim)
+    d_nghosts(dim),
+    d_velocity(new pdat::NodeVariable<double>(d_dim, "velocity", d_dim.getValue())),
+    d_massflux(new pdat::EdgeVariable<double>(d_dim, "massflux", 1)),
+    d_volflux(new pdat::EdgeVariable<double>(d_dim, "volflux", 1)),
+    d_pressure(new pdat::CellVariable<double>(d_dim, "pressure", 1)),
+    d_viscosity(new pdat::CellVariable<double>(d_dim, "viscosity", 1)),
+    d_soundspeed(new pdat::CellVariable<double>(d_dim, "soundspeed", 1)),
+    d_density(new pdat::CellVariable<double>(d_dim, "density", 1)),
+    d_energy(new pdat::CellVariable<double>(d_dim, "energy", 1)),
+    d_volume(new pdat::CellVariable<double>(d_dim, "volume", 1)),
+    d_celldeltas(new pdat::CellVariable<double>(d_dim, "celldelta", d_dim.getValue())),
+    d_cellcoords(new pdat::CellVariable<double>(d_dim, "cellcoords", d_dim.getValue())),
+    d_vertexdeltas(new pdat::NodeVariable<double>(d_dim, "vertexdeltas", d_dim.getValue())),
+    d_vertexcoords(new pdat::NodeVariable<double>(d_dim, "vertexcoords", d_dim.getValue()))
 {
 
     d_hierarchy = hierarchy;
@@ -87,34 +100,13 @@ Cleverleaf::Cleverleaf(
     d_nghosts = hier::IntVector(d_dim, 2);
 
     /*
-     * Register variables
-     */
-    d_velocity = new pdat::NodeVariable<double>(d_dim, "velocity", d_dim.getValue());
-
-    d_massflux  = new pdat::EdgeVariable<double>(d_dim, "massflux", 1);
-    d_volflux   = new pdat::EdgeVariable<double>(d_dim, "volflux", 1);
-
-    d_pressure  = new pdat::CellVariable<double>(d_dim, "pressure", 1);
-    d_viscosity  = new pdat::CellVariable<double>(d_dim, "viscosity", 1);
-    d_soundspeed  = new pdat::CellVariable<double>(d_dim, "soundspeed", 1);
-    d_density  = new pdat::CellVariable<double>(d_dim, "density", 1);
-    d_energy  = new pdat::CellVariable<double>(d_dim, "energy", 1);
-    d_volume  = new pdat::CellVariable<double>(d_dim, "volume", 1);
-
-    d_celldeltas = new pdat::CellVariable<double>(d_dim, "celldelta", d_dim.getValue());
-    d_cellcoords = new pdat::CellVariable<double>(d_dim, "cellcoords", d_dim.getValue());
-
-    d_vertexdeltas = new pdat::NodeVariable<double>(d_dim, "vertexdeltas", d_dim.getValue());
-    d_vertexcoords = new pdat::NodeVariable<double>(d_dim, "vertexcoords", d_dim.getValue());
-
-    /*
      * Add our coarsen operators to the registry.
      */
-    tbox::Pointer<hier::CoarsenOperator> vol_weighted_avg(new CartesianCellDoubleVolumeWeightedAverage(dim));
-    tbox::Pointer<hier::CoarsenOperator> mass_weighted_avg(new CartesianCellDoubleMassWeightedAverage(dim));
+    boost::shared_ptr<hier::CoarsenOperator> vol_weighted_avg(new CartesianCellDoubleVolumeWeightedAverage(dim));
+    boost::shared_ptr<hier::CoarsenOperator> mass_weighted_avg(new CartesianCellDoubleMassWeightedAverage(dim));
 
-    d_grid_geometry->addCoarsenOperator(vol_weighted_avg);
-    d_grid_geometry->addCoarsenOperator(mass_weighted_avg);
+    d_grid_geometry->addCoarsenOperator("density", vol_weighted_avg);
+    d_grid_geometry->addCoarsenOperator("energy", mass_weighted_avg);
 
 }
 
@@ -230,7 +222,7 @@ void Cleverleaf::registerModelVariables(
 
     d_plot_context = integrator->getPlotContext();
 
-    if (!(d_visit_writer.isNull())) {
+    if (d_visit_writer) {
         /*
          * Register scalar variables with the VisIt writer.
          */
@@ -294,7 +286,7 @@ void Cleverleaf::registerModelVariables(
     }
 }
 
-void Cleverleaf::registerVisItDataWriter(tbox::Pointer<appu::VisItDataWriter> writer) {
+void Cleverleaf::registerVisItDataWriter(boost::shared_ptr<appu::VisItDataWriter> writer) {
     d_visit_writer = writer;
 }
 
@@ -304,29 +296,57 @@ void Cleverleaf::initializeDataOnPatch(
         bool initial_time)
 {
     if (initial_time) {
-        tbox::Pointer<pdat::NodeData<double> > velocity = patch.getPatchData(d_velocity, getCurrentDataContext());
-        tbox::Pointer<pdat::EdgeData<double> > massflux = patch.getPatchData(d_massflux, getCurrentDataContext());
-        tbox::Pointer<pdat::EdgeData<double> > volflux = patch.getPatchData(d_volflux, getCurrentDataContext());
-        tbox::Pointer<pdat::CellData<double> > pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
-        tbox::Pointer<pdat::CellData<double> > viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
-        tbox::Pointer<pdat::CellData<double> > soundspeed = patch.getPatchData(d_soundspeed, getCurrentDataContext());
-        tbox::Pointer<pdat::CellData<double> > v_density = patch.getPatchData(d_density, getCurrentDataContext());
-        tbox::Pointer<pdat::CellData<double> > v_energy = patch.getPatchData(d_energy, getCurrentDataContext());
-        tbox::Pointer<pdat::CellData<double> > volume = patch.getPatchData(d_volume, getCurrentDataContext());
+        boost::shared_ptr<pdat::NodeData<double> > velocity(
+                patch.getPatchData(d_velocity, getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
 
-        tbox::Pointer<pdat::CellData<double> > celldeltas = patch.getPatchData(
-                d_celldeltas,
-                getCurrentDataContext());
-        tbox::Pointer<pdat::CellData<double> > cellcoords = patch.getPatchData(
-                d_cellcoords,
-                getCurrentDataContext());
+        boost::shared_ptr<pdat::EdgeData<double> > massflux(
+                patch.getPatchData(d_massflux, getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
 
-        tbox::Pointer<pdat::NodeData<double> > vertexdeltas = patch.getPatchData(
-                d_vertexdeltas,
-                getCurrentDataContext());
-        tbox::Pointer<pdat::NodeData<double> > vertexcoords = patch.getPatchData(
-                d_vertexcoords,
-                getCurrentDataContext());
+        boost::shared_ptr<pdat::EdgeData<double> > volflux(
+                patch.getPatchData(d_volflux, getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
+
+        boost::shared_ptr<pdat::CellData<double> > v_pressure(
+                patch.getPatchData(d_pressure, getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
+
+        boost::shared_ptr<pdat::CellData<double> > v_viscosity(
+                patch.getPatchData(d_viscosity, getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
+
+        boost::shared_ptr<pdat::CellData<double> > v_soundspeed(
+                patch.getPatchData(d_soundspeed, getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
+
+        boost::shared_ptr<pdat::CellData<double> > v_density(
+                patch.getPatchData(d_density, getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
+
+        boost::shared_ptr<pdat::CellData<double> > v_energy(
+                patch.getPatchData(d_energy, getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
+
+        boost::shared_ptr<pdat::CellData<double> > v_volume(
+                patch.getPatchData(d_volume, getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
+
+        boost::shared_ptr<pdat::CellData<double> > celldeltas(
+                patch.getPatchData(d_celldeltas,getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
+
+        boost::shared_ptr<pdat::CellData<double> > cellcoords(
+                patch.getPatchData(d_cellcoords, getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
+
+        boost::shared_ptr<pdat::NodeData<double> > vertexdeltas(
+                patch.getPatchData(d_vertexdeltas, getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
+
+        boost::shared_ptr<pdat::NodeData<double> > vertexcoords(
+                patch.getPatchData( d_vertexcoords, getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
 
         /*
          * Fill in the volume array...
@@ -349,7 +369,8 @@ void Cleverleaf::initializeDataOnPatch(
         int nx = xmax - xmin + 1;
         int ny = ymax - ymin + 1;
 
-        const tbox::Pointer<geom::CartesianPatchGeometry> pgeom = patch.getPatchGeometry();
+        const boost::shared_ptr<geom::CartesianPatchGeometry> pgeom(patch.getPatchGeometry(), boost::detail::dynamic_cast_tag());
+
         const double* dxs = pgeom->getDx();
         const double* coords = pgeom->getXLower();
 
@@ -369,10 +390,10 @@ void Cleverleaf::initializeDataOnPatch(
         velocity->fillAll(0.0);
         massflux->fillAll(0.0);
         volflux->fillAll(0.0);
-        viscosity->fillAll(0.0);
-        soundspeed->fillAll(0.0);
-        volume->fillAll(vol);
-        pressure->fillAll(0.0);
+        v_viscosity->fillAll(0.0);
+        v_soundspeed->fillAll(0.0);
+        v_volume->fillAll(vol);
+        v_pressure->fillAll(0.0);
 
         /*
          * Fill in arrays of dx/dy
@@ -500,21 +521,26 @@ void Cleverleaf::initializeDataOnPatch(
             }
         }
     } else {
-        tbox::Pointer<pdat::CellData<double> > celldeltas = patch.getPatchData(
-                d_celldeltas,
-                getCurrentDataContext());
-        tbox::Pointer<pdat::CellData<double> > cellcoords = patch.getPatchData(
-                d_cellcoords,
-                getCurrentDataContext());
+        boost::shared_ptr<pdat::CellData<double> > celldeltas(patch.getPatchData(
+                    d_celldeltas,
+                    getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
 
-        tbox::Pointer<pdat::NodeData<double> > vertexdeltas = patch.getPatchData(
-                d_vertexdeltas,
-                getCurrentDataContext());
-        tbox::Pointer<pdat::NodeData<double> > vertexcoords = patch.getPatchData(
-                d_vertexcoords,
-                getCurrentDataContext());
+        boost::shared_ptr<pdat::CellData<double> > cellcoords(
+                patch.getPatchData(d_cellcoords, getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
 
-        tbox::Pointer<pdat::CellData<double> > volume = patch.getPatchData(d_volume, getCurrentDataContext());
+        boost::shared_ptr<pdat::NodeData<double> > vertexdeltas(
+                patch.getPatchData(d_vertexdeltas, getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
+
+        boost::shared_ptr<pdat::NodeData<double> > vertexcoords(
+                patch.getPatchData(d_vertexcoords, getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
+
+        boost::shared_ptr<pdat::CellData<double> > v_volume(
+                patch.getPatchData(d_volume, getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
 
         /*
          * Fill in the volume array...
@@ -537,7 +563,10 @@ void Cleverleaf::initializeDataOnPatch(
         int nx = xmax - xmin + 1;
         int ny = ymax - ymin + 1;
 
-        const tbox::Pointer<geom::CartesianPatchGeometry> pgeom = patch.getPatchGeometry();
+        const boost::shared_ptr<geom::CartesianPatchGeometry> pgeom(
+                patch.getPatchGeometry(),
+                boost::detail::dynamic_cast_tag());
+
         const double* dxs = pgeom->getDx();
         const double* coords = pgeom->getXLower();
 
@@ -551,7 +580,7 @@ void Cleverleaf::initializeDataOnPatch(
         /*
          * Use the fillAll() methods to initialise other variables for now...
          */
-        volume->fillAll(vol);
+        v_volume->fillAll(vol);
 
         /*
          * Fill in arrays of dx/dy
@@ -627,13 +656,33 @@ void Cleverleaf::accelerate(
 {
     double nodal_mass;
 
-    tbox::Pointer<pdat::CellData<double> > v_density = patch.getPatchData(d_density, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_volume = patch.getPatchData(d_volume, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
-    tbox::Pointer<pdat::NodeData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
-    tbox::Pointer<pdat::NodeData<double> > v_vel1 = patch.getPatchData(d_velocity, getNewDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_density(
+            patch.getPatchData(d_density, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::CellData<double> > v_volume(
+            patch.getPatchData(d_volume, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::CellData<double> > v_celldeltas(
+            patch.getPatchData(d_celldeltas, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::CellData<double> > v_pressure(
+            patch.getPatchData(d_pressure, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::CellData<double> > v_viscosity(
+            patch.getPatchData(d_viscosity, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::NodeData<double> > v_vel0(
+            patch.getPatchData(d_velocity, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::NodeData<double> > v_vel1(
+            patch.getPatchData(d_velocity, getNewDataContext()),
+            boost::detail::dynamic_cast_tag());
         
     hier::IntVector ghosts = v_pressure->getGhostCellWidth();
 
@@ -743,24 +792,44 @@ void Cleverleaf::ideal_gas_knl(
         bool predict)
 {
 
-    tbox::Pointer<pdat::CellData<double> > v_density;
-    tbox::Pointer<pdat::CellData<double> > v_energy;
+    boost::shared_ptr<pdat::CellData<double> > v_density;
+    boost::shared_ptr<pdat::CellData<double> > v_energy;
 
     if (predict) {
-        v_density = patch.getPatchData(d_density, getNewDataContext());
+        boost::shared_ptr<pdat::CellData<double> > d_tmp(
+                patch.getPatchData(d_density, getNewDataContext()),
+                boost::detail::dynamic_cast_tag());
+
+        v_density = d_tmp;
     } else {
-        v_density = patch.getPatchData(d_density, getCurrentDataContext());
+        boost::shared_ptr<pdat::CellData<double> > d_tmp(
+                patch.getPatchData(d_density, getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
+
+        v_density = d_tmp;
     }
 
     if (predict) {
-        v_energy = patch.getPatchData(d_energy, getNewDataContext());
+        boost::shared_ptr<pdat::CellData<double> > e_tmp(
+                patch.getPatchData(d_energy, getNewDataContext()),
+                boost::detail::dynamic_cast_tag());
+
+        v_energy = e_tmp;
     } else {
-        v_energy = patch.getPatchData(d_energy, getCurrentDataContext());
+        boost::shared_ptr<pdat::CellData<double> > e_tmp(
+                patch.getPatchData(d_energy, getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
+
+        v_energy = e_tmp;
     }
 
-    tbox::Pointer<pdat::CellData<double> > v_pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_pressure(
+            patch.getPatchData(d_pressure, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::CellData<double> > v_soundspeed = patch.getPatchData(d_soundspeed, getCurrentDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_soundspeed(
+            patch.getPatchData(d_soundspeed, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
 
 
     hier::IntVector ghosts = v_pressure->getGhostCellWidth();
@@ -824,13 +893,25 @@ void Cleverleaf::viscosity_knl(
          pgradx2,pgrady2,grad,ygrad,pgrad,
          xgrad,div,strain2,limiter;
 
-    tbox::Pointer<pdat::CellData<double> > v_density0 = patch.getPatchData(d_density, getCurrentDataContext());
+  boost::shared_ptr<pdat::CellData<double> > v_density0(
+          patch.getPatchData(d_density, getCurrentDataContext()),
+          boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::CellData<double> > v_pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
+  boost::shared_ptr<pdat::CellData<double> > v_pressure(
+          patch.getPatchData(d_pressure, getCurrentDataContext()),
+          boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::CellData<double> > v_viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
-    tbox::Pointer<pdat::NodeData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
+  boost::shared_ptr<pdat::CellData<double> > v_viscosity(
+          patch.getPatchData(d_viscosity, getCurrentDataContext()),
+          boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::NodeData<double> > v_vel0(
+          patch.getPatchData(d_velocity, getCurrentDataContext()),
+          boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::CellData<double> > v_celldeltas(
+          patch.getPatchData(d_celldeltas, getCurrentDataContext()),
+          boost::detail::dynamic_cast_tag());
 
 
     hier::IntVector ghosts = v_pressure->getGhostCellWidth();
@@ -919,23 +1000,51 @@ double Cleverleaf::calc_dt_knl(
     int kldt;
     int jldt;
 
-    tbox::Pointer<pdat::CellData<double> > v_density1 = patch.getPatchData(d_density, getNewDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_density0 = patch.getPatchData(d_density, getCurrentDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_density1(
+            patch.getPatchData(d_density, getNewDataContext()),
+            boost::detail::dynamic_cast_tag());
+    boost::shared_ptr<pdat::CellData<double> > v_density0(
+            patch.getPatchData(d_density, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::CellData<double> > v_energy0 = patch.getPatchData(d_energy, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_energy1 = patch.getPatchData(d_energy, getNewDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_energy0(
+            patch.getPatchData(d_energy, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+    boost::shared_ptr<pdat::CellData<double> > v_energy1(
+            patch.getPatchData(d_energy, getNewDataContext()),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::CellData<double> > v_pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_pressure(
+            patch.getPatchData(d_pressure, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::CellData<double> > v_soundspeed = patch.getPatchData(d_soundspeed, getCurrentDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_soundspeed(
+            patch.getPatchData(d_soundspeed, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::CellData<double> > v_viscosity = patch.getPatchData(d_viscosity, getCurrentDataContext());
-    tbox::Pointer<pdat::NodeData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_viscosity(
+            patch.getPatchData(d_viscosity, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::CellData<double> > v_volume = patch.getPatchData(d_volume, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_cellcoords = patch.getPatchData(d_cellcoords, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_energy = patch.getPatchData(d_energy, getCurrentDataContext());
+    boost::shared_ptr<pdat::NodeData<double> > v_vel0(
+            patch.getPatchData(d_velocity, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::CellData<double> > v_celldeltas(
+            patch.getPatchData(d_celldeltas, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::CellData<double> > v_volume(
+            patch.getPatchData(d_volume, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::CellData<double> > v_cellcoords(
+            patch.getPatchData(d_cellcoords, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::CellData<double> > v_energy(
+            patch.getPatchData(d_energy, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
 
     hier::IntVector ghosts = v_pressure->getGhostCellWidth();
 
@@ -1130,16 +1239,36 @@ void Cleverleaf::pdv_knl(
     /*
      * Get necessary variables
      */
-    tbox::Pointer<pdat::CellData<double> > area = patch.getPatchData(d_celldeltas, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > vol = patch.getPatchData(d_volume, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > dens0 = patch.getPatchData(d_density, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > dens1 = patch.getPatchData(d_density, getNewDataContext());
-    tbox::Pointer<pdat::CellData<double> > en0 = patch.getPatchData(d_energy, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > en1 = patch.getPatchData(d_energy, getNewDataContext());
-    tbox::Pointer<pdat::CellData<double> > pres = patch.getPatchData(d_pressure, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > visc = patch.getPatchData(d_viscosity, getCurrentDataContext());
-    tbox::Pointer<pdat::NodeData<double> > v0 = patch.getPatchData(d_velocity, getCurrentDataContext());
-    tbox::Pointer<pdat::NodeData<double> > v1 = patch.getPatchData(d_velocity, getNewDataContext());
+    boost::shared_ptr<pdat::CellData<double> > area(
+            patch.getPatchData(d_celldeltas, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+    boost::shared_ptr<pdat::CellData<double> > vol(
+            patch.getPatchData(d_volume, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+    boost::shared_ptr<pdat::CellData<double> > dens0(
+            patch.getPatchData(d_density, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+    boost::shared_ptr<pdat::CellData<double> > dens1(
+            patch.getPatchData(d_density, getNewDataContext()),
+            boost::detail::dynamic_cast_tag());
+    boost::shared_ptr<pdat::CellData<double> > en0(
+            patch.getPatchData(d_energy, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+    boost::shared_ptr<pdat::CellData<double> > en1(
+            patch.getPatchData(d_energy, getNewDataContext()),
+            boost::detail::dynamic_cast_tag());
+    boost::shared_ptr<pdat::CellData<double> > pres(
+            patch.getPatchData(d_pressure, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+    boost::shared_ptr<pdat::CellData<double> > visc(
+            patch.getPatchData(d_viscosity, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+    boost::shared_ptr<pdat::NodeData<double> > v0(
+            patch.getPatchData(d_velocity, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+    boost::shared_ptr<pdat::NodeData<double> > v1(
+            patch.getPatchData(d_velocity, getNewDataContext()),
+            boost::detail::dynamic_cast_tag());
 
     hier::IntVector ghosts = pres->getGhostCellWidth();
 
@@ -1279,12 +1408,20 @@ void Cleverleaf::flux_calc_knl(
         double dt)
 {
 
-    tbox::Pointer<pdat::NodeData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
-    tbox::Pointer<pdat::NodeData<double> > v_vel1 = patch.getPatchData(d_velocity, getNewDataContext());
+    boost::shared_ptr<pdat::NodeData<double> > v_vel0(
+            patch.getPatchData(d_velocity, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+    boost::shared_ptr<pdat::NodeData<double> > v_vel1(
+            patch.getPatchData(d_velocity, getNewDataContext()),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::EdgeData<double> > v_volflux = patch.getPatchData(d_volflux, getCurrentDataContext());
+    boost::shared_ptr<pdat::EdgeData<double> > v_volflux(
+            patch.getPatchData(d_volflux, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_celldeltas(
+            patch.getPatchData(d_celldeltas, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
 
     hier::IntVector ghosts = v_celldeltas->getGhostCellWidth();
 
@@ -1340,14 +1477,29 @@ void Cleverleaf::advec_cell(hier::Patch& patch,
         int sweep_number,
         ADVEC_DIR dir)
 {
-    tbox::Pointer<pdat::CellData<double> > v_density1 = patch.getPatchData(d_density, getNewDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_energy1 = patch.getPatchData(d_energy, getNewDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_volume = patch.getPatchData(d_volume, getCurrentDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_density1(
+            patch.getPatchData(d_density, getNewDataContext()),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::EdgeData<double> > v_volflux = patch.getPatchData(d_volflux, getCurrentDataContext());
-    tbox::Pointer<pdat::EdgeData<double> > v_massflux = patch.getPatchData(d_massflux, getCurrentDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_energy1(
+            patch.getPatchData(d_energy, getNewDataContext()),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::NodeData<double> > vertexdeltas = patch.getPatchData(d_vertexdeltas, getCurrentDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_volume(
+            patch.getPatchData(d_volume, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::EdgeData<double> > v_volflux(
+            patch.getPatchData(d_volflux, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::EdgeData<double> > v_massflux(
+            patch.getPatchData(d_massflux, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::NodeData<double> > vertexdeltas(
+            patch.getPatchData(d_vertexdeltas, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
 
     hier::IntVector ghosts = v_density1->getGhostCellWidth();
 
@@ -1570,14 +1722,29 @@ void Cleverleaf::advec_mom(hier::Patch& patch,
         ADVEC_DIR direction,
         ADVEC_DIR which_vel)
 {
-    tbox::Pointer<pdat::CellData<double> > v_density1 = patch.getPatchData(d_density, getNewDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_volume = patch.getPatchData(d_volume, getCurrentDataContext());
-    tbox::Pointer<pdat::NodeData<double> > v_vel1 = patch.getPatchData(d_velocity, getNewDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_density1(
+            patch.getPatchData(d_density, getNewDataContext()),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::EdgeData<double> > v_volflux = patch.getPatchData(d_volflux, getCurrentDataContext());
-    tbox::Pointer<pdat::EdgeData<double> > v_massflux = patch.getPatchData(d_massflux, getCurrentDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_volume(
+            patch.getPatchData(d_volume, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::CellData<double> > v_celldeltas = patch.getPatchData(d_celldeltas, getCurrentDataContext());
+    boost::shared_ptr<pdat::NodeData<double> > v_vel1(
+            patch.getPatchData(d_velocity, getNewDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::EdgeData<double> > v_volflux(
+            patch.getPatchData(d_volflux, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::EdgeData<double> > v_massflux(
+            patch.getPatchData(d_massflux, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::CellData<double> > v_celldeltas(
+            patch.getPatchData(d_celldeltas, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
 
     hier::IntVector ghosts = v_density1->getGhostCellWidth();
 
@@ -1816,35 +1983,45 @@ void Cleverleaf::setPhysicalBoundaryConditions(
         return;
     }
 
-    tbox::Pointer<pdat::CellData<double> > v_pressure =
-        patch.getPatchData(d_pressure, getScratchDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_pressure(
+            patch.getPatchData(d_pressure, getScratchDataContext()),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::CellData<double> > v_density0 =
-        patch.getPatchData(d_density, getScratchDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_density0(
+            patch.getPatchData(d_density, getScratchDataContext()),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::CellData<double> > v_density1 =
-        patch.getPatchData(d_density, getNewDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_density1(
+            patch.getPatchData(d_density, getNewDataContext()),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::CellData<double> > v_energy0 =
-        patch.getPatchData(d_energy, getScratchDataContext());
-    
-    tbox::Pointer<pdat::CellData<double> > v_energy1 =
-        patch.getPatchData(d_energy, getNewDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_energy0(
+            patch.getPatchData(d_energy, getScratchDataContext()),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::CellData<double> > v_viscosity =
-        patch.getPatchData(d_viscosity, getScratchDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_energy1(
+            patch.getPatchData(d_energy, getNewDataContext()),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::NodeData<double> > v_vel0 =
-        patch.getPatchData(d_velocity, getScratchDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_viscosity(
+            patch.getPatchData(d_viscosity, getScratchDataContext()),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::NodeData<double> > v_vel1 =
-        patch.getPatchData(d_velocity, getNewDataContext());
+    boost::shared_ptr<pdat::NodeData<double> > v_vel0(
+            patch.getPatchData(d_velocity, getScratchDataContext()),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::EdgeData<double> > v_massflux = 
-        patch.getPatchData(d_massflux, getScratchDataContext());
+    boost::shared_ptr<pdat::NodeData<double> > v_vel1(
+            patch.getPatchData(d_velocity, getNewDataContext()),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::EdgeData<double> > v_volflux = 
-        patch.getPatchData(d_volflux, getScratchDataContext());
+    boost::shared_ptr<pdat::EdgeData<double> > v_massflux( 
+            patch.getPatchData(d_massflux, getScratchDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::EdgeData<double> > v_volflux( 
+            patch.getPatchData(d_volflux, getScratchDataContext()),
+            boost::detail::dynamic_cast_tag());
 
     hier::IntVector ghosts = v_pressure->getGhostCellWidth();
 
@@ -1882,11 +2059,11 @@ void Cleverleaf::setPhysicalBoundaryConditions(
 
     int depth = ghost_width_to_fill[0];
 
-    const tbox::Pointer<geom::CartesianPatchGeometry> pgeom = 
-        patch.getPatchGeometry();
+    const boost::shared_ptr<geom::CartesianPatchGeometry> pgeom(
+            patch.getPatchGeometry(),
+            boost::detail::dynamic_cast_tag());
 
     const tbox::Array<hier::BoundaryBox>& edge_bdry = pgeom->getCodimensionBoundaries(Bdry::EDGE2D);
-    tbox::pout << "In Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
 
     for(int i = 0; i < edge_bdry.getSize(); i++) {
         switch(edge_bdry[i].getLocationIndex()) {
@@ -2623,11 +2800,25 @@ void Cleverleaf::field_summary(
         double* ie,
         double* ke)
 {
-    tbox::Pointer<pdat::CellData<double> > v_volume = patch.getPatchData(d_volume, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_density0 = patch.getPatchData(d_density, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_energy0 = patch.getPatchData(d_energy, getCurrentDataContext());
-    tbox::Pointer<pdat::CellData<double> > v_pressure = patch.getPatchData(d_pressure, getCurrentDataContext());
-    tbox::Pointer<pdat::NodeData<double> > v_vel0 = patch.getPatchData(d_velocity, getCurrentDataContext());
+    boost::shared_ptr<pdat::CellData<double> > v_volume(
+            patch.getPatchData(d_volume, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::CellData<double> > v_density0(
+            patch.getPatchData(d_density, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::CellData<double> > v_energy0(
+            patch.getPatchData(d_energy, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::CellData<double> > v_pressure(
+            patch.getPatchData(d_pressure, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::NodeData<double> > v_vel0(
+            patch.getPatchData(d_velocity, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
 
     const hier::Index ifirst = patch.getBox().lower();
     const hier::Index ilast = patch.getBox().upper();
@@ -2689,13 +2880,19 @@ void Cleverleaf::tagGradientDetectorCells(
 
     const int error_level_number = patch.getPatchLevelNumber();
 
-    const tbox::Pointer<geom::CartesianPatchGeometry> patch_geom =
-        patch.getPatchGeometry();
+    const boost::shared_ptr<geom::CartesianPatchGeometry> patch_geom(
+            patch.getPatchGeometry(),
+            boost::detail::dynamic_cast_tag());
+
     const double* dx = patch_geom->getDx();
 
-    tbox::Pointer<pdat::CellData<int> > tags = patch.getPatchData(tag_index);
+    boost::shared_ptr<pdat::CellData<int> > tags(
+            patch.getPatchData(tag_index),
+            boost::detail::dynamic_cast_tag());
 
-    tbox::Pointer<pdat::NodeData<double> > v_velocity = patch.getPatchData(d_velocity, getCurrentDataContext());
+    boost::shared_ptr<pdat::NodeData<double> > v_velocity(
+            patch.getPatchData(d_velocity, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
 
     hier::Box pbox = patch.getBox();
     hier::BoxContainer domain_boxes;
@@ -2707,7 +2904,7 @@ void Cleverleaf::tagGradientDetectorCells(
      * Construct domain bounding box
      */
     hier::Box domain(d_dim);
-    for (hier::BoxContainer::Iterator i(domain_boxes); i != domain_boxes.end(); ++i) {
+    for (hier::BoxContainer::iterator i(domain_boxes); i != domain_boxes.end(); ++i) {
         domain += *i;
     }
 
@@ -2736,7 +2933,7 @@ void Cleverleaf::tagGradientDetectorCells(
      * Create a set of temporary tags and set to untagged value.
      */
 
-    tbox::Pointer<pdat::CellData<int> > temp_tags(new pdat::CellData<int>(
+    boost::shared_ptr<pdat::CellData<int> > temp_tags(new pdat::CellData<int>(
                 pbox,
                 1,
                 nghosts));

@@ -8,7 +8,7 @@
 
 LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
         const std::string& object_name,
-        tbox::Pointer<tbox::Database> input_db,
+        const boost::shared_ptr<tbox::Database>& input_db,
         LagrangianEulerianPatchStrategy* patch_strategy):
     d_dim(patch_strategy->getDim())
 {
@@ -25,16 +25,16 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
     /*
      * Communication algorithms
      */
-    d_bdry_fill_half_step = new xfer::RefineAlgorithm(d_dim);
-    d_bdry_fill_prime_halos = new xfer::RefineAlgorithm(d_dim);
-    d_bdry_fill_pre_lagrange = new xfer::RefineAlgorithm(d_dim);
-    d_bdry_fill_post_viscosity = new xfer::RefineAlgorithm(d_dim);
-    d_bdry_fill_pre_sweep1_cell = new xfer::RefineAlgorithm(d_dim);
-    d_bdry_fill_pre_sweep1_mom = new xfer::RefineAlgorithm(d_dim);
-    d_bdry_fill_pre_sweep2_mom = new xfer::RefineAlgorithm(d_dim);
+    d_bdry_fill_half_step.reset(new xfer::RefineAlgorithm(d_dim));
+    d_bdry_fill_prime_halos.reset(new xfer::RefineAlgorithm(d_dim));
+    d_bdry_fill_pre_lagrange.reset(new xfer::RefineAlgorithm(d_dim));
+    d_bdry_fill_post_viscosity.reset(new xfer::RefineAlgorithm(d_dim));
+    d_bdry_fill_pre_sweep1_cell.reset(new xfer::RefineAlgorithm(d_dim));
+    d_bdry_fill_pre_sweep1_mom.reset(new xfer::RefineAlgorithm(d_dim));
+    d_bdry_fill_pre_sweep2_mom.reset(new xfer::RefineAlgorithm(d_dim));
 
-    d_fill_new_level = new xfer::RefineAlgorithm(d_dim);
-    d_coarsen_field_data = new xfer::CoarsenAlgorithm(d_dim);
+    d_fill_new_level.reset(new xfer::RefineAlgorithm(d_dim));
+    d_coarsen_field_data.reset(new xfer::CoarsenAlgorithm(d_dim));
 
     /*
      * Variable contexts
@@ -63,7 +63,7 @@ LagrangianEulerianIntegrator::~LagrangianEulerianIntegrator()
 
 
 void LagrangianEulerianIntegrator::initializeLevelIntegrator(
-        tbox::Pointer<mesh::GriddingAlgorithmStrategy> gridding_alg)
+        const boost::shared_ptr<mesh::GriddingAlgorithmStrategy>& gridding_alg)
 {
     /*
      * Register model variables here.
@@ -84,7 +84,7 @@ void LagrangianEulerianIntegrator::initializeLevelIntegrator(
  *************************************************************************
  */
 double LagrangianEulerianIntegrator::getLevelDt(
-        const tbox::Pointer<hier::PatchLevel> level,
+        const boost::shared_ptr<hier::PatchLevel>& level,
         const double dt_time,
         const bool initial_time)
 {
@@ -100,8 +100,8 @@ double LagrangianEulerianIntegrator::getLevelDt(
 #if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: getLevelDt: ideal_gas corrector {{{" << std::endl;
 #endif
-    for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
-        tbox::Pointer<hier::Patch> patch = *ip;
+    for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ip++) {
+        boost::shared_ptr<hier::Patch> patch = *ip;
 
         d_patch_strategy->ideal_gas_knl(*patch, false);
     }
@@ -133,8 +133,8 @@ double LagrangianEulerianIntegrator::getLevelDt(
 #if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: getLevelDt: viscosity {{{" << std::endl;
 #endif
-    for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
-        tbox::Pointer<hier::Patch> patch = *ip;
+    for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ++ip) {
+        boost::shared_ptr<hier::Patch> patch = *ip;
 
         d_patch_strategy->viscosity_knl(*patch);
     }
@@ -162,8 +162,8 @@ double LagrangianEulerianIntegrator::getLevelDt(
 #if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: getLevelDt: calc_dt {{{" << std::endl;
 #endif
-    for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
-        tbox::Pointer<hier::Patch> patch = *ip;
+    for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ++ip) {
+        boost::shared_ptr<hier::Patch> patch = *ip;
 
         patch_dt = d_patch_strategy->
             calc_dt_knl(*patch);
@@ -192,9 +192,18 @@ double LagrangianEulerianIntegrator::getLevelDt(
     }
 }
 
+
+double LagrangianEulerianIntegrator::getMaxFinerLevelDt(
+        const int finer_level_number,
+        const double coarse_dt,
+        const hier::IntVector& ratio)
+{
+    return coarse_dt / double(ratio.max());
+}
+
 double LagrangianEulerianIntegrator::advanceLevel(
-        const tbox::Pointer<hier::PatchLevel> level,
-        const tbox::Pointer<hier::PatchHierarchy> hierarchy,
+        const boost::shared_ptr<hier::PatchLevel>& level,
+        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time,
         const double new_time,
         const bool first_step,
@@ -230,9 +239,9 @@ double LagrangianEulerianIntegrator::advanceLevel(
 #if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advanceLevel: PdV predictor {{{" << std::endl;
 #endif
-    for(hier::PatchLevel::Iterator p(level);p;p++){
+    for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
 
-        tbox::Pointer<hier::Patch>patch=*p;
+        boost::shared_ptr<hier::Patch>patch=*p;
 
         d_patch_strategy->pdv_knl(*patch,dt, true);
     }
@@ -246,9 +255,9 @@ double LagrangianEulerianIntegrator::advanceLevel(
 #if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advanceLevel: ideal_gas predictor {{{" << std::endl;
 #endif
-    for(hier::PatchLevel::Iterator p(level);p;p++){
+    for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
 
-        tbox::Pointer<hier::Patch>patch=*p;
+        boost::shared_ptr<hier::Patch>patch=*p;
 
         d_patch_strategy->ideal_gas_knl(*patch,true);
     }
@@ -284,9 +293,9 @@ double LagrangianEulerianIntegrator::advanceLevel(
 #if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advanceLevel: acceleration {{{" << std::endl;
 #endif
-    for(hier::PatchLevel::Iterator p(level);p;p++){
+    for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
 
-        tbox::Pointer<hier::Patch>patch=*p;
+        boost::shared_ptr<hier::Patch>patch=*p;
 
         d_patch_strategy->accelerate(*patch,dt);
     }
@@ -300,9 +309,9 @@ double LagrangianEulerianIntegrator::advanceLevel(
 #if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advanceLevel: PdV corrector {{{" << std::endl;
 #endif
-   for(hier::PatchLevel::Iterator p(level);p;p++){
+    for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
 
-        tbox::Pointer<hier::Patch>patch=*p;
+        boost::shared_ptr<hier::Patch>patch=*p;
 
         d_patch_strategy->pdv_knl(*patch,dt, false);
     }
@@ -313,9 +322,9 @@ double LagrangianEulerianIntegrator::advanceLevel(
    /*
     * flux calculations...
     */
-   for(hier::PatchLevel::Iterator p(level);p;p++){
+    for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
 
-        tbox::Pointer<hier::Patch>patch=*p;
+        boost::shared_ptr<hier::Patch>patch=*p;
 
         d_patch_strategy->flux_calc_knl(*patch,dt);
     }
@@ -343,21 +352,23 @@ double LagrangianEulerianIntegrator::advanceLevel(
 }
 
 void LagrangianEulerianIntegrator::standardLevelSynchronization(
-        const tbox::Pointer<hier::PatchHierarchy> hierarchy,
+        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const int coarsest_level,
         const int finest_level,
         const double sync_time,
-        const double old_time)
+        const tbox::Array<double>& old_times)
 {
     d_current_hierarchy = hierarchy;
+
+    double old_time = old_times[0];
 
     for (int fine_ln = finest_level; fine_ln > coarsest_level; fine_ln--) {
        const int coarse_ln = fine_ln - 1;
 
-       tbox::Pointer<hier::PatchLevel> fine_level = hierarchy->getPatchLevel(fine_ln);
-       tbox::Pointer<hier::PatchLevel> coarse_level = hierarchy->getPatchLevel(coarse_ln);
+       boost::shared_ptr<hier::PatchLevel> fine_level = hierarchy->getPatchLevel(fine_ln);
+       boost::shared_ptr<hier::PatchLevel> coarse_level = hierarchy->getPatchLevel(coarse_ln);
 
-       const tbox::Pointer<hier::PatchHierarchy> patch_hierarchy = hierarchy;
+       const boost::shared_ptr<hier::PatchHierarchy> patch_hierarchy = hierarchy;
 
  /*
   * Sync
@@ -371,7 +382,7 @@ void LagrangianEulerianIntegrator::standardLevelSynchronization(
 }
 
 void LagrangianEulerianIntegrator::synchronizeNewLevels(
-        const tbox::Pointer<hier::PatchHierarchy> hierarchy,
+        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const int coarsest_level,
         const int finest_level,
         const double sync_time,
@@ -381,12 +392,12 @@ void LagrangianEulerianIntegrator::synchronizeNewLevels(
 }
 
 void LagrangianEulerianIntegrator::resetTimeDependentData(
-        const tbox::Pointer<hier::PatchLevel> level,
+        const boost::shared_ptr<hier::PatchLevel>& level,
         const double new_time,
         const bool can_be_refined){}
 
 void LagrangianEulerianIntegrator::resetDataToPreadvanceState(
-        const tbox::Pointer<hier::PatchLevel> level){}
+        const boost::shared_ptr<hier::PatchLevel>& level){}
 
 bool LagrangianEulerianIntegrator::usingRefinedTimestepping() const
 {
@@ -395,18 +406,18 @@ bool LagrangianEulerianIntegrator::usingRefinedTimestepping() const
 
 
 void LagrangianEulerianIntegrator::initializeLevelData (
-        const tbox::Pointer<hier::PatchHierarchy> hierarchy,
+        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const int level_number,
         const double init_data_time,
         const bool can_be_refined,
         const bool initial_time,
-        const tbox::Pointer<hier::PatchLevel> old_level,
+        const boost::shared_ptr<hier::PatchLevel>& old_level,
         const bool allocate_data)
 {
 
     d_current_hierarchy = hierarchy;
 
-    tbox::Pointer<hier::PatchLevel> level(
+    boost::shared_ptr<hier::PatchLevel> level(
             hierarchy->getPatchLevel(level_number));
 
 
@@ -428,13 +439,13 @@ void LagrangianEulerianIntegrator::initializeLevelData (
 
    const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
 
-   if ((level_number > 0) || !old_level.isNull()) {
+   if ((level_number > 0) || old_level) {
 
-      const tbox::Pointer<hier::PatchHierarchy> patch_hierarchy(hierarchy);
+      const boost::shared_ptr<hier::PatchHierarchy> patch_hierarchy(hierarchy);
 
       d_patch_strategy->setCurrentDataContext(d_scratch);
 
-      tbox::Pointer<xfer::RefineSchedule> sched(
+      boost::shared_ptr<xfer::RefineSchedule> sched(
          d_fill_new_level->createSchedule(level,
             old_level,
             level_number-1,
@@ -447,8 +458,8 @@ void LagrangianEulerianIntegrator::initializeLevelData (
       d_patch_strategy->setCurrentDataContext(d_current);
    }
 
-    for (hier::PatchLevel::Iterator p(level); p; p++) {
-        tbox::Pointer<hier::Patch> patch(*p);
+    for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
+        boost::shared_ptr<hier::Patch> patch(*p);
 
         d_patch_strategy->initializeDataOnPatch(*patch,
                 init_data_time,
@@ -460,7 +471,7 @@ void LagrangianEulerianIntegrator::initializeLevelData (
 
 //    } else {
 //
-    tbox::Pointer<xfer::RefineSchedule> refine_sched;
+    boost::shared_ptr<xfer::RefineSchedule> refine_sched;
 
     d_patch_strategy->setCurrentDataContext(d_scratch);
 
@@ -472,16 +483,16 @@ void LagrangianEulerianIntegrator::initializeLevelData (
     d_patch_strategy->setCurrentDataContext(d_current);
 //   }
 
-    if ((level_number > 0) || !old_level.isNull()) {
+    if ((level_number > 0) || old_level) {
 
         d_patch_strategy->setCurrentDataContext(d_scratch);
         level->allocatePatchData(d_var_scratch_data, init_data_time);
 
-        const tbox::Pointer<hier::PatchHierarchy> patch_hierarchy(hierarchy);
+        const boost::shared_ptr<hier::PatchHierarchy> patch_hierarchy(hierarchy);
 
         d_patch_strategy->setCurrentDataContext(d_scratch);
 
-        tbox::Pointer<xfer::RefineSchedule> sched(
+        boost::shared_ptr<xfer::RefineSchedule> sched(
                 d_bdry_fill_prime_halos->createSchedule(level,
                     old_level,
                     level_number-1,
@@ -499,12 +510,12 @@ void LagrangianEulerianIntegrator::initializeLevelData (
 }
 
 void LagrangianEulerianIntegrator::resetHierarchyConfiguration (
-        const tbox::Pointer<hier::PatchHierarchy> hierarchy,
+        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const int coarsest_level,
         const int finest_level){}
 
 void LagrangianEulerianIntegrator::applyGradientDetector (
-        const tbox::Pointer<hier::PatchHierarchy> hierarchy,
+        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const int level_number,
         const double error_data_time,
         const int tag_index,
@@ -512,14 +523,14 @@ void LagrangianEulerianIntegrator::applyGradientDetector (
         const bool uses_richardson_extrapolation_too)
 {
 
-   tbox::Pointer<hier::PatchLevel> level(hierarchy->getPatchLevel(level_number));
+   boost::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(level_number));
 
    const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
 
    //d_bdry_sched_advance[level_number]->fillData(error_data_time);
 
-   for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
-      tbox::Pointer<hier::Patch> patch(*ip);
+    for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ++ip) {
+      boost::shared_ptr<hier::Patch> patch(*ip);
       d_patch_strategy->
       tagGradientDetectorCells(*patch,
          error_data_time,
@@ -533,15 +544,15 @@ void LagrangianEulerianIntegrator::applyGradientDetector (
  */
 
 void LagrangianEulerianIntegrator::putToDatabase(
-        tbox::Pointer<tbox::Database> database){}
+        const boost::shared_ptr<tbox::Database>& database) const {}
 
 
 void LagrangianEulerianIntegrator::registerVariable(
-        tbox::Pointer<hier::Variable> var,
+        const boost::shared_ptr<hier::Variable>& var,
         const int var_type,
         const int var_exchanges,
         const hier::IntVector ghosts,
-        const tbox::Pointer<hier::GridGeometry> transfer_geom)
+        const boost::shared_ptr<hier::BaseGridGeometry>& transfer_geom)
 {
     //tbox::pout << "Registering variable: " << var->getName() << std::endl;
 
@@ -552,12 +563,12 @@ void LagrangianEulerianIntegrator::registerVariable(
     const hier::IntVector& zero_ghosts(hier::IntVector::getZero(dim));
 
     if((var_type & FIELD) == FIELD) {
-        d_field_vars.appendItem(var);
+        d_field_vars.push_back(var);
     }
 
     if((var_type & REVERT) == REVERT) {
         //std::cout << "Found a revert var: " << var->getName() << std::endl;
-        d_revert_vars.appendItem(var);
+        d_revert_vars.push_back(var);
     }
 
     int cur_id = variable_db->registerVariableAndContext(var,
@@ -572,8 +583,8 @@ void LagrangianEulerianIntegrator::registerVariable(
             d_scratch,
             ghosts);
 
-    tbox::Pointer<hier::RefineOperator> refine_op;
-    tbox::Pointer<hier::CoarsenOperator> coarsen_op;
+    boost::shared_ptr<hier::RefineOperator> refine_op;
+    boost::shared_ptr<hier::CoarsenOperator> coarsen_op;
 
 //    if (var->getName() == "massflux") {
 //        //tbox::pout << "Using CONSERVATIVE_LINEAR_REFINE..." << std::endl;
@@ -739,51 +750,54 @@ void LagrangianEulerianIntegrator::registerVariable(
     d_var_scratch_data.setFlag(scr_id);
 }
 
-tbox::Pointer<hier::VariableContext> LagrangianEulerianIntegrator::getPlotContext()
+boost::shared_ptr<hier::VariableContext> LagrangianEulerianIntegrator::getPlotContext()
 {
     return d_plot_context;
 }
 
 
 void LagrangianEulerianIntegrator::resetField(
-   const tbox::Pointer<hier::PatchLevel> level)
+   const boost::shared_ptr<hier::PatchLevel>& level)
 {
-   for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
-      tbox::Pointer<hier::Patch> patch = *ip;
+   for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ++ip) {
+      boost::shared_ptr<hier::Patch> patch = *ip;
 
-      tbox::List<tbox::Pointer<hier::Variable> >::Iterator
-         field_var = d_field_vars.listStart();
-      while (field_var) {
+      std::list<boost::shared_ptr<hier::Variable> >::iterator
+         field_var = d_field_vars.begin();
+
+      while (field_var != d_field_vars.end()) {
 
           //tbox::pout << "Copying " << field_var()->getName() << " back to tl0" << std::endl;
 
-         tbox::Pointer<hier::PatchData> src_data =
-            patch->getPatchData(field_var(), d_new);
-         tbox::Pointer<hier::PatchData> dst_data =
-            patch->getPatchData(field_var(), d_current);
+         boost::shared_ptr<hier::PatchData> src_data =
+            patch->getPatchData(*field_var, d_new);
+         boost::shared_ptr<hier::PatchData> dst_data =
+            patch->getPatchData(*field_var, d_current);
 
          dst_data->copy(*src_data);
+
          field_var++;
       }
    }
 }
 
 void LagrangianEulerianIntegrator::revert(
-   const tbox::Pointer<hier::PatchLevel> level)
+   const boost::shared_ptr<hier::PatchLevel>& level)
 {
-   for (hier::PatchLevel::Iterator ip(level); ip; ip++) {
-      tbox::Pointer<hier::Patch> patch = *ip;
+   for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ++ip) {
+      boost::shared_ptr<hier::Patch> patch = *ip;
 
-      tbox::List<tbox::Pointer<hier::Variable> >::Iterator
-         revert_var = d_revert_vars.listStart();
-      while (revert_var) {
+      std::list<boost::shared_ptr<hier::Variable> >::iterator
+         revert_var = d_revert_vars.begin();
+
+      while (revert_var != d_revert_vars.end()) {
 #if DEBUG
           tbox::pout << "Copying " << revert_var()->getName() << " back to tl0" << std::endl;
 #endif
-         tbox::Pointer<hier::PatchData> dst_data =
-            patch->getPatchData(revert_var(), d_new);
-         tbox::Pointer<hier::PatchData> src_data =
-            patch->getPatchData(revert_var(), d_current);
+         boost::shared_ptr<hier::PatchData> dst_data =
+            patch->getPatchData(*revert_var, d_new);
+         boost::shared_ptr<hier::PatchData> src_data =
+            patch->getPatchData(*revert_var, d_current);
 
         dst_data->copy(*src_data);
          revert_var++;
@@ -792,8 +806,8 @@ void LagrangianEulerianIntegrator::revert(
 }
 
 void LagrangianEulerianIntegrator::advection(
-        const tbox::Pointer<hier::PatchLevel> level,
-        const tbox::Pointer<hier::PatchHierarchy> hierarchy,
+        const boost::shared_ptr<hier::PatchLevel>& level,
+        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         double current_time)
 {
 
@@ -817,9 +831,9 @@ void LagrangianEulerianIntegrator::advection(
 #if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advection: advec_cell {{{" << std::endl;
 #endif
-    for(hier::PatchLevel::Iterator p(level);p;p++){
+    for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
 
-        tbox::Pointer<hier::Patch>patch=*p;
+        boost::shared_ptr<hier::Patch>patch=*p;
 
         d_patch_strategy->advec_cell(*patch,sweep_number,direction);
     }
@@ -841,9 +855,9 @@ void LagrangianEulerianIntegrator::advection(
 #if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advection: advec_mom x {{{" << std::endl;
 #endif
-    for(hier::PatchLevel::Iterator p(level);p;p++){
+    for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
 
-        tbox::Pointer<hier::Patch>patch=*p;
+        boost::shared_ptr<hier::Patch>patch=*p;
 
         /*
          * advection for x and y momentum.
@@ -857,9 +871,9 @@ void LagrangianEulerianIntegrator::advection(
 #if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advection: advec_mom y {{{" << std::endl;
 #endif
-    for(hier::PatchLevel::Iterator p(level);p;p++){
+    for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
 
-        tbox::Pointer<hier::Patch>patch=*p;
+        boost::shared_ptr<hier::Patch>patch=*p;
 
         /*
          * advection for x and y momentum.
@@ -878,9 +892,9 @@ void LagrangianEulerianIntegrator::advection(
 #if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advection sweep 2: advec_cell {{{" << std::endl;
 #endif
-    for(hier::PatchLevel::Iterator p(level);p;p++){
+    for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
 
-        tbox::Pointer<hier::Patch>patch=*p;
+        boost::shared_ptr<hier::Patch>patch=*p;
 
         d_patch_strategy->advec_cell(*patch,sweep_number,direction);
     }
@@ -901,9 +915,9 @@ void LagrangianEulerianIntegrator::advection(
 #if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advection: advec_mom x {{{" << std::endl;
 #endif
-    for(hier::PatchLevel::Iterator p(level);p;p++){
+    for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
 
-        tbox::Pointer<hier::Patch>patch=*p;
+        boost::shared_ptr<hier::Patch>patch=*p;
 
         /*
          * advection for x and y momentum.
@@ -917,9 +931,9 @@ void LagrangianEulerianIntegrator::advection(
 #if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advection: advec_mom y {{{" << std::endl;
 #endif
-    for(hier::PatchLevel::Iterator p(level);p;p++){
+    for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
 
-        tbox::Pointer<hier::Patch>patch=*p;
+        boost::shared_ptr<hier::Patch>patch=*p;
 
         /*
          * advection for x and y momentum.
@@ -935,7 +949,7 @@ void LagrangianEulerianIntegrator::printFieldSummary(
         double time,
         int step)
 {
-    tbox::Pointer<hier::PatchLevel> level = d_current_hierarchy->getPatchLevel(0);
+    boost::shared_ptr<hier::PatchLevel> level = d_current_hierarchy->getPatchLevel(0);
     const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
 
     double vol;
@@ -950,9 +964,9 @@ void LagrangianEulerianIntegrator::printFieldSummary(
     double global_ie;
     double global_ke;
 
-    for(hier::PatchLevel::Iterator p(level);p;p++){
+    for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
 
-        tbox::Pointer<hier::Patch>patch=*p;
+        boost::shared_ptr<hier::Patch>patch=*p;
 
         d_patch_strategy->ideal_gas_knl(*patch, false);
 

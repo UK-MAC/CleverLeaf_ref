@@ -8,34 +8,34 @@ LagrangianEulerianPatchStrategy::LagrangianEulerianPatchStrategy(
 }
 
 void LagrangianEulerianPatchStrategy::setCurrentDataContext(
-        tbox::Pointer<hier::VariableContext> context)
+        boost::shared_ptr<hier::VariableContext> context)
 {
     d_current_data_context = context;
 }
 
 void LagrangianEulerianPatchStrategy::setNewDataContext(
-        tbox::Pointer<hier::VariableContext> context)
+        boost::shared_ptr<hier::VariableContext> context)
 {
     d_new_data_context = context;
 }
 
 void LagrangianEulerianPatchStrategy::setScratchDataContext(
-        tbox::Pointer<hier::VariableContext> context)
+        boost::shared_ptr<hier::VariableContext> context)
 {
     d_scratch_data_context = context;
 }
 
-tbox::Pointer<hier::VariableContext> LagrangianEulerianPatchStrategy::getCurrentDataContext()
+boost::shared_ptr<hier::VariableContext> LagrangianEulerianPatchStrategy::getCurrentDataContext()
 {
     return d_current_data_context;
 }
 
-tbox::Pointer<hier::VariableContext> LagrangianEulerianPatchStrategy::getNewDataContext()
+boost::shared_ptr<hier::VariableContext> LagrangianEulerianPatchStrategy::getNewDataContext()
 {
     return d_new_data_context;
 }
 
-tbox::Pointer<hier::VariableContext> LagrangianEulerianPatchStrategy::getScratchDataContext()
+boost::shared_ptr<hier::VariableContext> LagrangianEulerianPatchStrategy::getScratchDataContext()
 {
     return d_scratch_data_context;
 }

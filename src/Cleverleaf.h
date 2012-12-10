@@ -4,7 +4,6 @@
 #include "LagrangianEulerianPatchStrategy.h"
 #include "LagrangianEulerianIntegrator.h"
 
-#include "SAMRAI/tbox/Pointer.h"
 #include "SAMRAI/appu/VisItDataWriter.h"
 #include "SAMRAI/mesh/StandardTagAndInitStrategy.h"
 #include "SAMRAI/hier/PatchHierarchy.h"
@@ -45,16 +44,16 @@ class Cleverleaf:
          * @param grid_geometry The geometry of the problem.
          */
         Cleverleaf(
-                tbox::Pointer<hier::PatchHierarchy> hierarchy,
+                boost::shared_ptr<hier::PatchHierarchy> hierarchy,
                 const tbox::Dimension& dim,
-                tbox::Pointer<geom::CartesianGridGeometry> grid_geometry);
+                boost::shared_ptr<geom::CartesianGridGeometry> grid_geometry);
 
         /**
          * Register a VisitDataWriter with the class.
          *
          * @param writer The VisitDataWriter to register.
          */
-        void registerVisItDataWriter(tbox::Pointer<appu::VisItDataWriter> writer);
+        void registerVisItDataWriter(boost::shared_ptr<appu::VisItDataWriter> writer);
 
         void registerModelVariables(LagrangianEulerianIntegrator* integrator);
 
@@ -227,10 +226,10 @@ class Cleverleaf:
 
     private:
 
-        tbox::Pointer<hier::PatchHierarchy> d_hierarchy;
-        tbox::Pointer<appu::VisItDataWriter> d_visit_writer;
+        boost::shared_ptr<hier::PatchHierarchy> d_hierarchy;
+        boost::shared_ptr<appu::VisItDataWriter> d_visit_writer;
 
-        tbox::Pointer<geom::CartesianGridGeometry> d_grid_geometry;
+        boost::shared_ptr<geom::CartesianGridGeometry> d_grid_geometry;
 
         const tbox::Dimension d_dim;
 
@@ -239,25 +238,25 @@ class Cleverleaf:
         /*
          * Variables
          */
-        tbox::Pointer<pdat::NodeVariable<double> > d_velocity;
-        tbox::Pointer<pdat::EdgeVariable<double> > d_massflux;
-        tbox::Pointer<pdat::EdgeVariable<double> > d_volflux;
-        tbox::Pointer<pdat::CellVariable<double> > d_pressure;
-        tbox::Pointer<pdat::CellVariable<double> > d_viscosity;
-        tbox::Pointer<pdat::CellVariable<double> > d_soundspeed;
-        tbox::Pointer<pdat::CellVariable<double> > d_density;
-        tbox::Pointer<pdat::CellVariable<double> > d_energy;
-        tbox::Pointer<pdat::CellVariable<double> > d_volume;
+        boost::shared_ptr<pdat::NodeVariable<double> > d_velocity;
+        boost::shared_ptr<pdat::EdgeVariable<double> > d_massflux;
+        boost::shared_ptr<pdat::EdgeVariable<double> > d_volflux;
+        boost::shared_ptr<pdat::CellVariable<double> > d_pressure;
+        boost::shared_ptr<pdat::CellVariable<double> > d_viscosity;
+        boost::shared_ptr<pdat::CellVariable<double> > d_soundspeed;
+        boost::shared_ptr<pdat::CellVariable<double> > d_density;
+        boost::shared_ptr<pdat::CellVariable<double> > d_energy;
+        boost::shared_ptr<pdat::CellVariable<double> > d_volume;
 
-        tbox::Pointer<pdat::CellVariable<double> > d_celldeltas;
-        tbox::Pointer<pdat::CellVariable<double> > d_cellcoords;
+        boost::shared_ptr<pdat::CellVariable<double> > d_celldeltas;
+        boost::shared_ptr<pdat::CellVariable<double> > d_cellcoords;
 
-        tbox::Pointer<pdat::NodeVariable<double> > d_vertexdeltas;
-        tbox::Pointer<pdat::NodeVariable<double> > d_vertexcoords;
+        boost::shared_ptr<pdat::NodeVariable<double> > d_vertexdeltas;
+        boost::shared_ptr<pdat::NodeVariable<double> > d_vertexcoords;
 
         /*
          * Variable contexts
          */
-        tbox::Pointer<hier::VariableContext> d_plot_context;
+        boost::shared_ptr<hier::VariableContext> d_plot_context;
 };
 #endif

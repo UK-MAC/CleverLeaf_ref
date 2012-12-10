@@ -14,7 +14,6 @@
 #include "SAMRAI/hier/VariableDatabase.h"
 #include "SAMRAI/mesh/StandardTagAndInitialize.h"
 #include "SAMRAI/appu/VisItDataWriter.h"
-#include "SAMRAI/tbox/Pointer.h"
 #include "SAMRAI/tbox/InputManager.h"
 
 // Normal headers
@@ -53,13 +52,13 @@ int main(int argc, char* argv[]) {
          * Create input database and parse input file.
          */
 
-        tbox::Pointer<tbox::Database> input_db(new tbox::InputDatabase("input_db"));
+        boost::shared_ptr<tbox::InputDatabase> input_db(new tbox::InputDatabase("input_db"));
         tbox::InputManager::getManager()->parseInputFile(input_filename, input_db);
 
         /*
          * Read in main data.
          */
-        tbox::Pointer<tbox::Database> main_db = input_db->getDatabase("Main");
+        boost::shared_ptr<tbox::Database> main_db = input_db->getDatabase("Main");
 
         const tbox::Dimension dim(static_cast<unsigned short>(main_db->getInteger("dim")));
 
@@ -69,12 +68,12 @@ int main(int argc, char* argv[]) {
         /*
          * Create data and algorithm objects.
          */
-        tbox::Pointer<geom::CartesianGridGeometry> grid_geometry(
+        boost::shared_ptr<geom::CartesianGridGeometry> grid_geometry(
                 new geom::CartesianGridGeometry(dim,
                     "CartesianGeometry",
                     input_db->getDatabase("CartesianGeometry")));
 
-        tbox::Pointer<hier::PatchHierarchy> patch_hierarchy(
+        boost::shared_ptr<hier::PatchHierarchy> patch_hierarchy(
                 new hier::PatchHierarchy("PatchHierarchy",
                     /* 
                      * Pass the grid geometry into the patch hierarchy, 
@@ -87,17 +86,18 @@ int main(int argc, char* argv[]) {
          * Create the Cleverleaf model here to control the maths specific to this
          * program.
          */
-        tbox::Pointer<tbox::Database> cleverleaf_db = input_db->getDatabase("Cleverleaf");
+        boost::shared_ptr<tbox::Database> cleverleaf_db = input_db->getDatabase("Cleverleaf");
 
         bool vis_me = cleverleaf_db->getBool("vis");
         int visit_number_procs_per_file = 1;
         const std::string visit_dump_dirname = "cleverleaf.visit";
 
-        Cleverleaf* cleverleaf = new Cleverleaf(patch_hierarchy,
+        Cleverleaf* cleverleaf = new Cleverleaf(
+                patch_hierarchy,
                 dim,
                 grid_geometry);
 
-        tbox::Pointer<LagrangianEulerianIntegrator> lagrangian_eulerian_integrator(
+        boost::shared_ptr<LagrangianEulerianIntegrator> lagrangian_eulerian_integrator(
                 new LagrangianEulerianIntegrator("LagrangianEulerianIntegrator",
                     input_db->getDatabase("LagrangianEulerianIntegrator"),
                     /*
@@ -106,20 +106,20 @@ int main(int argc, char* argv[]) {
                      */
                     cleverleaf));
 
-        tbox::Pointer<mesh::StandardTagAndInitialize> error_detector(
+        boost::shared_ptr<mesh::StandardTagAndInitialize> error_detector(
                 new mesh::StandardTagAndInitialize(dim,
                     "StandardTagAndInitialize",
-                    lagrangian_eulerian_integrator,
+                    lagrangian_eulerian_integrator.get(),
                     input_db->getDatabase("StandardTagAndInitialize")));
 
-        tbox::Pointer<mesh::BergerRigoutsos> box_generator(
+        boost::shared_ptr<mesh::BergerRigoutsos> box_generator(
                 new mesh::BergerRigoutsos(
                     dim,
                     input_db->getDatabaseWithDefault(
                         "BergerRigoutsos",
-                        SAMRAI::tbox::Pointer<SAMRAI::tbox::Database>(NULL))));
+                        boost::shared_ptr<SAMRAI::tbox::Database>())));
 
-        tbox::Pointer<mesh::TreeLoadBalancer> load_balancer(
+        boost::shared_ptr<mesh::TreeLoadBalancer> load_balancer(
                 new mesh::TreeLoadBalancer(dim,
                     "LoadBalancer",
                     input_db->getDatabase("LoadBalancer")));
@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
         load_balancer->setSAMRAI_MPI(
                 SAMRAI::tbox::SAMRAI_MPI::getSAMRAIWorld());
 
-        tbox::Pointer<mesh::GriddingAlgorithm> gridding_algorithm(
+        boost::shared_ptr<mesh::GriddingAlgorithm> gridding_algorithm(
                 new mesh::GriddingAlgorithm(
                     patch_hierarchy,
                     "GriddingAlgorithm",
@@ -136,7 +136,7 @@ int main(int argc, char* argv[]) {
                     box_generator,
                     load_balancer));
 
-        tbox::Pointer<algs::TimeRefinementIntegrator> time_integrator(
+        boost::shared_ptr<algs::TimeRefinementIntegrator> time_integrator(
                 new algs::TimeRefinementIntegrator("TimeRefinementIntegrator",
                     input_db->getDatabase("TimeRefinementIntegrator"),
                     patch_hierarchy,
@@ -150,7 +150,7 @@ int main(int argc, char* argv[]) {
         /*
          * Set up ViSiT writer here.
          */
-        tbox::Pointer<appu::VisItDataWriter> visit_data_writer(
+        boost::shared_ptr<appu::VisItDataWriter> visit_data_writer(
                 new appu::VisItDataWriter(dim,
                     "Kamra VisIt Writer",
                     visit_dump_dirname,
@@ -227,12 +227,12 @@ int main(int argc, char* argv[]) {
         /*
          * Deallocate objects
          */
-        patch_hierarchy.setNull();
-        grid_geometry.setNull();
-        box_generator.setNull();
-        load_balancer.setNull();
-        error_detector.setNull();
-        gridding_algorithm.setNull();
+        patch_hierarchy.reset();
+        grid_geometry.reset();
+        box_generator.reset();
+        load_balancer.reset();
+        error_detector.reset();
+        gridding_algorithm.reset();
 
         if (cleverleaf) delete cleverleaf;
 
