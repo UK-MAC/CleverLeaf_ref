@@ -45,7 +45,7 @@ int CartesianCellDoubleMassWeightedAverage::getOperatorPriority() const
 
 hier::IntVector
 CartesianCellDoubleMassWeightedAverage::getStencilWidth() const {
-   return hier::IntVector::getZero(getDim());
+   return hier::IntVector(getDim(), 0);
 }
 
 void CartesianCellDoubleMassWeightedAverage::coarsen(

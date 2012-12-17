@@ -105,8 +105,8 @@ Cleverleaf::Cleverleaf(
     boost::shared_ptr<hier::CoarsenOperator> vol_weighted_avg(new CartesianCellDoubleVolumeWeightedAverage(dim));
     boost::shared_ptr<hier::CoarsenOperator> mass_weighted_avg(new CartesianCellDoubleMassWeightedAverage(dim));
 
-    d_grid_geometry->addCoarsenOperator("density", vol_weighted_avg);
-    d_grid_geometry->addCoarsenOperator("energy", mass_weighted_avg);
+    d_grid_geometry->addCoarsenOperator(typeid(pdat::CellVariable<double>).name(), vol_weighted_avg);
+    d_grid_geometry->addCoarsenOperator(typeid(pdat::CellVariable<double>).name(), mass_weighted_avg);
 
 }
 
