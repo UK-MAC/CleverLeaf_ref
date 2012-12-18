@@ -2890,8 +2890,12 @@ void Cleverleaf::tagGradientDetectorCells(
             patch.getPatchData(tag_index),
             boost::detail::dynamic_cast_tag());
 
-    boost::shared_ptr<pdat::NodeData<double> > v_velocity(
-            patch.getPatchData(d_velocity, getCurrentDataContext()),
+    boost::shared_ptr<pdat::CellData<double> > v_density(
+            patch.getPatchData(d_density, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::CellData<double> > v_energy(
+            patch.getPatchData(d_energy, getCurrentDataContext()),
             boost::detail::dynamic_cast_tag());
 
     hier::Box pbox = patch.getBox();
@@ -2913,20 +2917,20 @@ void Cleverleaf::tagGradientDetectorCells(
     hier::Index ifirst = patch.getBox().lower();
     hier::Index ilast = patch.getBox().upper();
 
-    hier::IntVector nghosts = v_velocity->getGhostCellWidth();
+    hier::IntVector nghosts = v_density->getGhostCellWidth();
     hier::IntVector tnghosts = tags->getGhostCellWidth();
 
-    int x_min = ifirst(0) - nghosts[0];
-    int y_min = ifirst(1) - nghosts[1];
-    int x_max = ilast(0) + nghosts[0];
-    int y_max = ilast(1) + nghosts[1];
+    int xmin = ifirst(0) - nghosts[0];
+    int ymin = ifirst(1) - nghosts[1];
+    int xmax = ilast(0) + nghosts[0];
+    int ymax = ilast(1) + nghosts[1];
 
     int tx_min = ifirst(0) - tnghosts[0];
     int ty_min = ifirst(1) - tnghosts[1];
     int tx_max = ilast(0) + tnghosts[0];
     int ty_max = ilast(1) + tnghosts[1];
 
-    int nx = (x_max - x_min) + 1;
+    int nx = (xmax - xmin) + 1;
     int tnx = (tx_max - tx_min) + 1;
 
     /*
@@ -2941,27 +2945,43 @@ void Cleverleaf::tagGradientDetectorCells(
     temp_tags->fillAll(0);
     tags->fillAll(0);
 
-    double* xvel0 = v_velocity->getPointer(0);
-    double* yvel0 = v_velocity->getPointer(1);
+    double* density0 = v_density->getPointer();
+    double* energy0 = v_energy->getPointer();
 
     for(int k = ifirst(1); k <= ilast(1)+1; k++) {
         for(int j = ifirst(0); j <= ilast(0)+1; j++) {
 
-            int xv1 = POLY2(j,k, x_min, y_min, (nx+1));
-            int yv1 = POLY2(j,k, x_min, y_min, (nx+1));
+            int n1 = POLY2(j,k, xmin, ymin, nx);
 
+            double d2x = abs(density0(j+1,k) - 2.0*density0(j,k) + density0(j-1,k));
+            double d2y = abs(density0(j,k+1) - 2.0*density0(j,k) + density0(j,k-1));
 
-            int n1 = POLY2(j,k, x_min, y_min, nx);
-            int n2 = POLY2(j-1,k, x_min, y_min, nx);
-            int n3 = POLY2(j,k-1, x_min, y_min, nx);
-            int n4 = POLY2(j-1,k-1, x_min, y_min, nx);
+            double dxy = abs(density0(j+1,k+1) - 2.0*density0(j,k) + density0(j-1,k-1));
+            double dyx = abs(density0(j-1,k+1) - 2.0*density0(j,k) + density0(j+1,k-1));
 
-            if (abs(xvel0[xv1]) > 0.4 || abs(yvel0[yv1]) > 0.4) {
-                temp_tags->getPointer()[n1] = 1;
-                temp_tags->getPointer()[n2] = 1;
-                temp_tags->getPointer()[n3] = 1;
-                temp_tags->getPointer()[n4] = 1;
-                //std::cout << "tagging node: " << j << "," << k << std::endl;
+            double dd = max(d2x,max(d2y,max(dxy,dyx)));
+
+            if (dd > 0.1 ) {
+                temp_tags->getPointer(0)[n1] = 1;
+            }
+        }
+    }
+
+    for(int k = ifirst(1); k <= ilast(1)+1; k++) {
+        for(int j = ifirst(0); j <= ilast(0)+1; j++) {
+
+            int n1 = POLY2(j,k, xmin, ymin, nx);
+
+            double d2x = abs(energy0(j+1,k) - 2.0*energy0(j,k) + energy0(j-1,k));
+            double d2y = abs(energy0(j,k+1) - 2.0*energy0(j,k) + energy0(j,k-1));
+
+            double dxy = abs(energy0(j+1,k+1) - 2.0*energy0(j,k) + energy0(j-1,k-1));
+            double dyx = abs(energy0(j-1,k+1) - 2.0*energy0(j,k) + energy0(j+1,k-1));
+
+            double dd = max(d2x,max(d2y,max(dxy,dyx)));
+
+            if (dd > 0.1 ) {
+                temp_tags->getPointer(0)[n1] = 1;
             }
         }
     }
@@ -2990,17 +3010,18 @@ void Cleverleaf::tagGradientDetectorCells(
     /*
      * Update tags
      */
-//    for (pdat::CellIterator ic(pbox); ic; ic++) {
-//        (*tags)(ic(), 0) = (*temp_tags)(ic(), 0);
+   pdat::CellIterator icend(pbox, false);
+   for (pdat::CellIterator ic(pbox, true); ic != icend; ++ic) {
+      (*tags)(*ic, 0) = (*temp_tags)(*ic, 0);
+   }
+
+//    for (int k = ifirst(1); k <= ilast(1); k++) {
+//        for (int j = ifirst(0); j <= ilast(0); j++) {
+//
+//            int n1 = POLY2(j,k, xmin, ymin, nx);
+//            int t1 = POLY2(j,k, tx_min, ty_min, tnx);
+//
+//            tags->getPointer(0)[t1] = temp_tags->getPointer(0)[n1];
+//        }
 //    }
-
-    for (int k = ifirst(1); k <= ilast(1); k++) {
-        for (int j = ifirst(0); j <= ilast(0); j++) {
-
-            int n1 = POLY2(j,k, x_min, y_min, nx);
-            int t1 = POLY2(j,k, tx_min, ty_min, tnx);
-
-            tags->getPointer(0)[t1] = temp_tags->getPointer(0)[n1];
-        }
-    }
 }
