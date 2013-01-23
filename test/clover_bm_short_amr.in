@@ -1,35 +1,37 @@
 Main {
     dim = 2
     vis_dump_interval = 1
-    field_summary_interval = 1
+    field_summary_interval = 5
 }
 
 CartesianGeometry {
-    domain_boxes = [ (0,0), (119,119) ]
+    domain_boxes = [ (0,0), (240,240) ]
     x_lo         = 0.e0, 0.e0
     x_up         = 10.e0, 10.e0
 }
 
 PatchHierarchy {
-    max_levels = 3
+    max_levels = 2
 
     ratio_to_coarser {
-        level_1 = 4,4
+        level_1 = 2,2
     }
     
     largest_patch_size {
-        level_0 = 120,120
+        level_0 = 240,240
     }
 
     smallest_patch_size {
-        level_0 = 120,120
-        level_1 = 5,5
+        level_0 = 240,240
+        level_1 = 10,10
     }
+
+    proper_nesting_buffer = {2,2}
 }
 
 Cleverleaf {
     vis = FALSE
-    vis_dump_interval = 0
+    vis_dump_interval = 1
 }
 
 LagrangianEulerianIntegrator{}

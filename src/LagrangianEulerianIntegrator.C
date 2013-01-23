@@ -4,6 +4,8 @@
 #include "SAMRAI/hier/VariableDatabase.h"
 #include "SAMRAI/hier/Patch.h"
 
+#include <string>
+
 #define LOOPPRINT 0
 
 LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
@@ -25,15 +27,15 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
     /*
      * Communication algorithms
      */
-    d_bdry_fill_half_step.reset(new xfer::RefineAlgorithm(d_dim));
-    d_bdry_fill_prime_halos.reset(new xfer::RefineAlgorithm(d_dim));
-    d_bdry_fill_pre_lagrange.reset(new xfer::RefineAlgorithm(d_dim));
-    d_bdry_fill_post_viscosity.reset(new xfer::RefineAlgorithm(d_dim));
-    d_bdry_fill_pre_sweep1_cell.reset(new xfer::RefineAlgorithm(d_dim));
-    d_bdry_fill_pre_sweep1_mom.reset(new xfer::RefineAlgorithm(d_dim));
-    d_bdry_fill_pre_sweep2_mom.reset(new xfer::RefineAlgorithm(d_dim));
+    d_bdry_fill_half_step.reset(new xfer::RefineAlgorithm());
+    d_bdry_fill_prime_halos.reset(new xfer::RefineAlgorithm());
+    d_bdry_fill_pre_lagrange.reset(new xfer::RefineAlgorithm());
+    d_bdry_fill_post_viscosity.reset(new xfer::RefineAlgorithm());
+    d_bdry_fill_pre_sweep1_cell.reset(new xfer::RefineAlgorithm());
+    d_bdry_fill_pre_sweep1_mom.reset(new xfer::RefineAlgorithm());
+    d_bdry_fill_pre_sweep2_mom.reset(new xfer::RefineAlgorithm());
 
-    d_fill_new_level.reset(new xfer::RefineAlgorithm(d_dim));
+    d_fill_new_level.reset(new xfer::RefineAlgorithm());
     d_coarsen_field_data.reset(new xfer::CoarsenAlgorithm(d_dim));
 
     /*
@@ -180,7 +182,6 @@ double LagrangianEulerianIntegrator::getLevelDt(
     if (mpi.getSize() > 1) {
         mpi.AllReduce(&global_dt, 1, MPI_MIN);
     }
-
 
     /*
      * TODO: Hard code the max_timestep here for now...
@@ -466,9 +467,6 @@ void LagrangianEulerianIntegrator::initializeLevelData (
                 initial_time);
     }
 
-   // TODO: prime_halos_exch here. 
-
-
 //    } else {
 //
     boost::shared_ptr<xfer::RefineSchedule> refine_sched;
@@ -539,14 +537,6 @@ void LagrangianEulerianIntegrator::applyGradientDetector (
    }
 }
 
-/*
- * Serializable methods.
- */
-
-void LagrangianEulerianIntegrator::putToDatabase(
-        const boost::shared_ptr<tbox::Database>& database) const {}
-
-
 void LagrangianEulerianIntegrator::registerVariable(
         const boost::shared_ptr<hier::Variable>& var,
         const int var_type,
@@ -585,6 +575,8 @@ void LagrangianEulerianIntegrator::registerVariable(
 
     boost::shared_ptr<hier::RefineOperator> refine_op;
     boost::shared_ptr<hier::CoarsenOperator> coarsen_op;
+
+
 
 //    if (var->getName() == "massflux") {
 //        //tbox::pout << "Using CONSERVATIVE_LINEAR_REFINE..." << std::endl;

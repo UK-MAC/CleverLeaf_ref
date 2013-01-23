@@ -12,6 +12,11 @@
 #include "SAMRAI/appu/CartesianBoundaryUtilities2.h"
 #include "SAMRAI/appu/CartesianBoundaryDefines.h"
 
+#include "SAMRAI/pdat/NodeDoubleInjection.h"
+#include "SAMRAI/geom/CartesianNodeDoubleLinearRefine.h"
+#include "SAMRAI/geom/CartesianEdgeDoubleConservativeLinearRefine.h"
+#include "SAMRAI/geom/CartesianCellDoubleConservativeLinearRefine.h"
+
 #include <iostream>
 #include <cmath>
 
@@ -105,9 +110,17 @@ Cleverleaf::Cleverleaf(
     boost::shared_ptr<hier::CoarsenOperator> vol_weighted_avg(new CartesianCellDoubleVolumeWeightedAverage(dim));
     boost::shared_ptr<hier::CoarsenOperator> mass_weighted_avg(new CartesianCellDoubleMassWeightedAverage(dim));
 
+    boost::shared_ptr<hier::CoarsenOperator> ndi(new pdat::NodeDoubleInjection());
+    boost::shared_ptr<hier::RefineOperator> cndlr(new geom::CartesianNodeDoubleLinearRefine());
+    boost::shared_ptr<hier::RefineOperator> cedclr(new geom::CartesianEdgeDoubleConservativeLinearRefine());
+    boost::shared_ptr<hier::RefineOperator> ccdclr(new geom::CartesianCellDoubleConservativeLinearRefine());
+
     d_grid_geometry->addCoarsenOperator(typeid(pdat::CellVariable<double>).name(), vol_weighted_avg);
     d_grid_geometry->addCoarsenOperator(typeid(pdat::CellVariable<double>).name(), mass_weighted_avg);
-
+    d_grid_geometry->addCoarsenOperator(typeid(pdat::NodeVariable<double>).name(), ndi);
+    d_grid_geometry->addRefineOperator(typeid(pdat::NodeVariable<double>).name(), cndlr);
+    d_grid_geometry->addRefineOperator(typeid(pdat::EdgeVariable<double>).name(), cedclr);
+    d_grid_geometry->addRefineOperator(typeid(pdat::CellVariable<double>).name(), ccdclr);
 }
 
 void Cleverleaf::registerModelVariables(
@@ -485,7 +498,7 @@ void Cleverleaf::initializeDataOnPatch(
 //                }
 
                 if ((vertexx[v1] >= 0.0 && vertexx[v1] < 5.0) && 
-                    (vertexy[v1] >= 0.0 && vertexy[v1] < 1.9999999999)) {
+                    (vertexy[v1] >= 0.0 && vertexy[v1] < 2)) {
                         density(i,j) = 1.0;
                         energy(i,j) = 2.5;
                 } else {
@@ -575,6 +588,7 @@ void Cleverleaf::initializeDataOnPatch(
 
         double dx = dxs[0];
         double dy = dxs[1];
+
         double vol = dx*dy;
 
         /*
@@ -1085,83 +1099,6 @@ double Cleverleaf::calc_dt_knl(
     double dtdiv_safe = 0.7;
 
     /*
-     * Original timestep
-     */
-//    for(int k = ifirst(1); k <= ilast(1); k++) {
-//        for(int j = ifirst(0); j <= ilast(0); j++){
-//
-//            dsx=celldx(j,k);
-//            dsy=celldy(j,k);
-//
-//            cc=soundspeed(j,k)*soundspeed(j,k);
-//            cc=cc+2.0*viscosity(j,k)/density0(j,k);
-//            cc=max(sqrt(cc),1.0e-16);
-//
-//            dtct=min(dsx,dsy)/cc;
-//
-//            div=0.0;
-//
-//            dv1=(xvel0(j  ,k)+xvel0(j  ,k+1))*xarea(j  ,k);
-//            dv2=(xvel0(j+1,k)+xvel0(j+1,k+1))*xarea(j+1,k);
-//
-//            div=div+dv2-dv1;
-//
-//            dtut=2.0*volume(j,k)/max(abs(dv1),max(abs(dv2),1.0e-16*volume(j,k)));
-//
-//            dv1=(yvel0(j,k  )+yvel0(j+1,k  ))*yarea(j,k  );
-//            dv2=(yvel0(j,k+1)+yvel0(j+1,k+1))*yarea(j,k+1);
-//
-//            div=div+dv2-dv1;
-//
-//            dtvt=2.0*volume(j,k)/max(abs(dv1),max(abs(dv2),1.0e-16*volume(j,k)));
-//
-//            div=div/(2.0*volume(j,k));
-//
-//            if (div < -1.0e-16) {
-//                dtdivt=-1.0/div;
-//            } else {
-//                dtdivt=1.0e+21;
-//            } 
-//
-//            if (dtct*dtc_safe < dt_min_val) {
-//                jldt=j;
-//                kldt=k;
-//                dt_min_val=dtct*dtc_safe;
-//                dtl_control=1;
-//                xl_pos=cellx(j,k);
-//                yl_pos=celly(j,k);
-//            } 
-//
-//            if (dtut*dtu_safe < dt_min_val) {
-//                jldt=j;
-//                kldt=k;
-//                dt_min_val=dtut*dtu_safe;
-//                dtl_control=2;
-//                xl_pos=cellx(j,k);
-//                yl_pos=celly(j,k);
-//            } 
-//
-//            if (dtvt*dtv_safe < dt_min_val) {
-//                jldt=j;
-//                kldt=k;
-//                dt_min_val=dtvt*dtv_safe;
-//                dtl_control=3;
-//                xl_pos=cellx(j,k);
-//                yl_pos=celly(j,k);
-//            } 
-//
-//            if (dtdivt*dtdiv_safe < dt_min_val) {
-//                jldt=j;
-//                kldt=k;
-//                dt_min_val=dtdivt*dtdiv_safe;
-//                dtl_control=4;
-//                xl_pos=cellx(j,k);
-//                yl_pos=celly(j,k);
-//            } 
-//        }
-//    }
-
-    /*
      * new timestep
      */
     for(int k = ifirst(1); k <= ilast(1); k++) {
@@ -1204,13 +1141,6 @@ double Cleverleaf::calc_dt_knl(
 
         }
     }
-
-//    for(int k = ifirst(1); k <= ilast(1); k++) {
-//        for(int j = ifirst(0); j <= ilast(0); j++){
-//          if(dt_min(j,k) < dt_min_val)
-//              dt_min_val=dt_min(j,k);
-//        }
-//    }
 
     tbox::pout << "Timestep information:" << std::endl;
 //    tbox::pout << "\tj, k  : " << jldt << "," << kldt << std::endl;

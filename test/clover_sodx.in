@@ -35,7 +35,7 @@ LagrangianEulerianIntegrator{}
 LagrangianEulerianPatchStrategy{}
 
 StandardTagAndInitialize {
-    tagging_method = "GRADIENT DETECTOR"
+    tagging_method = "GRADIENT_DETECTOR"
 }
 
 LoadBalancer {
@@ -49,7 +49,7 @@ GriddingAlgorithm {
 
 TimeRefinementIntegrator {
     start_time = 0.e0
-    end_time = 3.0e0
+    end_time = 6.0e0
     grow_dt = 1.5e0
-    max_integrator_steps=75
+    max_integrator_steps=150
 }

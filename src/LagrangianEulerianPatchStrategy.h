@@ -237,7 +237,7 @@ class LagrangianEulerianPatchStrategy:
          * inheriting from this class.
          */
         virtual hier::IntVector
-            getRefineOpStencilWidth() const;
+            getRefineOpStencilWidth( const tbox::Dimension &dim ) const;
 
         /**
          * Pre- and post-processing routines for implementing user-defined

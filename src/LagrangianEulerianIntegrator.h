@@ -8,11 +8,10 @@
 #include "SAMRAI/hier/PatchLevel.h"
 #include "SAMRAI/hier/PatchHierarchy.h"
 #include "SAMRAI/mesh/StandardTagAndInitStrategy.h"
-#include "SAMRAI/tbox/Serializable.h"
 #include "SAMRAI/tbox/Database.h"
 #include "SAMRAI/xfer/RefineAlgorithm.h"
 #include "SAMRAI/xfer/CoarsenAlgorithm.h"
-#include "SAMRAI/geom/GridGeometry.h"
+#include "SAMRAI/hier/BaseGridGeometry.h"
 
 #include <string>
 #include <list>
@@ -30,8 +29,7 @@ using namespace SAMRAI;
  */
 class LagrangianEulerianIntegrator:
     public algs::TimeRefinementLevelStrategy,
-    public mesh::StandardTagAndInitStrategy,
-    public tbox::Serializable
+    public mesh::StandardTagAndInitStrategy
 {
     public:
 
@@ -234,12 +232,6 @@ class LagrangianEulerianIntegrator:
                 const int tag_index,
                 const bool initial_time,
                 const bool uses_richardson_extrapolation_too);
-
-        /**
-         * Serializable methods.
-         */
-
-        void putToDatabase(const boost::shared_ptr<tbox::Database>& database) const;
 
         /**
          * Copy new field variable values back to timelevel 0.

@@ -28,7 +28,7 @@ public:
    getOperatorPriority() const;
 
    hier::IntVector
-   getStencilWidth() const;
+   getStencilWidth( const tbox::Dimension &dim ) const;
 
    void
    coarsen(

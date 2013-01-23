@@ -10,7 +10,7 @@
 
 CartesianCellDoubleVolumeWeightedAverage::CartesianCellDoubleVolumeWeightedAverage(
    const tbox::Dimension& dim):
-   hier::CoarsenOperator(dim, "VOLUME_WEIGHTED_COARSEN")
+   hier::CoarsenOperator("VOLUME_WEIGHTED_COARSEN")
 {
 }
 
@@ -22,8 +22,6 @@ bool CartesianCellDoubleVolumeWeightedAverage::findCoarsenOperator(
    const boost::shared_ptr<SAMRAI::hier::Variable>& var,
    const std::string& op_name) const
 {
-   TBOX_DIM_ASSERT_CHECK_ARGS2(*this, *var);
-
    const boost::shared_ptr<pdat::CellVariable<double> > cast_var(var, boost::detail::dynamic_cast_tag());
 
    if (cast_var && (op_name == getOperatorName())) {
@@ -39,8 +37,8 @@ int CartesianCellDoubleVolumeWeightedAverage::getOperatorPriority() const
 }
 
 hier::IntVector
-CartesianCellDoubleVolumeWeightedAverage::getStencilWidth() const {
-   return hier::IntVector::getZero(getDim());
+CartesianCellDoubleVolumeWeightedAverage::getStencilWidth( const tbox::Dimension &dim ) const {
+   return hier::IntVector::getZero(dim);
 }
 
 void CartesianCellDoubleVolumeWeightedAverage::coarsen(
@@ -51,7 +49,7 @@ void CartesianCellDoubleVolumeWeightedAverage::coarsen(
    const hier::Box& coarse_box,
    const hier::IntVector& ratio) const
 {
-   const tbox::Dimension& dim(getDim());
+   const tbox::Dimension& dim(fine.getDim());
 
    boost::shared_ptr<pdat::CellData<double> > fdata(fine.getPatchData(src_component), boost::detail::dynamic_cast_tag());
    boost::shared_ptr<pdat::CellData<double> > cdata(coarse.getPatchData(dst_component), boost::detail::dynamic_cast_tag());

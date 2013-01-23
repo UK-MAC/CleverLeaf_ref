@@ -107,7 +107,7 @@ int main(int argc, char* argv[]) {
                     cleverleaf));
 
         boost::shared_ptr<mesh::StandardTagAndInitialize> error_detector(
-                new mesh::StandardTagAndInitialize(dim,
+                new mesh::StandardTagAndInitialize(
                     "StandardTagAndInitialize",
                     lagrangian_eulerian_integrator.get(),
                     input_db->getDatabase("StandardTagAndInitialize")));
