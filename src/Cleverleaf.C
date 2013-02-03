@@ -20,6 +20,41 @@
 #include <iostream>
 #include <cmath>
 
+#define F90_FUNC(name,NAME) name ## _
+
+extern "C" {
+    void F90_FUNC(ideal_gas_kernel,IDEAL_GAS_KERNEL)
+        (int*,int*,int*,int*,double*,double*,double*,double*);
+
+    void F90_FUNC(accelerate_kernel, ACCELERATE_KERNEL)
+        (int*,int*,int*,int*,double*,double*,double*,double*,double*,double*,
+         double*,double*,double*,double*,double*,double*);
+
+    void F90_FUNC(viscosity_kernel, VISCOSITY_KERNEL)
+        (int*,int*,int*,int*,double*,double*,double*,double*,double*,double*,double*);
+
+    void F90_FUNC(pdv_kernel, PDV_KERNEL)
+        (int*,int*,int*,int*,int*,double*,double*,double*,double*,double*,double*,
+         double*,double*,double*,double*,double*,double*,double*,double*,double*);
+
+    void F90_FUNC(advec_cell_kernel, ADVEC_CELL_KERNEL)
+        (int*,int*,int*,int*,int*,int*,double*,double*,double*,double*,double*,double*,
+         double*,double*,double*,double*,double*,double*,double*,double*,double*,double*);
+
+    void F90_FUNC(advec_mom_kernel, ADVEC_MOM_KERNEL)
+        (int*,int*,int*,int*,double*,double*,double*,double*,double*,double*,double*,double*,
+         double*,double*,double*,double*,double*,double*,double*,double*,double*,int*,int*,int*);
+
+    void F90_FUNC(calc_dt_kernel, CALC_DT_KERNEL)
+        (int*,int*,int*,int*,double*,double*,double*,double*,double*,double*,double*,double*,
+         double*,double*,double*,double*,double*,double*,double*,double*,double*,double*,
+         double*,double*,double*,double*,double*,int*,double*,double*,int*,int*,int*);
+
+    void F90_FUNC(flux_calc_kernel, FLUX_CALC_KERNEL)
+        (int*,int*,int*,int*,double*,double*,double*,double*,double*,double*,
+            double*,double*,double*);
+}
+
 
 #define POLY2(i, j, imin, jmin, nx) ((i - imin) + (j-jmin) * nx)
 
@@ -498,7 +533,7 @@ void Cleverleaf::initializeDataOnPatch(
 //                }
 
                 if ((vertexx[v1] >= 0.0 && vertexx[v1] < 5.0) && 
-                    (vertexy[v1] >= 0.0 && vertexy[v1] < 2)) {
+                    (vertexy[v1] >= 0.0 && vertexy[v1] < 1.9999)) {
                         density(i,j) = 1.0;
                         energy(i,j) = 2.5;
                 } else {
@@ -703,10 +738,10 @@ void Cleverleaf::accelerate(
     const hier::Index ifirst = patch.getBox().lower();
     const hier::Index ilast = patch.getBox().upper();
 
-    int xmin = ifirst(0) - ghosts(0); 
-    int xmax = ilast(0) + ghosts(0); 
-    int ymin = ifirst(1) - ghosts(1); 
-    int ymax = ilast(1) + ghosts(1); 
+    int xmin = ifirst(0);// - ghosts(0); 
+    int xmax = ilast(0);// + ghosts(0); 
+    int ymin = ifirst(1);// - ghosts(1); 
+    int ymax = ilast(1);// + ghosts(1); 
 
     /**
      * nx needs to account for the number of ghosts or things go very wrong!
@@ -731,81 +766,28 @@ void Cleverleaf::accelerate(
     double* xvel1 = v_vel1->getPointer(0);
     double* yvel1 = v_vel1->getPointer(1);
 
-    pdat::NodeData<double> v_stepbymass(patch.getBox(), 1, hier::IntVector(d_dim, 0));
+    pdat::NodeData<double> v_stepbymass(patch.getBox(), 1, hier::IntVector(d_dim, 2));
     double* stepbymass = v_stepbymass.getPointer();
 
-    for(int k = ifirst(1); k <= ilast(1)+1; k++) {
-        for(int j = ifirst(0); j <= ilast(0)+1; j++ ) {
-
-            nodal_mass=(density0(j-1,k-1)*volume(j-1,k-1)
-                    +density0(j,k-1)*volume(j,k-1)
-                    +density0(j,k)*volume(j,k)
-                    +density0(j-1,k)*volume(j-1,k))
-                    *0.25;
-
-                stepbymass(j,k)=0.5*dt/nodal_mass;
-        }
-    }
-
-    for(int k = ifirst(1); k <= ilast(1)+1; k++) {
-        for(int j = ifirst(0); j <= ilast(0)+1; j++ ) {
-
-            xvel1(j,k)=xvel0(j,k)-stepbymass(j,k)*(xarea(j,k)*(pressure(j,k)-pressure(j-1,k))
-                    +xarea(j,k-1)*(pressure(j,k-1)-pressure(j-1,k-1)));
-#ifdef DEBUG
-            cout << xvel0(j,k) << std::endl;
-            cout << stepbymass(j,k) << std::endl;
-            cout << xarea(j,k) << std::endl;
-            cout << pressure(j,k) << std::endl;
-            cout << pressure(j-1,k) << std::endl;
-            cout << xarea(j,k-1) << std::endl;
-            cout << pressure(j,k-1) << std::endl;
-            cout << pressure(j-1,k-1) << std::endl;
-            cout << "xvel1(" << j << "," << k << ") = " << xvel1(j,k) << std::endl;
-#endif
-        }
-    }
-
-    for(int k = ifirst(1); k <= ilast(1)+1; k++) {
-        for(int j = ifirst(0); j <= ilast(0)+1; j++ ) {
-
-            yvel1(j,k)=yvel0(j,k)-stepbymass(j,k)*(yarea(j,k)*(pressure(j,k)-pressure(j,k-1))
-                    +yarea(j-1,k)*(pressure(j-1,k)-pressure(j-1,k-1)));
-#ifdef DEBUG
-            cout << "yvel1(" << j << "," << k << ") = " << yvel1(j,k) << std::endl;
-#endif
-        }
-    }
-
-    for(int k = ifirst(1); k <= ilast(1)+1; k++) {
-        for(int j = ifirst(0); j <= ilast(0)+1; j++ ) {
-
-            xvel1(j,k)=xvel1(j,k)-stepbymass(j,k)*(xarea(j,k)*(viscosity(j,k)-viscosity(j-1,k))
-                    +xarea(j,k-1)*(viscosity(j,k-1)-viscosity(j-1,k-1)));
-
-#ifdef DEBUG
-            cout << "xvel1(" << j << "," << k << ") = " << xvel1(j,k) << std::endl;
-#endif
-        }
-    }
-
-    for(int k = ifirst(1); k <= ilast(1)+1; k++) {
-        for(int j = ifirst(0); j <= ilast(0)+1; j++ ) {
-
-            yvel1(j,k)=yvel1(j,k)-stepbymass(j,k)*(yarea(j,k)*(viscosity(j,k)-viscosity(j,k-1))
-                    +yarea(j-1,k)*(viscosity(j-1,k)-viscosity(j-1,k-1)));
-#ifdef DEBUG
-            cout << "yvel1(" << j << "," << k << ") = " << yvel1(j,k) << std::endl;
-#endif
-        }
-    }
+    F90_FUNC(accelerate_kernel,ACCELERATE_KERNEL)
+        (&xmin,&xmax,&ymin,&ymax,&dt,
+         xarea,
+         yarea,
+         volume,
+         density0,
+         pressure,
+         viscosity,
+         xvel0,
+         yvel0,
+         xvel1,
+         yvel1,
+         stepbymass);
 }
 
 void Cleverleaf::ideal_gas_knl(
         hier::Patch& patch,
         bool predict)
 {
-
     boost::shared_ptr<pdat::CellData<double> > v_density;
     boost::shared_ptr<pdat::CellData<double> > v_energy;
 
@@ -851,10 +833,10 @@ void Cleverleaf::ideal_gas_knl(
     const hier::Index ifirst = patch.getBox().lower();
     const hier::Index ilast = patch.getBox().upper();
 
-    int xmin = ifirst(0) - ghosts(0); 
-    int xmax = ilast(0) + ghosts(0); 
-    int ymin = ifirst(1) - ghosts(1); 
-    int ymax = ilast(1) + ghosts(1); 
+    int xmin = ifirst(0);// - ghosts(0); 
+    int xmax = ilast(0);// + ghosts(0); 
+    int ymin = ifirst(1);// - ghosts(1); 
+    int ymax = ilast(1);// + ghosts(1); 
 
     /**
      * nx needs to account for the number of ghosts or things go very wrong!
@@ -868,45 +850,17 @@ void Cleverleaf::ideal_gas_knl(
     double* pressure = v_pressure->getPointer();
     double* soundspeed = v_soundspeed->getPointer();
 
-    double pressurebyenergy = 0;
-    double pressurebyvolume = 0;
-    double sound_speed_squared = 0;
-    double v = 0;
-
-    for(int k = ifirst(1); k <= ilast(1); k++) {
-        for(int j = ifirst(0); j <= ilast(0); j++){
-
-            v=1.0/density(j,k);
-
-            //tbox::pout << "density: " << density(j,k) << std::endl;
-            //tbox::pout << "energy: " << energy(j,k) << std::endl;
-
-            pressure(j,k)=(1.4-1.0)*density(j,k)*energy(j,k);
-
-            pressurebyenergy=(1.4-1.0)*density(j,k);
-
-            pressurebyvolume=-density(j,k)*pressure(j,k);
-
-            sound_speed_squared=v*v*(pressure(j,k)*pressurebyenergy-pressurebyvolume);
-
-            soundspeed(j,k)=sqrt(sound_speed_squared);
-
-#ifdef DEBUG
-            tbox::pout << predict << " ";
-            tbox::pout << "Updating pressure[" << j << "][" << k << "]=" << pressure(j,k) << ", soundspeed[" << j << "][" << k << "]=" << soundspeed(j,k) << std::endl;
-#endif
-        }
-    }
+    F90_FUNC(ideal_gas_kernel,IDEAL_GAS_KERNEL)
+        (&(xmin), &(xmax), &(ymin), &(ymax),
+         density,
+         energy,
+         pressure,
+         soundspeed);
 }
 
 void Cleverleaf::viscosity_knl(
         hier::Patch& patch)
 {
-
-  double ugrad,vgrad,grad2,pgradx,pgrady,
-         pgradx2,pgrady2,grad,ygrad,pgrad,
-         xgrad,div,strain2,limiter;
-
   boost::shared_ptr<pdat::CellData<double> > v_density0(
           patch.getPatchData(d_density, getCurrentDataContext()),
           boost::detail::dynamic_cast_tag());
@@ -933,10 +887,10 @@ void Cleverleaf::viscosity_knl(
     const hier::Index ifirst = patch.getBox().lower();
     const hier::Index ilast = patch.getBox().upper();
 
-    int xmin = ifirst(0) - ghosts(0); 
-    int xmax = ilast(0) + ghosts(0); 
-    int ymin = ifirst(1) - ghosts(1); 
-    int ymax = ilast(1) + ghosts(1); 
+    int xmin = ifirst(0); 
+    int xmax = ilast(0); 
+    int ymin = ifirst(1); 
+    int ymax = ilast(1); 
 
     /**
      * nx needs to account for the number of ghosts or things go very wrong!
@@ -951,69 +905,20 @@ void Cleverleaf::viscosity_knl(
     double* celldx = v_celldeltas->getPointer(0);
     double* celldy = v_celldeltas->getPointer(1);
 
-    for(int k = ifirst(1); k <= ilast(1); k++) {
-        for(int j = ifirst(0); j <= ilast(0); j++){
-
-            ugrad=(xvel0(j+1,k)+xvel0(j+1,k+1))-(xvel0(j,k)+xvel0(j,k+1));
-
-#ifdef DEBUG
-            tbox::pout << "xvel(j+1,k) = " << xvel0(j+1,k) << std::endl;
-#endif
-            vgrad=(yvel0(j,k+1)+yvel0(j+1,k+1))-(yvel0(j,k)+yvel0(j+1,k));
-
-            div=(celldx(j,k)*(ugrad)+celldy(j,k)*(vgrad));
-
-#ifdef DEBUG
-            tbox::pout << "ugrad = " << ugrad << ",vgrad = " << vgrad << std::endl;
-#endif
-
-            strain2=0.5*(xvel0(j,k+1)+xvel0(j+1,k+1)-xvel0(j,k)-xvel0(j+1,k))/celldy(j,k)
-                +0.5*(yvel0(j+1,k)+yvel0(j+1,k+1)-yvel0(j,k)-yvel0(j,k+1))/celldx(j,k);
-
-            pgradx=(pressure(j+1,k)-pressure(j-1,k))/(celldx(j,k)+celldx(j+1,k));
-            pgrady=(pressure(j,k+1)-pressure(j,k-1))/(celldy(j,k)+celldy(j,k+1));
-
-            pgradx2=pgradx*pgradx;
-            pgrady2=pgrady*pgrady;
-
-            limiter=((0.5*(ugrad)/celldx(j,k))*pgradx2+(0.5*(vgrad)/celldy(j,k))*pgrady2+strain2*pgradx*pgrady)/max(pgradx2+pgrady2,1.0e-16);
-
-            pgradx = copysign(max(1.0e-16,abs(pgradx)),pgradx);
-            pgrady = copysign(max(1.0e-16,abs(pgrady)),pgrady);
-            pgrad = sqrt((pgradx*pgradx)+(pgrady*pgrady));
-            xgrad = abs(celldx(j,k)*pgrad/pgradx);
-            ygrad = abs(celldy(j,k)*pgrad/pgrady);
-            grad  = min(xgrad,ygrad);
-            grad2 = grad*grad;
-
-#ifdef DEBUG
-            tbox::pout << "limiter = " << limiter << ",div = " << div << std::endl;
-#endif
-            if(!((limiter > 0.0) || (div >= 0.0))) {
-#ifdef DEBUG
-                tbox::pout << "Updating viscosity[" << j-xmin << "][" << k-ymin << "]=" << 2.0*density(j,k)*grad2*(limiter*limiter) << std::endl;
-#endif
-                viscosity(j,k)=2.0*density(j,k)*grad2*(limiter*limiter);
-            } else {
-#ifdef DEBUG
-                tbox::pout << "[ZERO] Updating viscosity[" << j-xmin << "][" << k-ymin << "]=" << 0.0 << std::endl;
-#endif
-                viscosity(j,k) = 0.0;
-            }
-        }
-  }
+    F90_FUNC(viscosity_kernel,VISCOSITY_KERNEL)
+        (&xmin, &xmax, &ymin, &ymax,
+         celldx,
+         celldy,
+         density,
+         pressure,
+         viscosity,
+         xvel0,
+         yvel0); 
 }
 
 double Cleverleaf::calc_dt_knl(
         hier::Patch& patch)
 {
-    double div,dsx,dsy,dtut,dtvt,dtct,dtdivt,cc,dv1,dv2;
-    double xl_pos,
-           yl_pos;
-
-    int kldt;
-    int jldt;
-
     boost::shared_ptr<pdat::CellData<double> > v_density1(
             patch.getPatchData(d_density, getNewDataContext()),
             boost::detail::dynamic_cast_tag());
@@ -1065,10 +970,10 @@ double Cleverleaf::calc_dt_knl(
     const hier::Index ifirst = patch.getBox().lower();
     const hier::Index ilast = patch.getBox().upper();
 
-    int xmin = ifirst(0) - ghosts(0);
-    int xmax = ilast(0) + ghosts(0);
-    int ymin = ifirst(1) - ghosts(1);
-    int ymax = ilast(1) + ghosts(1);
+    int xmin = ifirst(0);
+    int xmax = ilast(0);
+    int ymin = ifirst(1);
+    int ymax = ilast(1);
 
     /**
      * nx needs to account for the number of ghosts or things go very wrong!
@@ -1083,7 +988,7 @@ double Cleverleaf::calc_dt_knl(
     double* xvel0 = v_vel0->getPointer(0);
     double* yvel0 = v_vel0->getPointer(1);
     double* density0 = v_density0->getPointer();
-    double* energy = v_energy->getPointer();
+    double* energy0 = v_energy->getPointer();
     double* xarea = v_celldeltas->getPointer(1);
     double* yarea = v_celldeltas->getPointer(0);
     double* volume = v_volume->getPointer();
@@ -1091,70 +996,57 @@ double Cleverleaf::calc_dt_knl(
     double* celly = v_cellcoords->getPointer(1);
 
     double dt_min_val = 1.0e+21;
-    double small=0;
+    int small=0;
     double dtc_safe = 0.7;
     int dtl_control;
     double dtu_safe = 0.5;
     double dtv_safe = 0.5;
     double dtdiv_safe = 0.7;
+    double xl_pos,
+           yl_pos;
+    double dt_min = 0.0000001;
 
-    /*
-     * new timestep
-     */
-    for(int k = ifirst(1); k <= ilast(1); k++) {
-        for(int j = ifirst(0); j <= ilast(0); j++){
+    int kldt;
+    int jldt;
 
-       dsx=celldx(j,k);
-       dsy=celldy(j,k);
+    double g_small = 1.0e-16;
+    double g_big = 1.0e+21;
 
-       cc=soundspeed(j,k)*soundspeed(j,k);
-       cc=cc+2.0*viscosity(j,k)/density0(j,k);
-       cc=max(sqrt(cc),1.0e-16);
+    pdat::NodeData<double> v_dtmin(patch.getBox(), 1, hier::IntVector(d_dim, 2));
+    double* dtmin = v_dtmin.getPointer();
 
-       dtct=dtc_safe*min(dsx,dsy)/cc;
+    F90_FUNC(calc_dt_kernel, CALC_DT_KERNEL)
+        (&xmin, &xmax, &ymin, &ymax,
+         &g_small,
+         &g_big,
+         &dt_min,
+         &dtc_safe,
+         &dtu_safe,
+         &dtv_safe,
+         &dtdiv_safe,
+         xarea,
+         yarea,
+         cellx,
+         celly,
+         celldx,
+         celldy,
+         volume,
+         density0,
+         energy0,
+         pressure,
+         viscosity,
+         soundspeed,
+         xvel0,
+         yvel0,
+         dtmin,
+         &dt_min_val,
+         &dtl_control,
+         &xl_pos,
+         &yl_pos,
+         &jldt,
+         &kldt,
+         &small);
 
-       div=0.0;
-
-       dv1=(xvel0(j  ,k)+xvel0(j  ,k+1))*xarea(j  ,k);
-       dv2=(xvel0(j+1,k)+xvel0(j+1,k+1))*xarea(j+1,k);
-
-       div=div+dv2-dv1;
-
-       dtut=dtu_safe*2.0*volume(j,k)/max(abs(dv1),max(abs(dv2),1.0e-16*volume(j,k)));
-
-       dv1=(yvel0(j,k  )+yvel0(j+1,k  ))*yarea(j,k  );
-       dv2=(yvel0(j,k+1)+yvel0(j+1,k+1))*yarea(j,k+1);
-
-       div=div+dv2-dv1;
-
-       dtvt=dtv_safe*2.0*volume(j,k)/max(abs(dv1),max(abs(dv2),1.0e-16*volume(j,k)));
-
-       div=div/(2.0*volume(j,k));
-
-       if (div < -1.0e-16) {
-         dtdivt=dtdiv_safe*(-1.0/div);
-       } else {
-         dtdivt=1.0e+21;
-       }
-
-       dt_min_val=min(dtct,min(dtut,min(dtvt,min(dtdivt, dt_min_val))));
-
-        }
-    }
-
-    tbox::pout << "Timestep information:" << std::endl;
-//    tbox::pout << "\tj, k  : " << jldt << "," << kldt << std::endl;
-//    tbox::pout << "\tx, y  : " << cellx(jldt,kldt) << "," << celly(jldt,kldt) << std::endl;
-    tbox::pout << "\ttimestep : " << dt_min_val << std::endl;
-//    tbox::pout << "\tCell velocities:" << std::endl;
-//    tbox::pout << "\t\t" << xvel0(jldt  ,kldt  ) << "," << yvel0(jldt  ,kldt  ) << std::endl;
-//    tbox::pout << "\t\t" << xvel0(jldt+1,kldt  ) << "," << yvel0(jldt+1,kldt  ) << std::endl;
-//    tbox::pout << "\t\t" << xvel0(jldt+1,kldt+1) << "," << yvel0(jldt+1,kldt+1) << std::endl;
-//    tbox::pout << "\t\t" << xvel0(jldt  ,kldt+1) << "," << yvel0(jldt  ,kldt+1) << std::endl;
-//    tbox::pout << "\tdensity, energy, pressure, soundspeed " << std::endl;
-//    tbox::pout << "\t" << density0(jldt, kldt) << "," << energy(jldt,kldt) << "," << pressure(jldt,kldt) << "," << soundspeed(jldt,kldt) << std::endl;
-
-    //cout << "RETURNING " << dt_min_val << " FROM calc_dt_knl()" << endl;
     return dt_min_val;
 }
 
@@ -1163,9 +1055,6 @@ void Cleverleaf::pdv_knl(
         double dt,
         bool predict)
 {
-    double left_flux, right_flux, bottom_flux, top_flux, total_flux;
-    double recip_volume, energy_change, min_cell_volume;
-
     /*
      * Get necessary variables
      */
@@ -1205,10 +1094,12 @@ void Cleverleaf::pdv_knl(
     const hier::Index ifirst = patch.getBox().lower();
     const hier::Index ilast = patch.getBox().upper();
 
-    int xmin = ifirst(0) - ghosts(0);
-    int xmax = ilast(0) + ghosts(0);
-    int ymin = ifirst(1) - ghosts(1);
-    int ymax = ilast(1) + ghosts(1);
+    int xmin = ifirst(0);
+    int xmax = ilast(0);
+    int ymin = ifirst(1);
+    int ymax = ilast(1);
+
+    int prdct = -1;
 
     /**
      * nx needs to account for the number of ghosts or things go very wrong!
@@ -1235,102 +1126,30 @@ void Cleverleaf::pdv_knl(
     double* yvel0 = v0->getPointer(1);
     double* yvel1 = v1->getPointer(1);
 
-    pdat::CellData<double> v_volchange(patch.getBox(), 1, hier::IntVector(d_dim, 0));
+    pdat::NodeData<double> v_volchange(patch.getBox(), 1, hier::IntVector(d_dim, 2));
     double* volume_change = v_volchange.getPointer();
 
-    if (predict) {
+    if (predict)
+        prdct = 1;
+    else
+        prdct = 0;
 
-        for (int  k = ifirst(1); k <= ilast(1); k++) {
-            for (int j = ifirst(0); j <= ilast(0); j++) {
-
-                left_flux=(xarea(j,k)*(xvel0(j,k)+xvel0(j,k+1)
-                            +xvel0(j,k)+xvel0(j,k+1)))*0.25*dt*0.5;
-
-                right_flux=(xarea(j+1,k)*(xvel0(j+1,k)+xvel0(j+1,k+1)
-                            +xvel0(j+1,k)+xvel0(j+1,k+1)))*0.25*dt*0.5;
-
-                bottom_flux=(yarea(j,k)*(yvel0(j,k)+yvel0(j+1,k)
-                            +yvel0(j,k)+yvel0(j+1,k)))*0.25*dt*0.5;
-
-                top_flux=(yarea(j,k+1)*(yvel0(j,k+1)+yvel0(j+1,k+1)
-                            +yvel0(j,k+1)+yvel0(j+1,k+1)))*0.25*dt*0.5;
-
-                total_flux=right_flux-left_flux+top_flux-bottom_flux;
-
-                volume_change(j,k)=volume(j,k)/(volume(j,k)+total_flux);
-
-                min_cell_volume=min(volume(j,k)+right_flux-left_flux+top_flux-bottom_flux,
-                        min(volume(j,k)+right_flux-left_flux,volume(j,k)+top_flux-bottom_flux));
-
-                //        IF(volume_change(j,k).LE.0.0) THEN ! Perhaps take these tests out so it will vectorise
-                //          error_condition=1 ! Do I need atomic for OpenMP?
-                //        ENDIF
-                //        IF(min_cell_volume.LE.0.0) THEN
-                //          error_condition=2
-                //        ENDIF
-
-                recip_volume=1.0/volume(j,k) ;
-
-                energy_change=(pressure(j,k)/density0(j,k)+viscosity(j,k)/density0(j,k))*total_flux*recip_volume;
-
-#ifdef DEBUG
-                tbox::pout << "energy change = " << energy_change << ", volume change = " << volume_change(j,k) << std::endl;
-                tbox::pout << "[" << j << "][" << k << "]" << std::endl;
-#endif
-
-                energy1(j,k)=energy0(j,k)-energy_change;
-
-                density1(j,k)=density0(j,k)*volume_change(j,k);
-            }
-        }
-
-    } else {
-
-        for (int  k = ifirst(1); k <= ilast(1); k++) {
-            for (int j = ifirst(0); j <= ilast(0); j++) {
-
-                left_flux=(xarea(j,k)*(xvel0(j,k)+xvel0(j,k+1)
-                            +xvel1(j,k)+xvel1(j,k+1)))*0.25*dt;
-
-                right_flux=(xarea(j+1,k)*(xvel0(j+1,k)+xvel0(j+1,k+1)
-                            +xvel1(j+1,k)+xvel1(j+1,k+1)))*0.25*dt;
-
-                bottom_flux=(yarea(j,k)*(yvel0(j,k)+yvel0(j+1,k)
-                            +yvel1(j,k)+yvel1(j+1,k)))*0.25*dt;
-
-                top_flux=(yarea(j,k+1)*(yvel0(j,k+1)+yvel0(j+1,k+1)
-                            +yvel1(j,k+1)+yvel1(j+1,k+1)))*0.25*dt;
-
-                total_flux=right_flux-left_flux+top_flux-bottom_flux;
-
-                volume_change(j,k)=volume(j,k)/(volume(j,k)+total_flux);
-
-                min_cell_volume=min(volume(j,k)+right_flux-left_flux+top_flux-bottom_flux,
-                        min(volume(j,k)+right_flux-left_flux,volume(j,k)+top_flux-bottom_flux));
-
-                //        IF(volume_change(j,k).LE.0.0) THEN ! Perhaps take these tests out so it will vectorise
-                //          error_condition=1 ! Do I need atomic for OpenMP?
-                //        ENDIF
-                //        IF(min_cell_volume.LE.0.0) THEN
-                //          error_condition=2
-                //        ENDIF
-
-                recip_volume=1.0/volume(j,k);
-
-                energy_change=(pressure(j,k)/density0(j,k)+viscosity(j,k)/density0(j,k))*total_flux*recip_volume;
-
-#ifdef DEBUG
-                tbox::pout << "energy change = " << energy_change << ", volume change = " << volume_change(j,k) << std::endl;
-                tbox::pout << "[" << j << "][" << k << "]" << std::endl;
-#endif
-
-                energy1(j,k)=energy0(j,k)-energy_change;
-
-                density1(j,k)=density0(j,k)*volume_change(j,k);
-            }
-        }
-
-    }
+    F90_FUNC(pdv_kernel, PDV_KERNEL)
+        (&prdct,&xmin,&xmax,&ymin,&ymax,&dt,
+         xarea,
+         yarea,
+         volume,
+         density0,
+         density1,
+         energy0,
+         energy1,
+         pressure,
+         viscosity,
+         xvel0,
+         xvel1,
+         yvel0,
+         yvel1,
+         volume_change);
 }
 
 void Cleverleaf::flux_calc_knl(
@@ -1358,10 +1177,10 @@ void Cleverleaf::flux_calc_knl(
     const hier::Index ifirst = patch.getBox().lower();
     const hier::Index ilast = patch.getBox().upper();
 
-    int xmin = ifirst(0) - ghosts(0); 
-    int xmax = ilast(0) + ghosts(0); 
-    int ymin = ifirst(1) - ghosts(1); 
-    int ymax = ilast(1) + ghosts(1); 
+    int xmin = ifirst(0); 
+    int xmax = ilast(0); 
+    int ymin = ifirst(1); 
+    int ymax = ilast(1); 
 
     /**
      * nx needs to account for the number of ghosts or things go very wrong!
@@ -1378,29 +1197,17 @@ void Cleverleaf::flux_calc_knl(
     double* yarea = v_celldeltas->getPointer(0);
     double* vol_flux_y = v_volflux->getPointer(0);
 
-    for (int k = ifirst(1); k <= ilast(1); k++) {
-        for (int j = ifirst(0); j <= ilast(0)+1; j++) {
-            vol_flux_x(j,k)=0.25*dt*xarea(j,k)
-                *(xvel0(j,k)+xvel0(j,k+1)+xvel1(j,k)+xvel1(j,k+1));
-
-#ifdef DEBUG
-            tbox::pout << "vol_flux_x(" << j << "," << k << ") = " << vol_flux_x(j,k) << std::endl;
-            tbox::pout << "\tdt\txarea(" << j << "," << k << ")\txvel0(" << j << "," << k << ")\txvel0(" << j << "," << k+1 << ")\txvel1(" << j << "," << k << ")\txvel1(" << j << "," << k+1 << ")" << std::endl;
-            tbox::pout << "\t" << dt << "\t" << xarea(j,k) << "\t" << xvel0(j,k) << "\t" << xvel0(j,k+1) << "\t" << xvel1(j,k) << "\t" << xvel1(j,k+1) << std::endl;
-#endif
-        }
-    }
-
-    for (int k = ifirst(1); k <= ilast(1)+1; k++) {
-        for (int j = ifirst(0); j <= ilast(0); j++) {
-            vol_flux_y(j,k)=0.25*dt*yarea(j,k)
-                *(yvel0(j,k)+yvel0(j+1,k)+yvel1(j,k)+yvel1(j+1,k));
-
-#ifdef DEBUG
-            tbox::pout << "vol_flux_y(" << j << "," << k << ") = " << vol_flux_y(j,k) << std::endl;
-#endif
-        }
-    }
+    F90_FUNC(flux_calc_kernel, FLUX_CALC_KERNEL)
+        (&xmin, &xmax, &ymin, &ymax,
+         &dt,
+         xarea,
+         yarea,
+         xvel0,
+         yvel0,
+         xvel1,
+         yvel1,
+         vol_flux_x,
+         vol_flux_y);
 }
 
 void Cleverleaf::advec_cell(hier::Patch& patch,
@@ -1436,10 +1243,10 @@ void Cleverleaf::advec_cell(hier::Patch& patch,
     const hier::Index ifirst = patch.getBox().lower();
     const hier::Index ilast = patch.getBox().upper();
 
-    int xmin = ifirst(0) - ghosts(0); 
-    int xmax = ilast(0) + ghosts(0); 
-    int ymin = ifirst(1) - ghosts(1); 
-    int ymax = ilast(1) + ghosts(1); 
+    int xmin = ifirst(0); 
+    int xmax = ilast(0); 
+    int ymin = ifirst(1); 
+    int ymax = ilast(1); 
 
     /**
      * nx needs to account for the number of ghosts or things go very wrong!
@@ -1463,13 +1270,13 @@ void Cleverleaf::advec_cell(hier::Patch& patch,
     double diffuw,diffdw,limiter;
     double one_by_six;
 
-    pdat::CellData<double> v_prevol(patch.getBox(), 1, hier::IntVector(d_dim, 2));
-    pdat::CellData<double> v_postvol(patch.getBox(), 1, hier::IntVector(d_dim, 2));
-    pdat::CellData<double> v_premass(patch.getBox(), 1, hier::IntVector(d_dim, 2));
-    pdat::CellData<double> v_postmass(patch.getBox(), 1, hier::IntVector(d_dim, 2));
-    pdat::CellData<double> v_advecvol(patch.getBox(), 1, hier::IntVector(d_dim, 2));
-    pdat::CellData<double> v_postener(patch.getBox(), 1, hier::IntVector(d_dim, 2));
-    pdat::CellData<double> v_enerflux(patch.getBox(), 1, hier::IntVector(d_dim, 2));
+    pdat::NodeData<double> v_prevol(patch.getBox(), 1, hier::IntVector(d_dim, 2));
+    pdat::NodeData<double> v_postvol(patch.getBox(), 1, hier::IntVector(d_dim, 2));
+    pdat::NodeData<double> v_premass(patch.getBox(), 1, hier::IntVector(d_dim, 2));
+    pdat::NodeData<double> v_postmass(patch.getBox(), 1, hier::IntVector(d_dim, 2));
+    pdat::NodeData<double> v_advecvol(patch.getBox(), 1, hier::IntVector(d_dim, 2));
+    pdat::NodeData<double> v_postener(patch.getBox(), 1, hier::IntVector(d_dim, 2));
+    pdat::NodeData<double> v_enerflux(patch.getBox(), 1, hier::IntVector(d_dim, 2));
 
     double* pre_vol = v_prevol.getPointer();
     double* post_vol = v_postvol.getPointer();
@@ -1479,172 +1286,30 @@ void Cleverleaf::advec_cell(hier::Patch& patch,
     double* post_ener = v_postener.getPointer();
     double* ener_flux = v_enerflux.getPointer();
 
-    one_by_six=1.0/6.0;
+    int idir;
 
+    if(dir == X)
+        idir = 1;
+    else idir = 2;
 
-    if(dir == X) {
-        if (sweep_number == 1){
-            for(int k= ymin; k <= ymax; k++) {
-                for(int j=xmin; j <= xmax; j++) {
-                    pre_vol(j,k)=volume(j,k)+(vol_flux_x(j+1,k  )-vol_flux_x(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k));
-                    post_vol(j,k)=pre_vol(j,k)-(vol_flux_x(j+1,k  )-vol_flux_x(j,k));
-                }
-            } 
-        } else {
-            for(int k=ymin; k <= ymax; k++) {
-                for(int j = xmin; j <= xmax; j++) {
-                    pre_vol(j,k)=volume(j,k)+vol_flux_x(j+1,k)-vol_flux_x(j,k);
-                    post_vol(j,k)=volume(j,k);
-                }
-            } 
-        }
-
-        for(int k = ifirst(1); k <= ilast(1); k++) {
-            for(int j = ifirst(0); j <= xmax; j++) {
-
-                if(vol_flux_x(j,k)>0.0){
-                    upwind   =j-2;
-                    donor    =j-1;
-                    downwind =j;
-                    dif      =donor;
-                } else {
-                    upwind   =min(j+1,xmax);
-                    donor    =j;
-                    downwind =j-1;
-                    dif      =upwind;
-                }
-
-                sigmat=abs(vol_flux_x(j,k))/pre_vol(donor,k);
-                sigma3=(1.0+sigmat)*(vertexdx(j)/vertexdx(dif));
-                sigma4=2.0-sigmat;
-
-                sigma=sigmat;
-                sigmav=sigmat;
-
-                diffuw=density1(donor,k)-density1(upwind,k);
-                diffdw=density1(downwind,k)-density1(donor,k);
-
-                if(diffuw*diffdw>0.0){
-                    limiter=(1.0-sigmav)*copysign(1.0,diffdw)*min(abs(diffuw),min(abs(diffdw),one_by_six*(sigma3*abs(diffuw)+sigma4*abs(diffdw))));
-                } else {
-                    limiter=0.0;
-                }
-
-                mass_flux_x(j,k)=vol_flux_x(j,k)*(density1(donor,k)+limiter);
-
-                sigmam=abs(mass_flux_x(j,k))/(density1(donor,k)*pre_vol(donor,k));
-                diffuw=energy1(donor,k)-energy1(upwind,k);
-                diffdw=energy1(downwind,k)-energy1(donor,k);
-
-                if(diffuw*diffdw>0.0){
-                    limiter=(1.0-sigmam)*copysign(1.0,diffdw)*min(abs(diffuw),min(abs(diffdw),one_by_six*(sigma3*abs(diffuw)+sigma4*abs(diffdw))));
-                } else {
-                    limiter=0.0;
-                }
-
-                ener_flux(j,k)=mass_flux_x(j,k)*(energy1(donor,k)+limiter);
-            }
-        }
-
-        for(int k=ifirst(1); k <= ilast(1); k++) {
-            for(int j=ifirst(0); j <= ilast(0); j++) {
-                pre_mass(j,k)=density1(j,k)*pre_vol(j,k);
-                post_mass(j,k)=pre_mass(j,k)+mass_flux_x(j,k)-mass_flux_x(j+1,k);
-                post_ener(j,k)=(energy1(j,k)*pre_mass(j,k)+ener_flux(j,k)-ener_flux(j+1,k))/post_mass(j,k);
-                advec_vol(j,k)=pre_vol(j,k)+vol_flux_x(j,k)-vol_flux_x(j+1,k);
-                density1(j,k)=post_mass(j,k)/advec_vol(j,k);
-                energy1(j,k)=post_ener(j,k);
-#ifdef DEBUG
-                tbox::pout << "density(" << j << "," << k << ") = " << density1(j,k) << std::endl;
-                tbox::pout << "energy(" << j << "," << k << ") = " << energy1(j,k) << std::endl;
-                tbox::pout << "advec_vol(" << j << "," << k << ") = " << advec_vol(j,k) << std::endl;
-#endif
-
-            }
-        }
-
-    } else if (dir == Y) {
-
-    if(sweep_number==1){
-
-      for(int k=ymin; k <= ymax; k++) {
-        for(int j=xmin; j <= xmax; j++) {
-          pre_vol(j,k)=volume(j,k)+(vol_flux_y(j  ,k+1)-vol_flux_y(j,k)+vol_flux_x(j+1,k  )-vol_flux_x(j,k));
-          post_vol(j,k)=pre_vol(j,k)-(vol_flux_y(j  ,k+1)-vol_flux_y(j,k));
-        }
-      }
-
-    } else {
-
-      for(int k=ymin; k <= ymax; k++) {
-        for(int j=xmin; j <= xmax; j++) {
-          pre_vol(j,k)=volume(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k);
-          post_vol(j,k)=volume(j,k);
-        }
-      }
-
-    }
-
-    for(int k=ifirst(1); k <= ymax; k++) {
-      for(int j=ifirst(0); j <= ilast(0); j++) {
-
-        if(vol_flux_y(j,k)>0.0){
-          upwind   =k-2;
-          donor    =k-1;
-          downwind =k;
-          dif      =donor;
-        } else {
-          upwind   =min(k+1,ymax);
-          donor    =k;
-          downwind =k-1;
-          dif      =upwind;
-        }
-
-        sigmat=abs(vol_flux_y(j,k))/pre_vol(j,donor);
-        sigma3=(1.0+sigmat)*(vertexdy(k)/vertexdy(dif));
-        sigma4=2.0-sigmat;
-
-        sigma=sigmat;
-        sigmav=sigmat;
-
-        diffuw=density1(j,donor)-density1(j,upwind);
-        diffdw=density1(j,downwind)-density1(j,donor);
-
-        if(diffuw*diffdw>0.0){
-          limiter=(1.0-sigmav)*copysign(1.0,diffdw)*min(abs(diffuw),min(abs(diffdw),one_by_six*(sigma3*abs(diffuw)+sigma4*abs(diffdw))));
-        } else {
-          limiter=0.0;
-        }
-        mass_flux_y(j,k)=vol_flux_y(j,k)*(density1(j,donor)+limiter);
-
-        sigmam=abs(mass_flux_y(j,k))/(density1(j,donor)*pre_vol(j,donor));
-        diffuw=energy1(j,donor)-energy1(j,upwind);
-        diffdw=energy1(j,downwind)-energy1(j,donor);
-
-        if(diffuw*diffdw>0.0){
-          limiter=(1.0-sigmam)*copysign(1.0,diffdw)*min(abs(diffuw),min(abs(diffdw),one_by_six*(sigma3*abs(diffuw)+sigma4*abs(diffdw))));
-        } else {
-          limiter=0.0;
-        }
-        ener_flux(j,k)=mass_flux_y(j,k)*(energy1(j,donor)+limiter);
-      }
-    }
-
-    for( int k=ifirst(1); k <= ilast(1); k++) {
-      for( int j=ifirst(0); j <= ilast(0); j++) {
-        pre_mass(j,k)=density1(j,k)*pre_vol(j,k);
-        post_mass(j,k)=pre_mass(j,k)+mass_flux_y(j,k)-mass_flux_y(j,k+1);
-        post_ener(j,k)=(energy1(j,k)*pre_mass(j,k)+ener_flux(j,k)-ener_flux(j,k+1))/post_mass(j,k);
-        advec_vol(j,k)=pre_vol(j,k)+vol_flux_y(j,k)-vol_flux_y(j,k+1);
-        density1(j,k)=post_mass(j,k)/advec_vol(j,k);
-        energy1(j,k)=post_ener(j,k);
-
-#ifdef DEBUG
-        tbox::pout << "advec_vol(" << j << "," << k << ") = " << advec_vol(j,k) << std::endl;
-#endif
-      }
-    }
-  }
+    F90_FUNC(advec_cell_kernel, ADVEC_CELL_KERNEL)
+        (&xmin, &xmax, &ymin, &ymax, &idir, &sweep_number,
+         vertexdx,
+         vertexdy,
+         volume,
+         density1,
+         energy1,
+         mass_flux_x,
+         vol_flux_x,
+         mass_flux_y,
+         vol_flux_y,
+         pre_vol,
+         post_vol,
+         pre_mass,
+         post_mass,
+         advec_vol,
+         post_ener,
+         ener_flux);
 }
 
 void Cleverleaf::advec_mom(hier::Patch& patch,
@@ -1681,10 +1346,10 @@ void Cleverleaf::advec_mom(hier::Patch& patch,
     const hier::Index ifirst = patch.getBox().lower();
     const hier::Index ilast = patch.getBox().upper();
 
-    int xmin = ifirst(0) - ghosts(0); 
-    int xmax = ilast(0) + ghosts(0); 
-    int ymin = ifirst(1) - ghosts(1); 
-    int ymax = ilast(1) + ghosts(1); 
+    int xmin = ifirst(0); 
+    int xmax = ilast(0); 
+    int ymin = ifirst(1); 
+    int ymax = ilast(1); 
 
     /**
      * nx needs to account for the number of ghosts or things go very wrong!
@@ -1698,7 +1363,8 @@ void Cleverleaf::advec_mom(hier::Patch& patch,
     double* mass_flux_x = v_massflux->getPointer(1);
     double* mass_flux_y = v_massflux->getPointer(0);
 
-    double* vel1;
+    double* xvel1 = v_vel1->getPointer(0);
+    double* yvel1 = v_vel1->getPointer(1);
 
     double* celldx = v_celldeltas->getPointer(0);
     double* celldy = v_celldeltas->getPointer(1);
@@ -1714,8 +1380,8 @@ void Cleverleaf::advec_mom(hier::Patch& patch,
     pdat::NodeData<double> v_advecvel(patch.getBox(), 1, hier::IntVector(d_dim, 2));
     pdat::NodeData<double> v_momflux(patch.getBox(), 1, hier::IntVector(d_dim, 2));
 
-    pdat::CellData<double> v_prevol(patch.getBox(), 1, hier::IntVector(d_dim, 2));
-    pdat::CellData<double> v_postvol(patch.getBox(), 1, hier::IntVector(d_dim, 2));
+    pdat::NodeData<double> v_prevol(patch.getBox(), 1, hier::IntVector(d_dim, 2));
+    pdat::NodeData<double> v_postvol(patch.getBox(), 1, hier::IntVector(d_dim, 2));
 
     double* node_flux = v_nodeflux.getPointer();
     double* node_mass_post = v_nodemasspost.getPointer();
@@ -1725,178 +1391,38 @@ void Cleverleaf::advec_mom(hier::Patch& patch,
     double* pre_vol = v_prevol.getPointer();
     double* post_vol = v_postvol.getPointer();
 
-    if (which_vel == X) {
-        vel1 = v_vel1->getPointer(0);
-    } else {
-        vel1 = v_vel1->getPointer(1);
-    }
+    int iwhich, idir;
 
-    int mom_sweep=direction+2*(sweep_number-1);
+    if (which_vel == X)
+        iwhich = 1;
+    else iwhich = 2;
 
-    if (mom_sweep == 1) { //! x 1
-        for(int k=ifirst(1)-2; k <= ilast(1)+2; k++) {
-            for(int j=ifirst(0)-2; j <= ilast(0)+2; j++) {
-                post_vol(j,k)= volume(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k);
-                pre_vol(j,k)=post_vol(j,k)+vol_flux_x(j+1,k  )-vol_flux_x(j,k);
-            }
-        }
-    } else if (mom_sweep == 2) { //! y 1
-        for(int k=ifirst(1)-2; k <= ilast(1)+2; k++) {
-            for(int j=ifirst(0)-2; j <= ilast(0)+2; j++) {
-                post_vol(j,k)= volume(j,k)+vol_flux_x(j+1,k  )-vol_flux_x(j,k);
-                pre_vol(j,k)=post_vol(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k);
-            }
-        }
-    } else if (mom_sweep == 3) { //! x 2
-        for(int k=ifirst(1)-2; k <= ilast(1)+2; k++) {
-            for(int j=ifirst(0)-2; j <= ilast(0)+2; j++) {
-                post_vol(j,k)=volume(j,k);
-                pre_vol(j,k)=post_vol(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k);
-            }
-        }
-    } else if (mom_sweep == 4) { //! y 2
-        for(int k=ifirst(1)-2; k <= ilast(1)+2; k++) {
-            for(int j=ifirst(0)-2; j <= ilast(0)+2; j++) {
-                post_vol(j,k)=volume(j,k);
-                pre_vol(j,k)=post_vol(j,k)+vol_flux_x(j+1,k  )-vol_flux_x(j,k);
-            }
-        }
-    } 
+    if (direction == X)
+        idir = 1;
+    else idir = 2;
 
-    if (direction == 1) {
-        for(int k=ifirst(1); k <= ilast(1)+1; k++) {
-            //! Find staggered mesh mass fluxes, nodal masses and volumes.
-            for(int j=ifirst(0)-2; j <= ilast(0)+2; j++) {
-                node_flux(j,k)=0.25*(mass_flux_x(j,k-1  )+mass_flux_x(j  ,k)+mass_flux_x(j+1,k-1)+mass_flux_x(j+1,k)); //! Mass Flux
-            }
-            for(int j=ifirst(0)-1; j <= ilast(0)+2; j++) {
-                //! Staggered cell mass post advection
-                node_mass_post(j,k)=0.25*(density1(j  ,k-1)*post_vol(j  ,k-1)                   
-                        +density1(j  ,k  )*post_vol(j  ,k  )                   
-                        +density1(j-1,k-1)*post_vol(j-1,k-1)                   
-                        +density1(j-1,k  )*post_vol(j-1,k  ));
-#ifdef DEBUG
-                tbox::pout << "post_vol(" << j << ", " << k-1 << ") = " << post_vol(j,k-1) << std::endl;
-                tbox::pout << "post_vol(" << j << ", " << k << ") = " << post_vol(j,k) << std::endl;
-                tbox::pout << "post_vol(" << j-1 << ", " << k-1 << ") = " << post_vol(j-1,k-1) << std::endl;
-                tbox::pout << "post_vol(" << j-1 << ", " << k << ") = " << post_vol(j-1,k) << std::endl;
-                tbox::pout << "density1(" << j << ", " << k-1 << ") = " << density1(j,k-1) << std::endl;
-                tbox::pout << "density1(" << j << ", " << k << ") = " << density1(j,k) << std::endl;
-                tbox::pout << "density1(" << j-1 << ", " << k-1 << ") = " << density1(j-1,k-1) << std::endl;
-                tbox::pout << "density1(" << j-1 << ", " << k << ") = " << density1(j-1,k) << std::endl;
-#endif
-            }
-            //! Stagered cell mass pre advection
-            for(int j=ifirst(0)-1; j <= ilast(0)+2; j++) {
-                node_mass_pre(j,k)=node_mass_post(j,k)-node_flux(j-1,k)+node_flux(j,k);
-            }
-            for(int j=ifirst(0)-1; j <= ilast(0)+1; j++) {
-                if (node_flux(j,k) < 0.0) {
-                    upwind=j+2;
-                    donor=j+1;
-                    downwind=j;
-                    dif=donor;
-                } else {
-                    upwind=j-1;
-                    donor=j;
-                    downwind=j+1;
-                    dif=upwind;
-                } 
-                sigma=abs(node_flux(j,k))/(node_mass_pre(donor,k));
-                width=celldx(j,k);
-                vdiffuw=vel1(donor,k)-vel1(upwind,k);
-                vdiffdw=vel1(downwind,k)-vel1(donor,k);
-                limiter=0.0;
-                if (vdiffuw*vdiffdw > 0.0) {
-                    auw=abs(vdiffuw);
-                    adw=abs(vdiffdw);
-                    wind=1.0;
-                    if (vdiffdw <= 0.0) wind=-1.0;
-                    limiter=wind*min(width*((2.0-sigma)*adw/width+(1.0+sigma)*auw/celldx(dif,k))/6.0,min(auw,adw));
-                } 
-                //! Set advection velocity and mometum flux
-                advec_vel(j,k)=vel1(donor,k)+(1.0-sigma)*limiter;
-                mom_flux(j,k)=advec_vel(j,k)*node_flux(j,k);
-            }
-            for(int j=ifirst(0); j <= ilast(0)+1; j++) {
-                double tv1 = (vel1(j,k)*node_mass_pre(j,k)+mom_flux(j-1,k)-mom_flux(j,k))/node_mass_post(j,k);
-                double nmp = node_mass_pre(j,k);
-                double mf = mom_flux(j-1,k);
-                double mf1 = mom_flux(j,k);
-                double nmpo = node_mass_post(j,k);
-
-                vel1(j,k)=(vel1(j,k)*node_mass_pre(j,k)+mom_flux(j-1,k)-mom_flux(j,k))/node_mass_post(j,k);
-#ifdef DEBUG
-                tbox::pout << "node_mass_pre(" << j << "," << k << ") = " << node_mass_pre(j,k) << std::endl;
-                tbox::pout << "mom_flux(" << j-1 << "," << k << ") = " << mom_flux(j-1,k) << std::endl;
-                tbox::pout << "mom_flux(" << j << "," << k << ") = " << mom_flux(j,k) << std::endl;
-                tbox::pout << "node_mass_post(" << j << "," << k << ") = " << node_mass_post(j,k) << std::endl;
-                tbox::pout << "vel1(" << j << "," << k << ") = " << vel1(j,k) << std::endl;
-#endif
-            }
-        }
-    } else if (direction == 2) {
-        for(int j=ifirst(0); j <= ilast(0)+1; j++) {
-            //! Find staggered mesh mass fluxes and nodal masses and volumes.
-            for(int k=ifirst(1)-2; k <= ilast(1)+2; k++) {
-                node_flux(j,k)=0.25*(mass_flux_y(j-1,k  )+mass_flux_y(j  ,k  )+mass_flux_y(j-1,k+1)+mass_flux_y(j  ,k+1));
-            }
-            for(int k=ifirst(1)-1; k <= ilast(1)+2; k++) {
-                node_mass_post(j,k)=0.25*(density1(j  ,k-1)*post_vol(j  ,k-1)                     
-                        +density1(j  ,k  )*post_vol(j  ,k  )                     
-                        +density1(j-1,k-1)*post_vol(j-1,k-1)                     
-                        +density1(j-1,k  )*post_vol(j-1,k  ));
-            }
-            for(int k=ifirst(1)-1; k <= ilast(1)+2; k++) {
-                node_mass_pre(j,k)=node_mass_post(j,k)-node_flux(j,k-1)+node_flux(j,k);
-            }
-            for(int k=ifirst(1)-1; k <= ilast(1)+1; k++) {
-                if (node_flux(j,k) < 0.0) {
-                    upwind=k+2;
-                    donor=k+1;
-                    downwind=k;
-                    dif=donor;
-                } else {
-                    upwind=k-1;
-                    donor=k;
-                    downwind=k+1;
-                    dif=upwind;
-                } 
-
-                sigma=abs(node_flux(j,k))/(node_mass_pre(j,donor));
-                width=celldy(j,k);
-                vdiffuw=vel1(j,donor)-vel1(j,upwind);
-                vdiffdw=vel1(j,downwind)-vel1(j,donor);
-                limiter=0.0;
-                if (vdiffuw*vdiffdw > 0.0) {
-                    auw=abs(vdiffuw);
-                    adw=abs(vdiffdw);
-                    wind=1.0;
-                    if (vdiffdw <= 0.0) wind=-1.0;
-                    limiter=wind*min(width*((2.0-sigma)*adw/width+(1.0+sigma)*auw/celldy(j,dif))/6.0,min(auw,adw));
-                } 
-                advec_vel(j,k)=vel1(j,donor)+(1.0-sigma)*limiter;
-                mom_flux(j,k)=advec_vel(j,k)*node_flux(j,k);
-            }
-
-            for(int k=ifirst(1); k <= ilast(1)+1; k++) {
-                double tv1 = (vel1(j,k)*node_mass_pre(j,k)+mom_flux(j,k-1)-mom_flux(j,k))/node_mass_post(j,k);
-                double nmp = node_mass_pre(j,k);
-                double mf = mom_flux(j,k-1);
-                double mf1 = mom_flux(j,k);
-                double nmpo = node_mass_post(j,k);
-
-                vel1(j,k)=(vel1(j,k)*node_mass_pre(j,k)+mom_flux(j,k-1)-mom_flux(j,k))/node_mass_post(j,k);
-#ifdef DEBUG
-                tbox::pout << "node_mass_pre(" << j << "," << k << ") = " << node_mass_pre(j,k) << std::endl;
-                tbox::pout << "mom_flux(" << j << "," << k-1 << ") = " << mom_flux(j-1,k) << std::endl;
-                tbox::pout << "mom_flux(" << j << "," << k << ") = " << mom_flux(j,k) << std::endl;
-                tbox::pout << "node_mass_post(" << j << "," << k << ") = " << node_mass_post(j,k) << std::endl;
-                tbox::pout << "vel1(" << j << "," << k << ") = " << vel1(j,k) << std::endl;
-#endif
-            }
-        }
-    } 
+    F90_FUNC(advec_mom_kernel, ADVEC_MOM_KERNEL)
+        (&xmin, &xmax, &ymin, &ymax,
+         xvel1,
+         yvel1,
+         mass_flux_x,
+         vol_flux_x,
+         mass_flux_y,
+         vol_flux_y,
+         volume,
+         density1,
+         node_flux,
+         node_mass_post,
+         node_mass_pre,
+         advec_vel,
+         mom_flux,
+         pre_vol,
+         post_vol,
+         celldx,
+         celldy,
+         &iwhich,
+         &sweep_number,
+         &idir);
 }
 
 
