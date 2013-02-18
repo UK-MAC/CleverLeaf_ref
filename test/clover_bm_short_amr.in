@@ -5,7 +5,7 @@ Main {
 }
 
 CartesianGeometry {
-    domain_boxes = [ (0,0), (240,240) ]
+    domain_boxes = [ (0,0), (239,239) ]
     x_lo         = 0.e0, 0.e0
     x_up         = 10.e0, 10.e0
 }
@@ -22,11 +22,13 @@ PatchHierarchy {
     }
 
     smallest_patch_size {
-        level_0 = 240,240
+        level_0 = 120,120
         level_1 = 10,10
     }
 
-    proper_nesting_buffer = {2,2}
+    proper_nesting_buffer {
+        level_1 = 4,4
+    }
 }
 
 Cleverleaf {

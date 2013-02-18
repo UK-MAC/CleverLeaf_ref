@@ -509,65 +509,65 @@ void Cleverleaf::initializeDataOnPatch(
         /*
          * Fill density and energy with some data, these are our initial conditions.
          */
-        v_energy->fillAll(50);
-        v_density->fillAll(50);
+        v_energy->fillAll(1.0);
+        v_density->fillAll(1.0);
 
         double* density = v_density->getPointer();
         double* energy = v_energy->getPointer();
 
-        for(int j = ymin; j <= ymax; j++) {
-            for(int i = xmin; i <= xmax; i++) {
-                int n1 = POLY2(i,j,xmin,ymin,nx);
-                int v1 = POLY2(i,j,vimin,vjmin,vnx);
-
-                /*
-                 * Produces square of size 60x60 in the centre of the domain
-                 */
-//                if ((cellx[n1] >= 0.0 && cellx[n1] <= 5.0)
-//                        && (celly[n1] >= 0.0 && celly[n1] <= 2.0)) {
-//                    density(i,j) = 1.0;
-//                    energy(i,j) = 2.5;
-//                } else {
-//                    density(i,j) = 0.2;
-//                    energy(i,j) = 1.0;
-//                }
-
-                if ((vertexx[v1] >= 0.0 && vertexx[v1] < 5.0) && 
-                    (vertexy[v1] >= 0.0 && vertexy[v1] < 1.9999)) {
-                        density(i,j) = 1.0;
-                        energy(i,j) = 2.5;
-                } else {
-                    density(i,j) = 0.2;
-                    energy(i,j) = 1.0;
-                }
-
-
-                /*
-                 * Produces square of size 60x60 in the centre of the domain
-                 */
-//                if ((cellx[n1] <= -10.0))
-//                {
-//                    density(i,j) = 1.0;
-//                    energy(i,j) = 2.5;
-//                } else {
-//                    density(i,j) = 0.1;
-//                    energy(i,j) = 1.0;
-//                }
-
-                /*
-                 * Use this loop to set square size per patch explicitly
-                 */
-//                if ((j >= yminng+1 && j <= ymaxng-1)
-//                        && (i >= xminng+1 && i <= xmaxng-1)) {
-//                    density(i,j) = 1.0;
-//                    energy(i,j) = 2.5;
-//                } else {
-//                    density(i,j) = 0.1;
-//                    energy(i,j) = 1.0;
-//                }
-                
-            }
-        }
+//         for(int j = ymin; j <= ymax; j++) {
+//             for(int i = xmin; i <= xmax; i++) {
+//                 int n1 = POLY2(i,j,xmin,ymin,nx);
+//                 int v1 = POLY2(i,j,vimin,vjmin,vnx);
+// 
+//                 /*
+//                  * Produces square of size 60x60 in the centre of the domain
+//                  */
+// //                if ((cellx[n1] >= 0.0 && cellx[n1] <= 5.0)
+// //                        && (celly[n1] >= 0.0 && celly[n1] <= 2.0)) {
+// //                    density(i,j) = 1.0;
+// //                    energy(i,j) = 2.5;
+// //                } else {
+// //                    density(i,j) = 0.2;
+// //                    energy(i,j) = 1.0;
+// //                }
+// 
+//                 if ((vertexx[v1] >= 0.0 && vertexx[v1] < 5.0) && 
+//                     (vertexy[v1] >= 0.0 && vertexy[v1] < 1.9999)) {
+//                         density(i,j) = 1.0;
+//                         energy(i,j) = 2.5;
+//                 } else {
+//                     density(i,j) = 0.2;
+//                     energy(i,j) = 1.0;
+//                 }
+// 
+// 
+//                 /*
+//                  * Produces square of size 60x60 in the centre of the domain
+//                  */
+// //                if ((cellx[n1] <= -10.0))
+// //                {
+// //                    density(i,j) = 1.0;
+// //                    energy(i,j) = 2.5;
+// //                } else {
+// //                    density(i,j) = 0.1;
+// //                    energy(i,j) = 1.0;
+// //                }
+// 
+//                 /*
+//                  * Use this loop to set square size per patch explicitly
+//                  */
+// //                if ((j >= yminng+1 && j <= ymaxng-1)
+// //                        && (i >= xminng+1 && i <= xmaxng-1)) {
+// //                    density(i,j) = 1.0;
+// //                    energy(i,j) = 2.5;
+// //                } else {
+// //                    density(i,j) = 0.1;
+// //                    energy(i,j) = 1.0;
+// //                }
+//                 
+//             }
+//         }
     } else {
         boost::shared_ptr<pdat::CellData<double> > celldeltas(patch.getPatchData(
                     d_celldeltas,
@@ -2442,27 +2442,6 @@ void Cleverleaf::tagGradientDetectorCells(
         }
     }
 
-
-
-    /*
-     * Problem specific criteria for step case.
-     */
-//    if (error_level_number < 2) {
-//        hier::Box tagbox(hier::Index(0, 0), hier::Index(10, 2));
-//
-//        if (error_level_number == 1) {
-//            tagbox.refine(hier::IntVector(d_dim, 2));
-//        }
-//
-//        hier::Box ibox = pbox * tagbox;
-//
-//        for (pdat::CellIterator itc(ibox); itc; itc++) {
-//            (*temp_tags)(itc(), 0) = 1;
-//        }
-//    }
-
-    
-
     /*
      * Update tags
      */
@@ -2470,14 +2449,4 @@ void Cleverleaf::tagGradientDetectorCells(
    for (pdat::CellIterator ic(pbox, true); ic != icend; ++ic) {
       (*tags)(*ic, 0) = (*temp_tags)(*ic, 0);
    }
-
-//    for (int k = ifirst(1); k <= ilast(1); k++) {
-//        for (int j = ifirst(0); j <= ilast(0); j++) {
-//
-//            int n1 = POLY2(j,k, xmin, ymin, nx);
-//            int t1 = POLY2(j,k, tx_min, ty_min, tnx);
-//
-//            tags->getPointer(0)[t1] = temp_tags->getPointer(0)[n1];
-//        }
-//    }
 }

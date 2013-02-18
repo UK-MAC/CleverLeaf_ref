@@ -224,6 +224,8 @@ int main(int argc, char* argv[]) {
             }
         }
 
+        lagrangian_eulerian_integrator->printFieldSummary(loop_time, time_integrator->getIntegratorStep()+1);
+
         /*
          * Deallocate objects
          */

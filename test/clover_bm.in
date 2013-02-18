@@ -1,7 +1,7 @@
 Main {
     dim = 2
-    vis_dump_interval = 0
-    field_summary_interval = 1
+    vis_dump_interval = 1
+    field_summary_interval = 5
 }
 
 CartesianGeometry {
@@ -27,8 +27,8 @@ PatchHierarchy {
 }
 
 Cleverleaf {
-    vis = FALSE
-    vis_dump_interval = 0
+    vis = TRUE
+    vis_dump_interval = 1
 }
 
 LagrangianEulerianIntegrator{}
@@ -36,7 +36,7 @@ LagrangianEulerianIntegrator{}
 LagrangianEulerianPatchStrategy{}
 
 StandardTagAndInitialize {
-    tagging_method = "GRADIENT DETECTOR"
+    tagging_method = "GRADIENT_DETECTOR"
 }
 
 LoadBalancer {
