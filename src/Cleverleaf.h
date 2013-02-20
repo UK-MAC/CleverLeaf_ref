@@ -44,6 +44,7 @@ class Cleverleaf:
          * @param grid_geometry The geometry of the problem.
          */
         Cleverleaf(
+                boost::shared_ptr<tbox::Database> input_database,
                 boost::shared_ptr<hier::PatchHierarchy> hierarchy,
                 const tbox::Dimension& dim,
                 boost::shared_ptr<geom::CartesianGridGeometry> grid_geometry);
@@ -234,6 +235,9 @@ class Cleverleaf:
         const tbox::Dimension d_dim;
 
         hier::IntVector d_nghosts;
+
+        boost::shared_ptr<tbox::Database> input_db;
+        const std::string state_prefix;
 
         /*
          * Variables

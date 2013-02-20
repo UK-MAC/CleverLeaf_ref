@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
         /*
          * Read in main data.
          */
-        boost::shared_ptr<tbox::Database> main_db = input_db->getDatabase("Main");
+        boost::shared_ptr<tbox::Database> main_db = input_db->getDatabase("Cleverleaf");
 
         const tbox::Dimension dim(static_cast<unsigned short>(main_db->getInteger("dim")));
 
@@ -82,17 +82,11 @@ int main(int argc, char* argv[]) {
                     grid_geometry,
                     input_db->getDatabase("PatchHierarchy")));
 
-        /*
-         * Create the Cleverleaf model here to control the maths specific to this
-         * program.
-         */
-        boost::shared_ptr<tbox::Database> cleverleaf_db = input_db->getDatabase("Cleverleaf");
-
-        bool vis_me = cleverleaf_db->getBool("vis");
         int visit_number_procs_per_file = 1;
         const std::string visit_dump_dirname = "cleverleaf.visit";
 
         Cleverleaf* cleverleaf = new Cleverleaf(
+                main_db,
                 patch_hierarchy,
                 dim,
                 grid_geometry);

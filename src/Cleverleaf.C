@@ -113,12 +113,15 @@ extern "C" {
 #define data(i,j) data[((i-xmin)) + (j-ymin)*nx]
 
 Cleverleaf::Cleverleaf(
+        boost::shared_ptr<tbox::Database> input_database,
         boost::shared_ptr<hier::PatchHierarchy> hierarchy,
         const tbox::Dimension& dim,
         boost::shared_ptr<geom::CartesianGridGeometry> grid_geometry):
     LagrangianEulerianPatchStrategy(dim),
     d_dim(dim),
     d_nghosts(dim),
+    input_db(input_database),
+    state_prefix("state"),
     d_velocity(new pdat::NodeVariable<double>(d_dim, "velocity", d_dim.getValue())),
     d_massflux(new pdat::EdgeVariable<double>(d_dim, "massflux", 1)),
     d_volflux(new pdat::EdgeVariable<double>(d_dim, "volflux", 1)),
@@ -421,9 +424,12 @@ void Cleverleaf::initializeDataOnPatch(
 
         const double* dxs = pgeom->getDx();
         const double* coords = pgeom->getXLower();
+        const double* ucoords = pgeom->getXUpper();
 
         double rxmin = coords[0];
         double rymin = coords[1];
+        double rxmax = ucoords[0];
+        double rymax = ucoords[1];
 
         double dx = dxs[0];
         double dy = dxs[1];
@@ -435,7 +441,7 @@ void Cleverleaf::initializeDataOnPatch(
         /*
          * Use the fillAll() methods to initialise other variables for now...
          */
-        velocity->fillAll(0.0);
+        velocity->fillAll(1.0);
         massflux->fillAll(0.0);
         volflux->fillAll(0.0);
         v_viscosity->fillAll(0.0);
@@ -451,7 +457,7 @@ void Cleverleaf::initializeDataOnPatch(
 
         vertexdeltas->fill(dx, 0);
         vertexdeltas->fill(dy, 1);
-        
+
         double* vertexx = vertexcoords->getPointer(0);
         double* vertexy = vertexcoords->getPointer(1);
 
@@ -480,8 +486,8 @@ void Cleverleaf::initializeDataOnPatch(
                 /*
                  * Start at rxmin-2dx because we have 2 ghost cells!
                  */
-                vertexx[ind] = (rxmin-2*dx) + dx*(xcount);
-                vertexy[ind] = (rymin-2*dy) + dy*(ycount);
+                vertexx[ind] = (rxmin-2.0*dx) + dx*(xcount);
+                vertexy[ind] = (rymin-2.0*dy) + dy*(ycount);
 
                 xcount++;
             }
@@ -511,63 +517,104 @@ void Cleverleaf::initializeDataOnPatch(
          */
         v_energy->fillAll(1.0);
         v_density->fillAll(1.0);
-
         double* density = v_density->getPointer();
         double* energy = v_energy->getPointer();
 
-//         for(int j = ymin; j <= ymax; j++) {
-//             for(int i = xmin; i <= xmax; i++) {
-//                 int n1 = POLY2(i,j,xmin,ymin,nx);
-//                 int v1 = POLY2(i,j,vimin,vjmin,vnx);
-// 
-//                 /*
-//                  * Produces square of size 60x60 in the centre of the domain
-//                  */
-// //                if ((cellx[n1] >= 0.0 && cellx[n1] <= 5.0)
-// //                        && (celly[n1] >= 0.0 && celly[n1] <= 2.0)) {
-// //                    density(i,j) = 1.0;
-// //                    energy(i,j) = 2.5;
-// //                } else {
-// //                    density(i,j) = 0.2;
-// //                    energy(i,j) = 1.0;
-// //                }
-// 
-//                 if ((vertexx[v1] >= 0.0 && vertexx[v1] < 5.0) && 
-//                     (vertexy[v1] >= 0.0 && vertexy[v1] < 1.9999)) {
-//                         density(i,j) = 1.0;
-//                         energy(i,j) = 2.5;
-//                 } else {
-//                     density(i,j) = 0.2;
-//                     energy(i,j) = 1.0;
-//                 }
-// 
-// 
-//                 /*
-//                  * Produces square of size 60x60 in the centre of the domain
-//                  */
-// //                if ((cellx[n1] <= -10.0))
-// //                {
-// //                    density(i,j) = 1.0;
-// //                    energy(i,j) = 2.5;
-// //                } else {
-// //                    density(i,j) = 0.1;
-// //                    energy(i,j) = 1.0;
-// //                }
-// 
-//                 /*
-//                  * Use this loop to set square size per patch explicitly
-//                  */
-// //                if ((j >= yminng+1 && j <= ymaxng-1)
-// //                        && (i >= xminng+1 && i <= xmaxng-1)) {
-// //                    density(i,j) = 1.0;
-// //                    energy(i,j) = 2.5;
-// //                } else {
-// //                    density(i,j) = 0.1;
-// //                    energy(i,j) = 1.0;
-// //                }
-//                 
-//             }
-//         }
+        boost::shared_ptr<tbox::Database> states_db = input_db->getDatabase("states");
+        int nstates = states_db->getInteger("num_states");
+
+        for(int i = 0; i < nstates; i++) {
+            std::ostringstream state_stream;
+            state_stream << state_prefix << i;
+
+            boost::shared_ptr<tbox::Database> current_state = states_db->getDatabase(state_stream.str());
+
+            double state_xmin = rxmin;
+            double state_xmax = rxmax;
+            double state_ymin = rymin;
+            double state_ymax = rymax;
+            std::string state_geometry;
+
+            state_geometry = current_state->getStringWithDefault("geometry", "RECTANGLE");
+
+            double state_density = current_state->getDouble("density");
+            double state_energy = current_state->getDouble("energy");
+
+            if (state_geometry.compare("RECTANGLE") == 0) {
+
+                if (i != 0) {
+                    double* state_min = new double[2];
+                    double* state_max = new double[2];
+
+                    current_state->getDoubleArray("min", state_min, 2);
+                    current_state->getDoubleArray("max", state_max, 2);
+
+                    state_xmin = state_min[0];
+                    state_ymin = state_min[1];
+
+                    state_xmax = state_max[0];
+                    state_ymax = state_max[1];
+                }
+
+                for(int j = ymin; j <= ymax; j++) {
+                    for(int i = xmin; i <= xmax; i++) {
+                        int n1 = POLY2(i,j,xmin,ymin,nx);
+                        int v1 = POLY2(i,j,vimin,vjmin,vnx);
+
+                        if (((float)vertexx[v1] >= (float)state_xmin && (float)vertexx[v1] < (float)state_xmax)) { 
+                            if ((float)vertexy[v1] >= (float)state_ymin && (float)vertexy[v1] < (float)state_ymax) {
+                                density(i,j) = state_density;
+                                energy(i,j) = state_energy;
+                            }
+                        }
+                    }
+                }
+            } else if (state_geometry.compare("CIRCLE") == 0) {
+                double* center = new double[2];
+                current_state->getDoubleArray("center", center, 2);
+
+                double x_center = center[0];
+                double y_center = center[1];
+
+                double state_radius = current_state->getDouble("radius");
+
+                for(int j = ymin; j <= ymax; j++) {
+                    for(int i = xmin; i <= xmax; i++) {
+                        int n1 = POLY2(i,j,xmin,ymin,nx);
+                        int v1 = POLY2(i,j,vimin,vjmin,vnx);
+
+                        double cell_radius =
+                            sqrt((cellx[n1]-x_center)*(cellx[n1]-x_center)
+                                    +(celly[n1]-y_center)*(celly[n1]-y_center));
+
+                        if((float)cell_radius <= (float)state_radius) {
+                            density(i,j) = state_density;
+                            energy(i,j) = state_energy;
+                        }
+                    }
+                }
+            } else if (state_geometry.compare("POINT") == 0) {
+                double* center = new double[2];
+                current_state->getDoubleArray("center", center, 2);
+
+                double x_center = center[0];
+                double y_center = center[1];
+
+                for(int j = ymin; j <= ymax; j++) {
+                    for(int i = xmin; i <= xmax; i++) {
+                        int n1 = POLY2(i,j,xmin,ymin,nx);
+                        int v1 = POLY2(i,j,vimin,vjmin,vnx);
+
+                        if ((float)vertexx[v1] == (float)x_center) { 
+                            if ((float)vertexy[v1] == (float)y_center) {
+                                density(i,j) = state_density;
+                                energy(i,j) = state_energy;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     } else {
         boost::shared_ptr<pdat::CellData<double> > celldeltas(patch.getPatchData(
                     d_celldeltas,
