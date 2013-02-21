@@ -110,7 +110,7 @@ extern "C" {
 
 #define vel1(j,k) vel1[((j-xmin)) + (k-ymin)*(nx+1)]
 
-#define data(i,j) data[((i-xmin)) + (j-ymin)*nx]
+#define data(i,j) data[(((i)-xmin)) + (((j)-ymin)*nx)]
 
 Cleverleaf::Cleverleaf(
         boost::shared_ptr<tbox::Database> input_database,
@@ -441,7 +441,7 @@ void Cleverleaf::initializeDataOnPatch(
         /*
          * Use the fillAll() methods to initialise other variables for now...
          */
-        velocity->fillAll(1.0);
+        velocity->fillAll(0.0);
         massflux->fillAll(0.0);
         volflux->fillAll(0.0);
         v_viscosity->fillAll(0.0);
@@ -2087,7 +2087,7 @@ void Cleverleaf::reflectXNodeBoundary(
                  * Reflect bottom edge...
                  */
                 for (int k=1; k <= depth; k++) {
-                    for (int j= ifirst(0)-depth; j <= ilast(0)+depth; j++) {
+                    for (int j= ifirst(0)-depth; j <= ilast(0)+depth+1; j++) {
                         data(j, ifirst(1)-k) = data(j, (ifirst(1)+(k)));
                     }
                 }
@@ -2203,7 +2203,7 @@ void Cleverleaf::reflectXEdgeBoundary(
             case (BdryLoc::YLO) :
                 for (int k=1; k <= depth; k++) {
                     for (int j= ifirst(0)-depth; j <= ilast(0)+1+depth; j++) {
-                        data(j, ifirst(1)-k) = data(j, (ifirst(1)+(k)));
+                        data(j, ifirst(1)-k) = data(j, ifirst(1)+k);
                     }
                 }
                 break;
