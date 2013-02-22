@@ -519,6 +519,8 @@ void Cleverleaf::initializeDataOnPatch(
         v_density->fillAll(1.0);
         double* density = v_density->getPointer();
         double* energy = v_energy->getPointer();
+        double* xvel0 = velocity->getPointer(0);
+        double* yvel0 = velocity->getPointer(1);
 
         boost::shared_ptr<tbox::Database> states_db = input_db->getDatabase("states");
         int nstates = states_db->getInteger("num_states");
@@ -539,6 +541,8 @@ void Cleverleaf::initializeDataOnPatch(
 
             double state_density = current_state->getDouble("density");
             double state_energy = current_state->getDouble("energy");
+            double state_xvel = current_state->getDoubleWithDefault("xvel", 0.0);
+            double state_yvel = current_state->getDoubleWithDefault("yvel", 0.0);
 
             if (state_geometry.compare("RECTANGLE") == 0) {
 
@@ -565,6 +569,16 @@ void Cleverleaf::initializeDataOnPatch(
                             if ((float)vertexy[v1] >= (float)state_ymin && (float)vertexy[v1] < (float)state_ymax) {
                                 density(i,j) = state_density;
                                 energy(i,j) = state_energy;
+
+                                xvel0(i,j) = state_xvel;
+                                xvel0(i,j+1) = state_xvel;
+                                xvel0(i+1,j) = state_xvel;
+                                xvel0(i+1,j+1) = state_xvel;
+
+                                yvel0(i,j) = state_yvel;
+                                yvel0(i,j+1) = state_yvel;
+                                yvel0(i+1,j) = state_yvel;
+                                yvel0(i+1,j+1) = state_yvel;
                             }
                         }
                     }
@@ -590,6 +604,16 @@ void Cleverleaf::initializeDataOnPatch(
                         if((float)cell_radius <= (float)state_radius) {
                             density(i,j) = state_density;
                             energy(i,j) = state_energy;
+
+                            xvel0(i,j) = state_xvel;
+                            xvel0(i,j+1) = state_xvel;
+                            xvel0(i+1,j) = state_xvel;
+                            xvel0(i+1,j+1) = state_xvel;
+
+                            yvel0(i,j) = state_yvel;
+                            yvel0(i,j+1) = state_yvel;
+                            yvel0(i+1,j) = state_yvel;
+                            yvel0(i+1,j+1) = state_yvel;
                         }
                     }
                 }
