@@ -230,6 +230,14 @@ SUBROUTINE advec_mom_kernel(x_min,x_max,y_min,y_max,   &
         vel1 (j,k)=(vel1 (j,k)*node_mass_pre(j,k)+mom_flux(j-1,k)-mom_flux(j,k))/node_mass_post(j,k)
       ENDDO
     ENDDO
+
+    PRINT *, 'vel1'
+    PRINT *, 'vel1 = ', vel1(x_min, y_min)
+    PRINT *, 'node_mass_pre', node_mass_pre(x_min,y_min)
+    PRINT *, 'mom_flux_x', mom_flux(x_min-1,y_min)
+    PRINT *, 'mom_flux_x', mom_flux(x_min,y_min)
+    PRINT *, 'node_mass_post', node_mass_post(x_min, y_min)
+
 !$OMP END DO
   ELSEIF(direction.EQ.2)THEN
 !$OMP DO

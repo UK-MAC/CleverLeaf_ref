@@ -18,11 +18,11 @@ PatchHierarchy {
     }
     
     largest_patch_size {
-        level_0 = 10,10
+        level_0 = 10,5
     }
 
     smallest_patch_size {
-        level_0 = 5,5
+        level_0 = 10,5
     }
 }
 
