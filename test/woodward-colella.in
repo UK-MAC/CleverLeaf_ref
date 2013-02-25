@@ -35,7 +35,7 @@ Cleverleaf {
 // These are the SAMRAI objects -----------------------------------------------!
 
 CartesianGeometry {
-    domain_boxes = [ (0,0), (99,4) ]
+    domain_boxes = [ (1,1), (100,5) ]
     x_lo         = 0.e0, 0.e0
     x_up         = 1.e0, 0.1e0
 }

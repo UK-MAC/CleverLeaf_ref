@@ -53,6 +53,22 @@ extern "C" {
     void F90_FUNC(flux_calc_kernel, FLUX_CALC_KERNEL)
         (int*,int*,int*,int*,double*,double*,double*,double*,double*,double*,
             double*,double*,double*);
+
+    void F90_FUNC(update_halo_kernel_top, UPDATE_HALO_KERNEL_TOP)
+        (int*,int*,int*,int*,double*,double*,double*,double*,double*,double*,
+         double*,double*,double*,double*,double*,double*,double*,double*,double*,int*,int*);
+
+    void F90_FUNC(update_halo_kernel_bottom, UPDATE_HALO_KERNEL_BOTTOM)
+        (int*,int*,int*,int*,double*,double*,double*,double*,double*,double*,
+         double*,double*,double*,double*,double*,double*,double*,double*,double*,int*,int*);
+
+    void F90_FUNC(update_halo_kernel_left, UPDATE_HALO_KERNEL_LEFT)
+        (int*,int*,int*,int*,double*,double*,double*,double*,double*,double*,
+         double*,double*,double*,double*,double*,double*,double*,double*,double*,int*,int*);
+
+    void F90_FUNC(update_halo_kernel_right, UPDATE_HALO_KERNEL_RIGHT)
+        (int*,int*,int*,int*,double*,double*,double*,double*,double*,double*,
+         double*,double*,double*,double*,double*,double*,double*,double*,double*,int*,int*);
 }
 
 
@@ -123,8 +139,8 @@ Cleverleaf::Cleverleaf(
     input_db(input_database),
     state_prefix("state"),
     d_velocity(new pdat::NodeVariable<double>(d_dim, "velocity", d_dim.getValue())),
-    d_massflux(new pdat::EdgeVariable<double>(d_dim, "massflux", 1)),
-    d_volflux(new pdat::EdgeVariable<double>(d_dim, "volflux", 1)),
+    d_massflux(new pdat::EdgeVariable<double>(d_dim, "massflux", d_dim.getValue())),
+    d_volflux(new pdat::EdgeVariable<double>(d_dim, "volflux", d_dim.getValue())),
     d_pressure(new pdat::CellVariable<double>(d_dim, "pressure", 1)),
     d_viscosity(new pdat::CellVariable<double>(d_dim, "viscosity", 1)),
     d_soundspeed(new pdat::CellVariable<double>(d_dim, "soundspeed", 1)),
@@ -1503,8 +1519,6 @@ void Cleverleaf::setPhysicalBoundaryConditions(
         const hier::IntVector& ghost_width_to_fill)
 {
 
-    //tbox::pout << "In Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
-
     if(!patch.inHierarchy()) {
     //    std::cerr << "PATCH NOT IN HIERARCHY" << std::endl;
         return;
@@ -1550,15 +1564,19 @@ void Cleverleaf::setPhysicalBoundaryConditions(
             patch.getPatchData(d_volflux, getScratchDataContext()),
             boost::detail::dynamic_cast_tag());
 
+    boost::shared_ptr<pdat::CellData<double> > v_soundspeed( 
+            patch.getPatchData(d_soundspeed, getScratchDataContext()),
+            boost::detail::dynamic_cast_tag());
+
     hier::IntVector ghosts = v_pressure->getGhostCellWidth();
 
     const hier::Index ifirst = patch.getBox().lower();
     const hier::Index ilast = patch.getBox().upper();
 
-    int xmin = ifirst(0) - ghosts(0); 
-    int xmax = ilast(0) + ghosts(0); 
-    int ymin = ifirst(1) - ghosts(1); 
-    int ymax = ilast(1) + ghosts(1); 
+    int xmin = ifirst(0); 
+    int xmax = ilast(0); 
+    int ymin = ifirst(1); 
+    int ymax = ilast(1); 
 
     int nx = xmax - xmin +1;
 
@@ -1584,7 +1602,10 @@ void Cleverleaf::setPhysicalBoundaryConditions(
     double* vol_flux_x = v_volflux->getPointer(1);
     double* vol_flux_y = v_volflux->getPointer(0);
 
-    int depth = ghost_width_to_fill[0];
+    double* soundspeed = v_soundspeed->getPointer();
+
+    //int depth = ghost_width_to_fill[0];
+    int depth = 2;
 
     const boost::shared_ptr<geom::CartesianPatchGeometry> pgeom(
             patch.getPatchGeometry(),
@@ -1592,731 +1613,107 @@ void Cleverleaf::setPhysicalBoundaryConditions(
 
     const tbox::Array<hier::BoundaryBox>& edge_bdry = pgeom->getCodimensionBoundaries(Bdry::EDGE2D);
 
+    int* fields = new int[15];
+
+    for(int i = 0; i < 15; i++) {
+        fields[i] = 1;
+    }
+
     for(int i = 0; i < edge_bdry.getSize(); i++) {
         switch(edge_bdry[i].getLocationIndex()) {
             case (BdryLoc::YLO) :
-                /*
-                 * update pressure boundary...
-                 */
-                reflectPhysicalBoundary(
-                        pressure,
-                        BdryLoc::YLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax,
-                        nx);
-
-                reflectPhysicalBoundary(
-                        density0,
-                        BdryLoc::YLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax,
-                        nx);
-
-                reflectPhysicalBoundary(
-                        density1,
-                        BdryLoc::YLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax, nx);
-
-                reflectPhysicalBoundary(
-                        energy0,
-                        BdryLoc::YLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax, nx);
-
-                reflectPhysicalBoundary(
-                        energy1,
-                        BdryLoc::YLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax, nx);
-
-                reflectPhysicalBoundary(
-                        viscosity,
-                        BdryLoc::YLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax, nx);
-
-                reflectXNodeBoundary(
-                        xvel0,
-                        BdryLoc::YLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax+1, nx+1);
-
-                reflectXNodeBoundary(
-                        xvel1,
-                        BdryLoc::YLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax+1, nx+1);
-
-                reflectYNodeBoundary(
-                        yvel0,
-                        BdryLoc::YLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax+1, nx+1);
-
-                reflectYNodeBoundary(
-                        yvel1,
-                        BdryLoc::YLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax+1, nx+1);
-
-                reflectXEdgeBoundary(
-                        vol_flux_x,
-                        BdryLoc::YLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax, nx+1);
-
-                reflectYEdgeBoundary(
-                        vol_flux_y,
-                        BdryLoc::YLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax+1, nx);
-
-                reflectXEdgeBoundary(
-                        mass_flux_x,
-                        BdryLoc::YLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax, nx+1);
-
-                reflectYEdgeBoundary(
-                        mass_flux_y,
-                        BdryLoc::YLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax+1, nx);
+                F90_FUNC(update_halo_kernel_bottom, UPDATE_HALO_KERNEL_BOTTOM)
+                    (&xmin, &xmax, &ymin, &ymax,
+                     density0,
+                     energy0,
+                     pressure,
+                     viscosity,
+                     soundspeed,
+                     density1,
+                     energy1,
+                     xvel0,
+                     yvel0,
+                     xvel1,
+                     yvel1,
+                     vol_flux_x,
+                     vol_flux_y,
+                     mass_flux_x,
+                     mass_flux_y,
+                     fields,
+                     &depth);
                 break;
 
 
             case (BdryLoc::YHI) :
-                
-                /*
-                 * Update pressure boundary...
-                 */
-                reflectPhysicalBoundary(
-                        pressure,
-                        BdryLoc::YHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax,
-                        nx);
-
-                reflectPhysicalBoundary(
-                        density0,
-                        BdryLoc::YHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax,
-                        nx);
-
-                reflectPhysicalBoundary(
-                        density1,
-                        BdryLoc::YHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax,
-                        nx);
-
-                reflectPhysicalBoundary(
-                        energy0,
-                        BdryLoc::YHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax,
-                        nx);
-
-                reflectPhysicalBoundary(
-                        energy1,
-                        BdryLoc::YHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax,
-                        nx);
-
-                reflectPhysicalBoundary(
-                        viscosity,
-                        BdryLoc::YHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax,
-                        nx);
-
-                reflectXNodeBoundary(
-                        xvel0,
-                        BdryLoc::YHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax+1, nx+1);
-
-                reflectXNodeBoundary(
-                        xvel1,
-                        BdryLoc::YHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax+1, nx+1);
-
-                reflectYNodeBoundary(
-                        yvel0,
-                        BdryLoc::YHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax+1, nx+1);
-
-                reflectYNodeBoundary(
-                        yvel1,
-                        BdryLoc::YHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax+1, nx+1);
-
-                reflectXEdgeBoundary(
-                        vol_flux_x,
-                        BdryLoc::YHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax, nx+1);
-
-                reflectYEdgeBoundary(
-                        vol_flux_y,
-                        BdryLoc::YHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax+1, nx);
-
-                reflectXEdgeBoundary(
-                        mass_flux_x,
-                        BdryLoc::YHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax, nx+1);
-
-                reflectYEdgeBoundary(
-                        mass_flux_y,
-                        BdryLoc::YHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax+1, nx);
+                F90_FUNC(update_halo_kernel_top, UPDATE_HALO_KERNEL_TOP)
+                    (&xmin, &xmax, &ymin, &ymax,
+                     density0,
+                     energy0,
+                     pressure,
+                     viscosity,
+                     soundspeed,
+                     density1,
+                     energy1,
+                     xvel0,
+                     yvel0,
+                     xvel1,
+                     yvel1,
+                     vol_flux_x,
+                     vol_flux_y,
+                     mass_flux_x,
+                     mass_flux_y,
+                     fields,
+                     &depth);
                 break;
 
 
             case (BdryLoc::XLO) :
-
-                reflectPhysicalBoundary(
-                        pressure,
-                        BdryLoc::XLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax,
-                        nx);
-
-                reflectPhysicalBoundary(
-                        density0,
-                        BdryLoc::XLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax, nx);
-
-                reflectPhysicalBoundary(
-                        density1,
-                        BdryLoc::XLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax,
-                        nx);
-
-                reflectPhysicalBoundary(
-                        energy0,
-                        BdryLoc::XLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax,
-                        nx);
-
-                reflectPhysicalBoundary(
-                        energy1,
-                        BdryLoc::XLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax,
-                        nx);
-
-                reflectPhysicalBoundary(
-                        viscosity,
-                        BdryLoc::XLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax,
-                        nx);
-
-                reflectXNodeBoundary(
-                        xvel0,
-                        BdryLoc::XLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax+1, nx+1);
-
-                reflectXNodeBoundary(
-                        xvel1,
-                        BdryLoc::XLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax+1, nx+1);
-
-                reflectYNodeBoundary(
-                        yvel0,
-                        BdryLoc::XLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax+1, nx+1);
-
-                reflectYNodeBoundary(
-                        yvel1,
-                        BdryLoc::XLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax+1, nx+1);
-
-                reflectXEdgeBoundary(
-                        vol_flux_x,
-                        BdryLoc::XLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax, nx+1);
-
-                reflectYEdgeBoundary(
-                        vol_flux_y,
-                        BdryLoc::XLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax+1, nx);
-
-                reflectXEdgeBoundary(
-                        mass_flux_x,
-                        BdryLoc::XLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax, nx+1);
-
-                reflectYEdgeBoundary(
-                        mass_flux_y,
-                        BdryLoc::XLO,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax+1, nx);
+                F90_FUNC(update_halo_kernel_left, UPDATE_HALO_KERNEL_LEFT)
+                    (&xmin, &xmax, &ymin, &ymax,
+                     density0,
+                     energy0,
+                     pressure,
+                     viscosity,
+                     soundspeed,
+                     density1,
+                     energy1,
+                     xvel0,
+                     yvel0,
+                     xvel1,
+                     yvel1,
+                     vol_flux_x,
+                     vol_flux_y,
+                     mass_flux_x,
+                     mass_flux_y,
+                     fields,
+                     &depth);
                 break;
 
             case (BdryLoc::XHI) :
-
-                reflectPhysicalBoundary(
-                        pressure,
-                        BdryLoc::XHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax,
-                        nx);
-
-                reflectPhysicalBoundary(
-                        density0,
-                        BdryLoc::XHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax,
-                        nx);
-
-                reflectPhysicalBoundary(
-                        density1,
-                        BdryLoc::XHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax,
-                        nx);
-
-                reflectPhysicalBoundary(
-                        energy0,
-                        BdryLoc::XHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax,
-                        nx);
-
-                reflectPhysicalBoundary(
-                        energy1,
-                        BdryLoc::XHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax,
-                        nx);
-
-                reflectPhysicalBoundary(
-                        viscosity,
-                        BdryLoc::XHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax,
-                        nx);
-
-                reflectXNodeBoundary(
-                        xvel0,
-                        BdryLoc::XHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax+1, nx+1);
-
-                reflectXNodeBoundary(
-                        xvel1,
-                        BdryLoc::XHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax+1, nx+1);
-
-                reflectYNodeBoundary(
-                        yvel0,
-                        BdryLoc::XHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax+1, nx+1);
-
-                reflectYNodeBoundary(
-                        yvel1,
-                        BdryLoc::XHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax+1, nx+1);
-
-                reflectXEdgeBoundary(
-                        vol_flux_x,
-                        BdryLoc::XHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax, nx+1);
-
-                reflectYEdgeBoundary(
-                        vol_flux_y,
-                        BdryLoc::XHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax+1, nx);
-
-                reflectXEdgeBoundary(
-                        mass_flux_x,
-                        BdryLoc::XHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax+1, ymin, ymax, nx+1);
-
-                reflectYEdgeBoundary(
-                        mass_flux_y,
-                        BdryLoc::XHI,
-                        depth,
-                        ifirst, ilast,
-                        xmin, xmax, ymin, ymax+1, nx);
+                F90_FUNC(update_halo_kernel_right, UPDATE_HALO_KERNEL_RIGHT)
+                    (&xmin, &xmax, &ymin, &ymax,
+                     density0,
+                     energy0,
+                     pressure,
+                     viscosity,
+                     soundspeed,
+                     density1,
+                     energy1,
+                     xvel0,
+                     yvel0,
+                     xvel1,
+                     yvel1,
+                     vol_flux_x,
+                     vol_flux_y,
+                     mass_flux_x,
+                     mass_flux_y,
+                     fields,
+                     &depth);
                 break;
-
             default : tbox::perr << "[ERROR] Unknown edge location in setPhysicalBoundaryConditions... " << std::endl;
                       exit(-1);
         }
     }
-
-    //tbox::pout << "Leaving Cleverleaf::setPhysicalBoundaryConditions..." << std::endl;
-
-}
-
-void Cleverleaf::reflectPhysicalBoundary(
-        double* data,
-        BdryLoc::Type boundary,
-        int depth,
-        hier::Index ifirst,
-        hier::Index ilast,
-        int xmin,
-        int xmax,
-        int ymin,
-        int ymax,
-        int nx)
-{
-
-        switch(boundary) {
-            case (BdryLoc::YLO) :
-                /*
-                 * Reflect bottom edge...
-                 */
-                for (int k=1; k <= depth; k++) {
-                    for (int j=xmin; j <= xmax; j++) {
-                        data(j, ifirst(1)-k) = data(j, (ifirst(1)+(k-1)));
-                    }
-                }
-                break;
-
-            case (BdryLoc::YHI) :
-                
-                /*
-                 * Reflect top edge...
-                 */
-                for (int k=1; k <= depth; k++) {
-                    for (int j=xmin; j <= xmax; j++) {
-                        data(j,ilast(1)+k)=data(j,ilast(1)-(k-1));
-                    }
-                }
-                break;
-
-            case (BdryLoc::XLO) :
-
-                for (int k=ymin; k <= ymax; k++) {
-                    for (int j=1; j <= depth; j++) {
-                        data(ifirst(0)-j,k)=data(ifirst(0)+(j-1),k);
-                    }
-                }
-                break;
-
-            case (BdryLoc::XHI) :
-                for (int k=ymin; k <= ymax; k++) {
-                    for (int j=1; j <= depth; j++) {
-                        data(ilast(0)+j,k)=data(ilast(0)-(j-1),k);
-                    }
-                }
-                break;
-
-            default : tbox::perr << "[ERROR] Unknown edge location in reflectPhysicalBoundary... " << std::endl;
-                      exit(-1);
-        }
-}
-
-
-void Cleverleaf::reflectXNodeBoundary(
-        double* data,
-        BdryLoc::Type boundary,
-        int depth,
-        hier::Index ifirst,
-        hier::Index ilast,
-        int xmin,
-        int xmax,
-        int ymin,
-        int ymax,
-        int nx)
-{
-        switch(boundary) {
-            case (BdryLoc::YLO) :
-                /*
-                 * Reflect bottom edge...
-                 */
-                for (int k=1; k <= depth; k++) {
-                    for (int j= ifirst(0)-depth; j <= ilast(0)+depth+1; j++) {
-                        data(j, ifirst(1)-k) = data(j, (ifirst(1)+(k)));
-                    }
-                }
-                break;
-
-            case (BdryLoc::YHI) :
-                
-                /*
-                 * Reflect top edge...
-                 */
-                for (int k=1; k <= depth; k++) {
-                    for (int j=ifirst(0)-depth; j <= ilast(0)+1+depth; j++) {
-                        data(j,ilast(1)+1+k) = data(j,ilast(1)+1-k);
-                    }
-                }
-                break;
-
-            case (BdryLoc::XLO) :
-
-                for (int k=ifirst(1)-depth; k <= ilast(1)+1+depth; k++) {
-                    for (int j=1; j <= depth; j++) {
-                        data(ifirst(0)-j,k)= -data(ifirst(0)+j,k);
-
-                        //std::cerr << "q(" << j << "," << ifirst(1)-k << ") = " << data(j,ifirst(1)-k) << ", setting q(" << j << "," << ifirst(1)+(k-1) << ") = " << -data(j, (ifirst(1)+(k-1))) << std::endl;
-                    }
-                }
-                break;
-
-            case (BdryLoc::XHI) :
-                for (int k=ifirst(1)-depth; k <= ilast(1)+1+depth; k++) {
-                    for (int j=1; j <= depth; j++) {
-                        data(ilast(0)+1+j,k)= -data(ilast(0)+1-j,k);
-                    }
-                }
-                break;
-
-            default : tbox::perr << "[ERROR] Unknown edge location in reflectXQuantBoundary... " << std::endl;
-                      exit(-1);
-        }
-}
-
-void Cleverleaf::reflectYNodeBoundary(
-        double* data,
-        BdryLoc::Type boundary,
-        int depth,
-        hier::Index ifirst,
-        hier::Index ilast,
-        int xmin,
-        int xmax,
-        int ymin,
-        int ymax,
-        int nx)
-{
-        switch(boundary) {
-            case (BdryLoc::YLO) :
-                /*
-                 * Reflect bottom edge...
-                 */
-                for (int k=1; k <= depth; k++) {
-                    for (int j=ifirst(0)-depth; j <= ilast(0)+1+depth; j++) {
-                        data(j, ifirst(1)-k) = -data(j, ifirst(1)+k);
-                    }
-                }
-                break;
-
-            case (BdryLoc::YHI) :
-                
-                /*
-                 * Reflect top edge...
-                 */
-                for (int k=1; k <= depth; k++) {
-                    for (int j=ifirst(0)-depth; j <= ilast(0)+1+depth; j++) {
-                        data(j,ilast(1)+1+k) = -data(j,ilast(1)+1-k);
-                    }
-                }
-                break;
-
-            case (BdryLoc::XLO) :
-
-                for (int k=ifirst(1)-depth; k <= ilast(1)+1+depth; k++) {
-                    for (int j=1; j <= depth; j++) {
-                        data(ifirst(0)-j,k) = data(ifirst(0)+j,k);
-                    }
-                }
-                break;
-
-            case (BdryLoc::XHI) :
-                for (int k=ifirst(1)-depth; k <= ilast(1)+1+depth; k++) {
-                    for (int j=1; j <= depth; j++) {
-                        data(ilast(0)+1+j,k) = data(ilast(0)+1-j,k);
-                    }
-                }
-                break;
-
-            default : tbox::perr << "[ERROR] Unknown edge location in reflectYQuantBoundary... " << std::endl;
-                      exit(-1);
-        }
-}
-
-void Cleverleaf::reflectXEdgeBoundary(
-        double* data,
-        BdryLoc::Type boundary,
-        int depth,
-        hier::Index ifirst,
-        hier::Index ilast,
-        int xmin,
-        int xmax,
-        int ymin,
-        int ymax,
-        int nx)
-{
-        switch(boundary) {
-            case (BdryLoc::YLO) :
-                for (int k=1; k <= depth; k++) {
-                    for (int j= ifirst(0)-depth; j <= ilast(0)+1+depth; j++) {
-                        data(j, ifirst(1)-k) = data(j, ifirst(1)+k);
-                    }
-                }
-                break;
-
-            case (BdryLoc::YHI) :
-                for (int k=1; k <= depth; k++) {
-                    for (int j=ifirst(0)-depth; j <= ilast(0)+1+depth; j++) {
-                        data(j,ilast(1)+k) = data(j,ilast(1)-k);
-                    }
-                }
-                break;
-
-            case (BdryLoc::XLO) :
-                for (int k=ifirst(1)-depth; k <= ilast(1)+depth; k++) {
-                    for (int j=1; j <= depth; j++) {
-                        data(ifirst(0)-j,k)= -data(ifirst(0)+j,k);
-                    }
-                }
-                break;
-
-            case (BdryLoc::XHI) :
-                for (int k=ifirst(1)-depth; k <= ilast(1)+depth; k++) {
-                    for (int j=1; j <= depth; j++) {
-                        data(ilast(0)+1+j,k)= -data(ilast(0)+1-j,k);
-                    }
-                }
-                break;
-
-            default : tbox::perr << "[ERROR] Unknown edge location in reflectXQuantBoundary... " << std::endl;
-                      exit(-1);
-        }
-}
-
-void Cleverleaf::reflectYEdgeBoundary(
-        double* data,
-        BdryLoc::Type boundary,
-        int depth,
-        hier::Index ifirst,
-        hier::Index ilast,
-        int xmin,
-        int xmax,
-        int ymin,
-        int ymax,
-        int nx)
-{
-        switch(boundary) {
-            case (BdryLoc::YLO) :
-                /*
-                 * Reflect bottom edge...
-                 */
-                for (int k=1; k <= depth; k++) {
-                    for (int j=ifirst(0)-depth; j <= ilast(0)+depth; j++) {
-                        data(j, ifirst(1)-k) = -data(j, ifirst(1)+k);
-                    }
-                }
-                break;
-
-            case (BdryLoc::YHI) :
-                
-                /*
-                 * Reflect top edge...
-                 */
-                for (int k=1; k <= depth; k++) {
-                    for (int j=ifirst(0)-depth; j <= ilast(0)+depth; j++) {
-                        data(j,ilast(1)+1+k) = -data(j,ilast(1)+1-k);
-                    }
-                }
-                break;
-
-            case (BdryLoc::XLO) :
-
-                for (int k=ifirst(1)-depth; k <= ilast(1)+1+depth; k++) {
-                    for (int j=1; j <= depth; j++) {
-                        data(ifirst(0)-j,k) = data(ifirst(0)+j,k);
-                    }
-                }
-                break;
-
-            case (BdryLoc::XHI) :
-                for (int k=ifirst(1)-depth; k <= ilast(1)+1+depth; k++) {
-                    for (int j=1; j <= depth; j++) {
-                        data(ilast(0)+j,k) = data(ilast(0)-j,k);
-                    }
-                }
-                break;
-
-            default : tbox::perr << "[ERROR] Unknown edge location in reflectYQuantBoundary... " << std::endl;
-                      exit(-1);
-        }
 }
 
 void Cleverleaf::field_summary(

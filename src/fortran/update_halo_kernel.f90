@@ -22,10 +22,616 @@
 !>  of data governs how this is carried out. External boundaries are always
 !>  reflective.
 
-  SUBROUTINE update_halo_kernel(x_min,x_max,y_min,y_max,                            &
-                        left,bottom,right,top,                                      &
-                        left_boundary,bottom_boundary,right_boundary,top_boundary,  &
-                        chunk_neighbours,                                           &
+SUBROUTINE update_halo_kernel_top(x_min,x_max,y_min,y_max,                        &
+                        density0,                                                   &
+                        energy0,                                                    &
+                        pressure,                                                   &
+                        viscosity,                                                  &
+                        soundspeed,                                                 &
+                        density1,                                                   &
+                        energy1,                                                    &
+                        xvel0,                                                      &
+                        yvel0,                                                      &
+                        xvel1,                                                      &
+                        yvel1,                                                      &
+                        vol_flux_x,                                                 &
+                        vol_flux_y,                                                 &
+                        mass_flux_x,                                                &
+                        mass_flux_y,                                                &
+                        fields,                                                     &
+                        depth                                                       )
+  IMPLICIT NONE
+
+  INTEGER :: x_min,x_max,y_min,y_max
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density0,energy0
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: pressure,viscosity,soundspeed
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density1,energy1
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: xvel0,yvel0
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: xvel1,yvel1
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+2) :: vol_flux_x,mass_flux_x
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+3) :: vol_flux_y,mass_flux_y
+  INTEGER :: fields(:),depth
+
+  ! These need to be kept consistent with the data module to avoid use statement
+  INTEGER,      PARAMETER :: CHUNK_LEFT   =1    &
+                            ,CHUNK_RIGHT  =2    &
+                            ,CHUNK_BOTTOM =3    &
+                            ,CHUNK_TOP    =4    &
+                            ,EXTERNAL_FACE=-1
+
+  INTEGER,      PARAMETER :: FIELD_DENSITY0   = 1         &
+                            ,FIELD_DENSITY1   = 2         &
+                            ,FIELD_ENERGY0    = 3         &
+                            ,FIELD_ENERGY1    = 4         &
+                            ,FIELD_PRESSURE   = 5         &
+                            ,FIELD_VISCOSITY  = 6         &
+                            ,FIELD_SOUNDSPEED = 7         &
+                            ,FIELD_XVEL0      = 8         &
+                            ,FIELD_XVEL1      = 9         &
+                            ,FIELD_YVEL0      =10         &
+                            ,FIELD_YVEL1      =11         &
+                            ,FIELD_VOL_FLUX_X =12         &
+                            ,FIELD_VOL_FLUX_Y =13         &
+                            ,FIELD_MASS_FLUX_X=14         &
+                            ,FIELD_MASS_FLUX_Y=15         &
+                            ,NUM_FIELDS       =15
+
+  INTEGER :: j,k
+
+!$OMP PARALLEL
+
+  ! Update values in external halo cells based on depth and fields requested
+  IF(fields(FIELD_DENSITY0).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+depth
+          density0(j,y_max+k)=density0(j,y_max+1-k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_DENSITY1).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+depth
+          density1(j,y_max+k)=density1(j,y_max+1-k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_ENERGY0).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+depth
+          energy0(j,y_max+k)=energy0(j,y_max+1-k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_ENERGY1).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+depth
+          energy1(j,y_max+k)=energy1(j,y_max+1-k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_PRESSURE).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+depth
+          pressure(j,y_max+k)=pressure(j,y_max+1-k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_VISCOSITY).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+depth
+          viscosity(j,y_max+k)=viscosity(j,y_max+1-k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_XVEL0).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+1+depth
+          xvel0(j,y_max+1+k)=xvel0(j,y_max+1-k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_XVEL1).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+1+depth
+          xvel1(j,y_max+1+k)=xvel1(j,y_max+1-k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_YVEL0).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+1+depth
+          yvel0(j,y_max+1+k)=-yvel0(j,y_max+1-k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_YVEL1).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+1+depth
+          yvel1(j,y_max+1+k)=-yvel1(j,y_max+1-k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_VOL_FLUX_X).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+1+depth
+          vol_flux_x(j,y_max+k)=vol_flux_x(j,y_max-k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_MASS_FLUX_X).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+1+depth
+          mass_flux_x(j,y_max+k)=mass_flux_x(j,y_max-k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_VOL_FLUX_Y).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+depth
+          vol_flux_y(j,y_max+k+1)=-vol_flux_y(j,y_max+1-k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_MASS_FLUX_Y).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+depth
+          mass_flux_y(j,y_max+k+1)=-mass_flux_y(j,y_max+1-k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+!$OMP END PARALLEL
+
+END SUBROUTINE update_halo_kernel_top
+
+SUBROUTINE update_halo_kernel_bottom(x_min,x_max,y_min,y_max,                       &
+                        density0,                                                   &
+                        energy0,                                                    &
+                        pressure,                                                   &
+                        viscosity,                                                  &
+                        soundspeed,                                                 &
+                        density1,                                                   &
+                        energy1,                                                    &
+                        xvel0,                                                      &
+                        yvel0,                                                      &
+                        xvel1,                                                      &
+                        yvel1,                                                      &
+                        vol_flux_x,                                                 &
+                        vol_flux_y,                                                 &
+                        mass_flux_x,                                                &
+                        mass_flux_y,                                                &
+                        fields,                                                     &
+                        depth                                                       )
+  IMPLICIT NONE
+
+  INTEGER :: x_min,x_max,y_min,y_max
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density0,energy0
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: pressure,viscosity,soundspeed
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density1,energy1
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: xvel0,yvel0
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: xvel1,yvel1
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+2) :: vol_flux_x,mass_flux_x
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+3) :: vol_flux_y,mass_flux_y
+  INTEGER :: fields(:),depth
+
+  ! These need to be kept consistent with the data module to avoid use statement
+  INTEGER,      PARAMETER :: CHUNK_LEFT   =1    &
+                            ,CHUNK_RIGHT  =2    &
+                            ,CHUNK_BOTTOM =3    &
+                            ,CHUNK_TOP    =4    &
+                            ,EXTERNAL_FACE=-1
+
+  INTEGER,      PARAMETER :: FIELD_DENSITY0   = 1         &
+                            ,FIELD_DENSITY1   = 2         &
+                            ,FIELD_ENERGY0    = 3         &
+                            ,FIELD_ENERGY1    = 4         &
+                            ,FIELD_PRESSURE   = 5         &
+                            ,FIELD_VISCOSITY  = 6         &
+                            ,FIELD_SOUNDSPEED = 7         &
+                            ,FIELD_XVEL0      = 8         &
+                            ,FIELD_XVEL1      = 9         &
+                            ,FIELD_YVEL0      =10         &
+                            ,FIELD_YVEL1      =11         &
+                            ,FIELD_VOL_FLUX_X =12         &
+                            ,FIELD_VOL_FLUX_Y =13         &
+                            ,FIELD_MASS_FLUX_X=14         &
+                            ,FIELD_MASS_FLUX_Y=15         &
+                            ,NUM_FIELDS       =15
+
+  INTEGER :: j,k
+
+!$OMP PARALLEL
+
+  ! Update values in external halo cells based on depth and fields requested
+  IF(fields(FIELD_DENSITY0).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+depth
+          density0(j,1-k)=density0(j,0+k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_DENSITY1).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+depth
+          density1(j,1-k)=density1(j,0+k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_ENERGY0).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+depth
+          energy0(j,1-k)=energy0(j,0+k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_ENERGY1).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+depth
+          energy1(j,1-k)=energy1(j,0+k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_PRESSURE).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+depth
+          pressure(j,1-k)=pressure(j,0+k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_VISCOSITY).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+depth
+          viscosity(j,1-k)=viscosity(j,0+k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_XVEL0).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+1+depth
+          xvel0(j,1-k)=xvel0(j,1+k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_XVEL1).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+1+depth
+          xvel1(j,1-k)=xvel1(j,1+k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_YVEL0).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+1+depth
+          yvel0(j,1-k)=-yvel0(j,1+k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_YVEL1).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+1+depth
+          yvel1(j,1-k)=-yvel1(j,1+k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_VOL_FLUX_X).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+1+depth
+          vol_flux_x(j,1-k)=vol_flux_x(j,1+k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_MASS_FLUX_X).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+1+depth
+          mass_flux_x(j,1-k)=mass_flux_x(j,1+k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_VOL_FLUX_Y).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+depth
+          vol_flux_y(j,1-k)=-vol_flux_y(j,1+k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+  IF(fields(FIELD_MASS_FLUX_Y).EQ.1) THEN
+      DO k=1,depth
+!$OMP DO
+        DO j=x_min-depth,x_max+depth
+          mass_flux_y(j,1-k)=-mass_flux_y(j,1+k)
+        ENDDO
+!$OMP END DO
+      ENDDO
+  ENDIF
+
+!$OMP END PARALLEL
+
+END SUBROUTINE update_halo_kernel_bottom
+
+SUBROUTINE update_halo_kernel_left(x_min,x_max,y_min,y_max,                        &
+                        density0,                                                   &
+                        energy0,                                                    &
+                        pressure,                                                   &
+                        viscosity,                                                  &
+                        soundspeed,                                                 &
+                        density1,                                                   &
+                        energy1,                                                    &
+                        xvel0,                                                      &
+                        yvel0,                                                      &
+                        xvel1,                                                      &
+                        yvel1,                                                      &
+                        vol_flux_x,                                                 &
+                        vol_flux_y,                                                 &
+                        mass_flux_x,                                                &
+                        mass_flux_y,                                                &
+                        fields,                                                     &
+                        depth                                                       )
+  IMPLICIT NONE
+
+  INTEGER :: x_min,x_max,y_min,y_max
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density0,energy0
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: pressure,viscosity,soundspeed
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density1,energy1
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: xvel0,yvel0
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: xvel1,yvel1
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+2) :: vol_flux_x,mass_flux_x
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+3) :: vol_flux_y,mass_flux_y
+  INTEGER :: fields(:),depth
+
+  ! These need to be kept consistent with the data module to avoid use statement
+  INTEGER,      PARAMETER :: CHUNK_LEFT   =1    &
+                            ,CHUNK_RIGHT  =2    &
+                            ,CHUNK_BOTTOM =3    &
+                            ,CHUNK_TOP    =4    &
+                            ,EXTERNAL_FACE=-1
+
+  INTEGER,      PARAMETER :: FIELD_DENSITY0   = 1         &
+                            ,FIELD_DENSITY1   = 2         &
+                            ,FIELD_ENERGY0    = 3         &
+                            ,FIELD_ENERGY1    = 4         &
+                            ,FIELD_PRESSURE   = 5         &
+                            ,FIELD_VISCOSITY  = 6         &
+                            ,FIELD_SOUNDSPEED = 7         &
+                            ,FIELD_XVEL0      = 8         &
+                            ,FIELD_XVEL1      = 9         &
+                            ,FIELD_YVEL0      =10         &
+                            ,FIELD_YVEL1      =11         &
+                            ,FIELD_VOL_FLUX_X =12         &
+                            ,FIELD_VOL_FLUX_Y =13         &
+                            ,FIELD_MASS_FLUX_X=14         &
+                            ,FIELD_MASS_FLUX_Y=15         &
+                            ,NUM_FIELDS       =15
+
+  INTEGER :: j,k
+
+!$OMP PARALLEL
+
+  ! Update values in external halo cells based on depth and fields requested
+  IF(fields(FIELD_DENSITY0).EQ.1) THEN
+!$OMP DO
+      DO k=y_min-depth,y_max+depth
+        DO j=1,depth
+          density0(1-j,k)=density0(0+j,k)
+        ENDDO
+      ENDDO
+!$OMP END DO
+  ENDIF
+
+  IF(fields(FIELD_DENSITY1).EQ.1) THEN
+!$OMP DO
+      DO k=y_min-depth,y_max+depth
+        DO j=1,depth
+          density1(1-j,k)=density1(0+j,k)
+        ENDDO
+      ENDDO
+!$OMP END DO
+  ENDIF
+
+  IF(fields(FIELD_ENERGY0).EQ.1) THEN
+!$OMP DO
+      DO k=y_min-depth,y_max+depth
+        DO j=1,depth
+          energy0(1-j,k)=energy0(0+j,k)
+        ENDDO
+      ENDDO
+!$OMP END DO
+  ENDIF
+
+  IF(fields(FIELD_ENERGY1).EQ.1) THEN
+!$OMP DO
+      DO k=y_min-depth,y_max+depth
+        DO j=1,depth
+          energy1(1-j,k)=energy1(0+j,k)
+        ENDDO
+      ENDDO
+!$OMP END DO
+  ENDIF
+
+  IF(fields(FIELD_PRESSURE).EQ.1) THEN
+!$OMP DO
+      DO k=y_min-depth,y_max+depth
+        DO j=1,depth
+          pressure(1-j,k)=pressure(0+j,k)
+        ENDDO
+      ENDDO
+!$OMP END DO
+  ENDIF
+
+  IF(fields(FIELD_VISCOSITY).EQ.1) THEN
+!$OMP DO
+      DO k=y_min-depth,y_max+depth
+        DO j=1,depth
+          viscosity(1-j,k)=viscosity(0+j,k)
+        ENDDO
+      ENDDO
+!$OMP END DO
+  ENDIF
+
+  IF(fields(FIELD_XVEL0).EQ.1) THEN
+!$OMP DO
+      DO k=y_min-depth,y_max+1+depth
+        DO j=1,depth
+          xvel0(1-j,k)=-xvel0(1+j,k)
+        ENDDO
+      ENDDO
+!$OMP END DO
+  ENDIF
+
+  IF(fields(FIELD_XVEL1).EQ.1) THEN
+!$OMP DO
+      DO k=y_min-depth,y_max+1+depth
+        DO j=1,depth
+          xvel1(1-j,k)=-xvel1(1+j,k)
+        ENDDO
+      ENDDO
+!$OMP END DO
+  ENDIF
+
+  IF(fields(FIELD_YVEL0).EQ.1) THEN
+!$OMP DO
+      DO k=y_min-depth,y_max+1+depth
+        DO j=1,depth
+          yvel0(1-j,k)=yvel0(1+j,k)
+        ENDDO
+      ENDDO
+!$OMP END DO
+  ENDIF
+
+  IF(fields(FIELD_YVEL1).EQ.1) THEN
+!$OMP DO
+      DO k=y_min-depth,y_max+1+depth
+        DO j=1,depth
+          yvel1(1-j,k)=yvel1(1+j,k)
+        ENDDO
+      ENDDO
+!$OMP END DO
+  ENDIF
+
+  IF(fields(FIELD_VOL_FLUX_X).EQ.1) THEN
+!$OMP DO
+      DO k=y_min-depth,y_max+depth
+        DO j=1,depth
+          vol_flux_x(1-j,k)=-vol_flux_x(1+j,k)
+        ENDDO
+      ENDDO
+!$OMP END DO
+  ENDIF
+
+  IF(fields(FIELD_MASS_FLUX_X).EQ.1) THEN
+!$OMP DO
+      DO k=y_min-depth,y_max+depth
+        DO j=1,depth
+          mass_flux_x(1-j,k)=-mass_flux_x(1+j,k)
+        ENDDO
+      ENDDO
+!$OMP END DO
+  ENDIF
+
+  IF(fields(FIELD_VOL_FLUX_Y).EQ.1) THEN
+!$OMP DO
+      DO k=y_min-depth,y_max+1+depth
+        DO j=1,depth
+          vol_flux_y(1-j,k)=vol_flux_y(1+j,k)
+        ENDDO
+      ENDDO
+!$OMP END DO
+  ENDIF
+
+  IF(fields(FIELD_MASS_FLUX_Y).EQ.1) THEN
+!$OMP DO
+      DO k=y_min-depth,y_max+1+depth
+        DO j=1,depth
+          mass_flux_y(1-j,k)=mass_flux_y(1+j,k)
+        ENDDO
+      ENDDO
+!$OMP END DO
+  ENDIF
+
+!$OMP END PARALLEL
+
+END SUBROUTINE update_halo_kernel_left
+
+SUBROUTINE update_halo_kernel_right(x_min,x_max,y_min,y_max,                        &
                         density0,                                                   &
                         energy0,                                                    &
                         pressure,                                                   &
@@ -88,34 +694,6 @@
 
   ! Update values in external halo cells based on depth and fields requested
   IF(fields(FIELD_DENSITY0).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          density0(j,1-k)=density0(j,0+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          density0(j,y_max+k)=density0(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          density0(1-j,k)=density0(0+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
@@ -123,38 +701,9 @@
         ENDDO
       ENDDO
 !$OMP END DO
-    ENDIF
   ENDIF
 
   IF(fields(FIELD_DENSITY1).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          density1(j,1-k)=density1(j,0+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          density1(j,y_max+k)=density1(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          density1(1-j,k)=density1(0+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
@@ -162,38 +711,9 @@
         ENDDO
       ENDDO
 !$OMP END DO
-    ENDIF
   ENDIF
 
   IF(fields(FIELD_ENERGY0).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          energy0(j,1-k)=energy0(j,0+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          energy0(j,y_max+k)=energy0(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          energy0(1-j,k)=energy0(0+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
@@ -201,38 +721,9 @@
         ENDDO
       ENDDO
 !$OMP END DO
-    ENDIF
   ENDIF
 
   IF(fields(FIELD_ENERGY1).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          energy1(j,1-k)=energy1(j,0+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          energy1(j,y_max+k)=energy1(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          energy1(1-j,k)=energy1(0+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
@@ -240,38 +731,9 @@
         ENDDO
       ENDDO
 !$OMP END DO
-    ENDIF
   ENDIF
 
   IF(fields(FIELD_PRESSURE).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          pressure(j,1-k)=pressure(j,0+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          pressure(j,y_max+k)=pressure(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          pressure(1-j,k)=pressure(0+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
@@ -279,38 +741,9 @@
         ENDDO
       ENDDO
 !$OMP END DO
-    ENDIF
   ENDIF
 
   IF(fields(FIELD_VISCOSITY).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          viscosity(j,1-k)=viscosity(j,0+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          viscosity(j,y_max+k)=viscosity(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          viscosity(1-j,k)=viscosity(0+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
@@ -318,38 +751,9 @@
         ENDDO
       ENDDO
 !$OMP END DO
-    ENDIF
   ENDIF
 
   IF(fields(FIELD_XVEL0).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          xvel0(j,1-k)=xvel0(j,1+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          xvel0(j,y_max+1+k)=xvel0(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+1+depth
-        DO j=1,depth
-          xvel0(1-j,k)=-xvel0(1+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+1+depth
         DO j=1,depth
@@ -357,38 +761,9 @@
         ENDDO
       ENDDO
 !$OMP END DO
-    ENDIF
   ENDIF
 
   IF(fields(FIELD_XVEL1).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          xvel1(j,1-k)=xvel1(j,1+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          xvel1(j,y_max+1+k)=xvel1(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+1+depth
-        DO j=1,depth
-          xvel1(1-j,k)=-xvel1(1+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+1+depth
         DO j=1,depth
@@ -396,38 +771,9 @@
         ENDDO
       ENDDO
 !$OMP END DO
-    ENDIF
   ENDIF
 
   IF(fields(FIELD_YVEL0).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          yvel0(j,1-k)=-yvel0(j,1+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          yvel0(j,y_max+1+k)=-yvel0(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+1+depth
-        DO j=1,depth
-          yvel0(1-j,k)=yvel0(1+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+1+depth
         DO j=1,depth
@@ -435,38 +781,9 @@
         ENDDO
       ENDDO
 !$OMP END DO
-    ENDIF
   ENDIF
 
   IF(fields(FIELD_YVEL1).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          yvel1(j,1-k)=-yvel1(j,1+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          yvel1(j,y_max+1+k)=-yvel1(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+1+depth
-        DO j=1,depth
-          yvel1(1-j,k)=yvel1(1+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+1+depth
         DO j=1,depth
@@ -474,38 +791,9 @@
         ENDDO
       ENDDO
 !$OMP END DO
-    ENDIF
   ENDIF
 
   IF(fields(FIELD_VOL_FLUX_X).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          vol_flux_x(j,1-k)=vol_flux_x(j,1+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          vol_flux_x(j,y_max+k)=vol_flux_x(j,y_max-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          vol_flux_x(1-j,k)=-vol_flux_x(1+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
@@ -513,38 +801,9 @@
         ENDDO
       ENDDO
 !$OMP END DO
-    ENDIF
   ENDIF
 
   IF(fields(FIELD_MASS_FLUX_X).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          mass_flux_x(j,1-k)=mass_flux_x(j,1+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          mass_flux_x(j,y_max+k)=mass_flux_x(j,y_max-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          mass_flux_x(1-j,k)=-mass_flux_x(1+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
@@ -552,38 +811,9 @@
         ENDDO
       ENDDO
 !$OMP END DO
-    ENDIF
   ENDIF
 
   IF(fields(FIELD_VOL_FLUX_Y).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          vol_flux_y(j,1-k)=-vol_flux_y(j,1+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          vol_flux_y(j,y_max+k+1)=-vol_flux_y(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+1+depth
-        DO j=1,depth
-          vol_flux_y(1-j,k)=vol_flux_y(1+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+1+depth
         DO j=1,depth
@@ -591,38 +821,9 @@
         ENDDO
       ENDDO
 !$OMP END DO
-    ENDIF
   ENDIF
 
   IF(fields(FIELD_MASS_FLUX_Y).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          mass_flux_y(j,1-k)=-mass_flux_y(j,1+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          mass_flux_y(j,y_max+k+1)=-mass_flux_y(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+1+depth
-        DO j=1,depth
-          mass_flux_y(1-j,k)=mass_flux_y(1+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+1+depth
         DO j=1,depth
@@ -630,9 +831,8 @@
         ENDDO
       ENDDO
 !$OMP END DO
-    ENDIF
   ENDIF
 
 !$OMP END PARALLEL
 
-END SUBROUTINE update_halo_kernel
+END SUBROUTINE update_halo_kernel_right
