@@ -1,0 +1,72 @@
+Cleverleaf {
+    dim = 2
+    vis_dump_interval = 1
+    field_summary_interval = 5
+
+    states {
+        num_states = 2
+
+        // State 0 is the background state, should always be defined.
+        state0 {
+            density = 1.e0
+            energy = 2.5e0
+        }
+
+        state1 {
+            geometry = "RECTANGLE"
+            min = 0.e0, 0.e0
+            max = 5.e0, 2.e0
+
+            density = 10.e0
+            energy = 25.e0
+        }
+    } 
+}
+
+// These are the SAMRAI objects -----------------------------------------------!
+
+CartesianGeometry {
+    domain_boxes = [ (0,0), (9,1) ]
+    x_lo         = 0.e0, 0.e0
+    x_up         = 10.e0, 2.e0
+}
+
+PatchHierarchy {
+    max_levels = 1
+
+    ratio_to_coarser {
+        level_1 = 2,2
+    }
+    
+    largest_patch_size {
+        level_0 = 10,2
+    }
+
+    smallest_patch_size {
+        level_0 = 10,2
+    }
+}
+
+LagrangianEulerianIntegrator{}
+
+LagrangianEulerianPatchStrategy{}
+
+StandardTagAndInitialize {
+    tagging_method = "GRADIENT_DETECTOR"
+}
+
+LoadBalancer {
+    //
+}
+
+GriddingAlgorithm {
+    efficiency_tolerance = 0.75e0
+    combine_efficiency = 0.85e0
+}
+
+TimeRefinementIntegrator {
+    start_time = 0.e0
+    end_time = 25.0e0
+    grow_dt = 1.5e0
+    max_integrator_steps=2955
+}
