@@ -50,7 +50,7 @@ SUBROUTINE update_halo_kernel_top(x_min,x_max,y_min,y_max,                      
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: xvel1,yvel1
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+2) :: vol_flux_x,mass_flux_x
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+3) :: vol_flux_y,mass_flux_y
-  INTEGER :: fields(:),depth
+  INTEGER :: fields(1:15),depth
 
   ! These need to be kept consistent with the data module to avoid use statement
   INTEGER,      PARAMETER :: CHUNK_LEFT   =1    &
@@ -253,7 +253,7 @@ SUBROUTINE update_halo_kernel_bottom(x_min,x_max,y_min,y_max,                   
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: xvel1,yvel1
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+2) :: vol_flux_x,mass_flux_x
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+3) :: vol_flux_y,mass_flux_y
-  INTEGER :: fields(:),depth
+  INTEGER :: fields(1:15),depth
 
   ! These need to be kept consistent with the data module to avoid use statement
   INTEGER,      PARAMETER :: CHUNK_LEFT   =1    &
@@ -456,7 +456,7 @@ SUBROUTINE update_halo_kernel_left(x_min,x_max,y_min,y_max,                     
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: xvel1,yvel1
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+2) :: vol_flux_x,mass_flux_x
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+3) :: vol_flux_y,mass_flux_y
-  INTEGER :: fields(:),depth
+  INTEGER :: fields(1:15),depth
 
   ! These need to be kept consistent with the data module to avoid use statement
   INTEGER,      PARAMETER :: CHUNK_LEFT   =1    &
@@ -662,7 +662,7 @@ SUBROUTINE update_halo_kernel_right(x_min,x_max,y_min,y_max,                    
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: xvel1,yvel1
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+2) :: vol_flux_x,mass_flux_x
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+3) :: vol_flux_y,mass_flux_y
-  INTEGER :: fields(:),depth
+  INTEGER :: fields(1:15),depth
 
   ! These need to be kept consistent with the data module to avoid use statement
   INTEGER,      PARAMETER :: CHUNK_LEFT   =1    &

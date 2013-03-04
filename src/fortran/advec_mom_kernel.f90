@@ -82,8 +82,10 @@ SUBROUTINE advec_mom_kernel(x_min,x_max,y_min,y_max,   &
   !  if it affects performance.
   ! Leave this one in as a test of performance
   IF(which_vel.EQ.1)THEN
+    PRINT *, 'UPDATING xvel'
     vel1=>xvel1
   ELSE
+    PRINT *, 'UPDATING yvel'
     vel1=>yvel1
   ENDIF
 
@@ -231,12 +233,7 @@ SUBROUTINE advec_mom_kernel(x_min,x_max,y_min,y_max,   &
       ENDDO
     ENDDO
 
-    PRINT *, 'vel1'
-    PRINT *, 'vel1 = ', vel1(x_min, y_min)
-    PRINT *, 'node_mass_pre', node_mass_pre(x_min,y_min)
-    PRINT *, 'mom_flux_x', mom_flux(x_min-1,y_min)
-    PRINT *, 'mom_flux_x', mom_flux(x_min,y_min)
-    PRINT *, 'node_mass_post', node_mass_post(x_min, y_min)
+    PRINT *, 'vel1(x_min, y_min) = ', vel1(x_min, y_min)
 
 !$OMP END DO
   ELSEIF(direction.EQ.2)THEN
@@ -244,6 +241,13 @@ SUBROUTINE advec_mom_kernel(x_min,x_max,y_min,y_max,   &
     DO k=y_min-2,y_max+2
       DO j=x_min,x_max+1
         ! Find staggered mesh mass fluxes and nodal masses and volumes.
+        ! Print out mass_fluxes here!
+        IF (j.EQ.x_min .AND. k.EQ.y_min-1) THEN
+          PRINT *, mass_flux_y(j-1,k)
+          PRINT *, mass_flux_y(j,k)
+          PRINT *, mass_flux_y(j-1,k+1)
+          PRINT *, mass_flux_y(j,k+1)
+        ENDIF
         node_flux(j,k)=0.25_8*(mass_flux_y(j-1,k  )+mass_flux_y(j  ,k  ) &
                               +mass_flux_y(j-1,k+1)+mass_flux_y(j  ,k+1))
       ENDDO
@@ -339,6 +343,8 @@ SUBROUTINE advec_mom_kernel(x_min,x_max,y_min,y_max,   &
       ENDDO
     ENDDO
 !$OMP END DO
+    PRINT *, 'mom_flux(x_min,y_min), mom_flux(x_min,y_min) = ', mom_flux(x_min,y_min), ', ', mom_flux(x_min,y_min-1)
+    PRINT *, 'vel1(x_min, y_min) = ', vel1(x_min, y_min)
   ENDIF
 
 !$OMP END PARALLEL

@@ -139,8 +139,8 @@ Cleverleaf::Cleverleaf(
     input_db(input_database),
     state_prefix("state"),
     d_velocity(new pdat::NodeVariable<double>(d_dim, "velocity", d_dim.getValue())),
-    d_massflux(new pdat::EdgeVariable<double>(d_dim, "massflux", d_dim.getValue())),
-    d_volflux(new pdat::EdgeVariable<double>(d_dim, "volflux", d_dim.getValue())),
+    d_massflux(new pdat::EdgeVariable<double>(d_dim, "massflux", 2)),
+    d_volflux(new pdat::EdgeVariable<double>(d_dim, "volflux", 2)),
     d_pressure(new pdat::CellVariable<double>(d_dim, "pressure", 1)),
     d_viscosity(new pdat::CellVariable<double>(d_dim, "viscosity", 1)),
     d_soundspeed(new pdat::CellVariable<double>(d_dim, "soundspeed", 1)),
@@ -332,12 +332,12 @@ void Cleverleaf::registerModelVariables(
                     d_velocity, d_plot_context));
 
 //        d_visit_writer->registerPlotQuantity("Massflux",
-//                "SCALAR",
+//                "VECTOR",
 //                vardb->mapVariableAndContextToIndex(
 //                    d_massflux, d_plot_context));
-
+//
 //        d_visit_writer->registerPlotQuantity("Volflux",
-//                "SCALAR",
+//                "VECTOR",
 //                vardb->mapVariableAndContextToIndex(
 //                    d_volflux, d_plot_context));
 
@@ -938,7 +938,7 @@ void Cleverleaf::ideal_gas_knl(
     double* soundspeed = v_soundspeed->getPointer();
 
     F90_FUNC(ideal_gas_kernel,IDEAL_GAS_KERNEL)
-        (&(xmin), &(xmax), &(ymin), &(ymax),
+        (&xmin, &xmax, &ymin, &ymax,
          density,
          energy,
          pressure,
@@ -1520,8 +1520,8 @@ void Cleverleaf::setPhysicalBoundaryConditions(
 {
 
     if(!patch.inHierarchy()) {
-    //    std::cerr << "PATCH NOT IN HIERARCHY" << std::endl;
-        return;
+        std::cerr << "PATCH NOT IN HIERARCHY" << std::endl;
+    //    return;
     }
 
     boost::shared_ptr<pdat::CellData<double> > v_pressure(
@@ -1533,7 +1533,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
             boost::detail::dynamic_cast_tag());
 
     boost::shared_ptr<pdat::CellData<double> > v_density1(
-            patch.getPatchData(d_density, getNewDataContext()),
+            patch.getPatchData(d_density, getScratchDataContext()),
             boost::detail::dynamic_cast_tag());
 
     boost::shared_ptr<pdat::CellData<double> > v_energy0(
@@ -1541,7 +1541,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
             boost::detail::dynamic_cast_tag());
 
     boost::shared_ptr<pdat::CellData<double> > v_energy1(
-            patch.getPatchData(d_energy, getNewDataContext()),
+            patch.getPatchData(d_energy, getScratchDataContext()),
             boost::detail::dynamic_cast_tag());
 
     boost::shared_ptr<pdat::CellData<double> > v_viscosity(
@@ -1553,7 +1553,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
             boost::detail::dynamic_cast_tag());
 
     boost::shared_ptr<pdat::NodeData<double> > v_vel1(
-            patch.getPatchData(d_velocity, getNewDataContext()),
+            patch.getPatchData(d_velocity, getScratchDataContext()),
             boost::detail::dynamic_cast_tag());
 
     boost::shared_ptr<pdat::EdgeData<double> > v_massflux( 
@@ -1604,8 +1604,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
 
     double* soundspeed = v_soundspeed->getPointer();
 
-    //int depth = ghost_width_to_fill[0];
-    int depth = 2;
+    int depth = ghost_width_to_fill[0];
 
     const boost::shared_ptr<geom::CartesianPatchGeometry> pgeom(
             patch.getPatchGeometry(),
@@ -1613,7 +1612,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
 
     const tbox::Array<hier::BoundaryBox>& edge_bdry = pgeom->getCodimensionBoundaries(Bdry::EDGE2D);
 
-    int* fields = new int[15];
+    int* fields = (int*)malloc(15*sizeof(int));
 
     for(int i = 0; i < 15; i++) {
         fields[i] = 1;
