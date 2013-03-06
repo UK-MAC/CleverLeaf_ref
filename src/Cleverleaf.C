@@ -1533,7 +1533,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
             boost::detail::dynamic_cast_tag());
 
     boost::shared_ptr<pdat::CellData<double> > v_density1(
-            patch.getPatchData(d_density, getScratchDataContext()),
+            patch.getPatchData(d_density, getScratchNewDataContext()),
             boost::detail::dynamic_cast_tag());
 
     boost::shared_ptr<pdat::CellData<double> > v_energy0(
@@ -1541,7 +1541,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
             boost::detail::dynamic_cast_tag());
 
     boost::shared_ptr<pdat::CellData<double> > v_energy1(
-            patch.getPatchData(d_energy, getScratchDataContext()),
+            patch.getPatchData(d_energy, getScratchNewDataContext()),
             boost::detail::dynamic_cast_tag());
 
     boost::shared_ptr<pdat::CellData<double> > v_viscosity(
@@ -1553,7 +1553,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
             boost::detail::dynamic_cast_tag());
 
     boost::shared_ptr<pdat::NodeData<double> > v_vel1(
-            patch.getPatchData(d_velocity, getScratchDataContext()),
+            patch.getPatchData(d_velocity, getScratchNewDataContext()),
             boost::detail::dynamic_cast_tag());
 
     boost::shared_ptr<pdat::EdgeData<double> > v_massflux( 

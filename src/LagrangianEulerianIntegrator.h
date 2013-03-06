@@ -299,6 +299,8 @@ class LagrangianEulerianIntegrator:
         boost::shared_ptr<hier::VariableContext> d_new;
         /** Scratch variables. */
         boost::shared_ptr<hier::VariableContext> d_scratch;
+        /** Scratch space for "new" variables. */
+        boost::shared_ptr<hier::VariableContext> d_scratch_new;
         /** "Old" timelevel 0 variables. */
         boost::shared_ptr<hier::VariableContext> d_current;
         /** Context used to write ViSiT dumps. */
@@ -308,6 +310,7 @@ class LagrangianEulerianIntegrator:
          */
 
         hier::ComponentSelector d_var_scratch_data;
+        hier::ComponentSelector d_var_scratch_new_data;
         hier::ComponentSelector d_var_cur_data;
         hier::ComponentSelector d_var_new_data;
 

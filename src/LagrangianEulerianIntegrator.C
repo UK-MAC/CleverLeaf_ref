@@ -48,6 +48,7 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
     d_current = hier::VariableDatabase::getDatabase()->getContext("CURRENT");
     d_new = hier::VariableDatabase::getDatabase()->getContext("NEW");
     d_scratch = hier::VariableDatabase::getDatabase()->getContext("SCRATCH");
+    d_scratch_new = hier::VariableDatabase::getDatabase()->getContext("NSCRATCH");
 
     /*
      * Pass these contexts up to the patch strategy
@@ -55,6 +56,7 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
     patch_strategy->setCurrentDataContext(d_current);
     patch_strategy->setNewDataContext(d_new);
     patch_strategy->setScratchDataContext(d_scratch);
+    patch_strategy->setScratchNewDataContext(d_scratch_new);
 
     d_plot_context = d_current;
 }
@@ -117,6 +119,7 @@ double LagrangianEulerianIntegrator::getLevelDt(
 
     d_patch_strategy->setCurrentDataContext(d_scratch);
     level->allocatePatchData(d_var_scratch_data, dt_time);
+    level->allocatePatchData(d_var_scratch_new_data, dt_time);
     
 
     d_bdry_fill_prime_halos->createSchedule(
@@ -128,6 +131,7 @@ double LagrangianEulerianIntegrator::getLevelDt(
     d_bdry_fill_pre_lagrange->createSchedule(level, d_patch_strategy)->fillData(dt_time);
 
     level->deallocatePatchData(d_var_scratch_data);
+    level->deallocatePatchData(d_var_scratch_new_data);
     d_patch_strategy->setCurrentDataContext(d_current);
 
 
@@ -149,6 +153,7 @@ double LagrangianEulerianIntegrator::getLevelDt(
      */
     d_patch_strategy->setCurrentDataContext(d_scratch);
     level->allocatePatchData(d_var_scratch_data, dt_time);
+    level->allocatePatchData(d_var_scratch_new_data, dt_time);
 
     //d_bdry_fill_post_viscosity->createSchedule(level, d_patch_strategy)->fillData(dt_time);
 
@@ -159,6 +164,7 @@ double LagrangianEulerianIntegrator::getLevelDt(
                 d_patch_strategy)->fillData(dt_time);
 
     level->deallocatePatchData(d_var_scratch_data);
+    level->deallocatePatchData(d_var_scratch_new_data);
     d_patch_strategy->setCurrentDataContext(d_current);
 
 #if LOOPPRINT
@@ -271,6 +277,7 @@ double LagrangianEulerianIntegrator::advanceLevel(
      */
     d_patch_strategy->setCurrentDataContext(d_scratch);
     level->allocatePatchData(d_var_scratch_data, current_time);
+    level->allocatePatchData(d_var_scratch_new_data, current_time);
     //d_bdry_fill_half_step->createSchedule(level, d_patch_strategy)->fillData(current_time);
 
     d_bdry_fill_half_step->createSchedule(
@@ -437,6 +444,7 @@ void LagrangianEulerianIntegrator::initializeLevelData (
     }
 
    level->allocatePatchData(d_var_scratch_data, init_data_time);
+    level->allocatePatchData(d_var_scratch_new_data, init_data_time);
 
    const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
 
@@ -485,6 +493,7 @@ void LagrangianEulerianIntegrator::initializeLevelData (
 
         d_patch_strategy->setCurrentDataContext(d_scratch);
         level->allocatePatchData(d_var_scratch_data, init_data_time);
+        level->allocatePatchData(d_var_scratch_new_data, init_data_time);
 
         const boost::shared_ptr<hier::PatchHierarchy> patch_hierarchy(hierarchy);
 
@@ -573,6 +582,10 @@ void LagrangianEulerianIntegrator::registerVariable(
             d_scratch,
             ghosts);
 
+    int scr_new_id = variable_db->registerVariableAndContext(var,
+            d_scratch_new,
+            ghosts);
+
     boost::shared_ptr<hier::RefineOperator> refine_op;
     boost::shared_ptr<hier::CoarsenOperator> coarsen_op;
 
@@ -640,7 +653,7 @@ void LagrangianEulerianIntegrator::registerVariable(
             d_bdry_fill_prime_halos->registerRefine(
                     new_id,
                     new_id,
-                    scr_id,
+                    scr_new_id,
                     refine_op);
         }
     }
@@ -694,7 +707,7 @@ void LagrangianEulerianIntegrator::registerVariable(
             d_bdry_fill_pre_sweep1_cell->registerRefine(
                     new_id,
                     new_id,
-                    scr_id,
+                    scr_new_id,
                     refine_op);
         }
     }
@@ -713,7 +726,7 @@ void LagrangianEulerianIntegrator::registerVariable(
             d_bdry_fill_pre_sweep1_cell->registerRefine(
                     new_id,
                     new_id,
-                    scr_id,
+                    scr_new_id,
                     refine_op);
         }
     }
@@ -732,7 +745,7 @@ void LagrangianEulerianIntegrator::registerVariable(
             d_bdry_fill_pre_sweep2_mom->registerRefine(
                     new_id,
                     new_id,
-                    scr_id,
+                    scr_new_id,
                     refine_op);
         }
     }
@@ -740,6 +753,7 @@ void LagrangianEulerianIntegrator::registerVariable(
     d_var_cur_data.setFlag(cur_id);
     d_var_new_data.setFlag(new_id);
     d_var_scratch_data.setFlag(scr_id);
+    d_var_scratch_new_data.setFlag(scr_new_id);
 }
 
 boost::shared_ptr<hier::VariableContext> LagrangianEulerianIntegrator::getPlotContext()

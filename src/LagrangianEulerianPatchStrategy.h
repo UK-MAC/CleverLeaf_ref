@@ -177,6 +177,8 @@ class LagrangianEulerianPatchStrategy:
          */
         boost::shared_ptr<hier::VariableContext> getScratchDataContext();
 
+        boost::shared_ptr<hier::VariableContext> getScratchNewDataContext();
+
         /**
          * Set the data context for the current time.
          *
@@ -205,6 +207,8 @@ class LagrangianEulerianPatchStrategy:
         void setScratchDataContext(
                 boost::shared_ptr<hier::VariableContext> context);
 
+        void setScratchNewDataContext(
+                boost::shared_ptr<hier::VariableContext> context);
         /**
          * Get the dimension of the problem.
          *
@@ -286,5 +290,6 @@ class LagrangianEulerianPatchStrategy:
         boost::shared_ptr<hier::VariableContext> d_new_data_context;
         boost::shared_ptr<hier::VariableContext> d_current_data_context;
         boost::shared_ptr<hier::VariableContext> d_scratch_data_context;
+        boost::shared_ptr<hier::VariableContext> d_scratch_new_data_context;
 };
 #endif
