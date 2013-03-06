@@ -16,7 +16,7 @@ CXX=mpiCC
 F90=mpif90
 
 CPPFLAGS=-g -O3 -fp-model source -fp-model strict -prec-div -prec-sqrt -lz $(HDF_INC) $(SAMRAI_INC) $(MATH_INC)
-FFLAGS=-module obj/
+FFLAGS=-g -module obj/
 LDFLAGS=-g -lz $(SAMRAI_LIB) $(HDF_LIB) $(MATH_LIB) -lstdc++ -nofor_main
 
 CPP_FILES := $(wildcard src/*.C)
