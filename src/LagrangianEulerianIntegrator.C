@@ -340,7 +340,7 @@ double LagrangianEulerianIntegrator::advanceLevel(
    /*
     * advection here...
     */
-   advection(level, hierarchy, new_time);
+   advection(level, hierarchy, current_time);
 
    advect_x = !advect_x;
 
@@ -349,7 +349,7 @@ double LagrangianEulerianIntegrator::advanceLevel(
      * timelevel 1 values back to timelevel 0.
      */
 
-    level->setTime(new_time, d_var_cur_data);
+    //level->setTime(new_time, d_var_cur_data);
 
     resetField(level);
 
@@ -828,11 +828,17 @@ void LagrangianEulerianIntegrator::advection(
    */
     //d_bdry_fill_pre_sweep1_cell->createSchedule(level, d_patch_strategy)->fillData(current_time);
 
+    level->allocatePatchData(d_var_scratch_data, current_time);
+    level->allocatePatchData(d_var_scratch_new_data, current_time);
+
     d_bdry_fill_pre_sweep1_cell->createSchedule(
                 level,
                 level->getLevelNumber()-1,
                 hierarchy,
                 d_patch_strategy)->fillData(current_time);
+
+    level->deallocatePatchData(d_var_scratch_data);
+    level->deallocatePatchData(d_var_scratch_new_data);
 
 #if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advection: advec_cell {{{" << std::endl;
@@ -852,12 +858,17 @@ void LagrangianEulerianIntegrator::advection(
    * TODO: update density1, energy1, velocity1 and mass_flux halos
    */
     //d_bdry_fill_pre_sweep1_mom->createSchedule(level, d_patch_strategy)->fillData(current_time);
+    level->allocatePatchData(d_var_scratch_data, current_time);
+    level->allocatePatchData(d_var_scratch_new_data, current_time);
+
     d_bdry_fill_pre_sweep1_mom->createSchedule(
                 level,
                 level->getLevelNumber()-1,
                 hierarchy,
                 d_patch_strategy)->fillData(current_time);
 
+    level->deallocatePatchData(d_var_scratch_data);
+    level->deallocatePatchData(d_var_scratch_new_data);
 #if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advection: advec_mom x {{{" << std::endl;
 #endif
@@ -912,11 +923,17 @@ void LagrangianEulerianIntegrator::advection(
    * TODO: Update density1, energy1, vel1 and mass flux halos
    */
     //d_bdry_fill_pre_sweep2_mom->createSchedule(level, d_patch_strategy)->fillData(current_time);
+    level->allocatePatchData(d_var_scratch_data, current_time);
+    level->allocatePatchData(d_var_scratch_new_data, current_time);
+
     d_bdry_fill_pre_sweep2_mom->createSchedule(
                 level,
                 level->getLevelNumber()-1,
                 hierarchy,
                 d_patch_strategy)->fillData(current_time);
+
+    level->deallocatePatchData(d_var_scratch_data);
+    level->deallocatePatchData(d_var_scratch_new_data);
 
 #if LOOPPRINT
     tbox::pout << "LagrangianEulerianIntegrator: advection: advec_mom x {{{" << std::endl;

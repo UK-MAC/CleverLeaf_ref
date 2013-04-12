@@ -1,7 +1,25 @@
-Main {
+Cleverleaf {
     dim = 2
     vis_dump_interval = 1
     field_summary_interval = 5
+
+    states {
+        num_states = 1
+
+        state0 {
+            density = 0.2e0
+            energy = 1.e0
+        }
+
+        state1 {
+            geometry = "RECTANGLE"
+            min = 0.e0, 0.e0
+            max = 5.e0, 2.e0
+
+            density = 1.e0
+            energy = 2.5e0
+        }
+    }
 }
 
 CartesianGeometry {
@@ -29,11 +47,6 @@ PatchHierarchy {
     proper_nesting_buffer {
         level_1 = 4,4
     }
-}
-
-Cleverleaf {
-    vis = FALSE
-    vis_dump_interval = 1
 }
 
 LagrangianEulerianIntegrator{}
