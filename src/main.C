@@ -2,7 +2,7 @@
 
 // Header for application-specific algorithm/data structure objects
 #include "Cleverleaf.h"
-#include "LagrangianEulerianIntegrator.h"
+#include "LagrangianEulerianLevelIntegrator.h"
 
 // Headers for SAMRAI
 #include "SAMRAI/algs/TimeRefinementIntegrator.h"
@@ -91,9 +91,9 @@ int main(int argc, char* argv[]) {
                 dim,
                 grid_geometry);
 
-        boost::shared_ptr<LagrangianEulerianIntegrator> lagrangian_eulerian_integrator(
-                new LagrangianEulerianIntegrator("LagrangianEulerianIntegrator",
-                    input_db->getDatabase("LagrangianEulerianIntegrator"),
+        boost::shared_ptr<LagrangianEulerianLevelIntegrator> lagrangian_eulerian_integrator(
+                new LagrangianEulerianLevelIntegrator("LagrangianEulerianLevelIntegrator",
+                    input_db->getDatabase("LagrangianEulerianLevelIntegrator"),
                     /*
                      * Pass the Cleverleaf model to the integrator,
                      * again following the Strategy pattern.

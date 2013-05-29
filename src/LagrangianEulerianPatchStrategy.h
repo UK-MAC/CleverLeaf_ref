@@ -8,12 +8,12 @@
 
 using namespace SAMRAI;
 
-class LagrangianEulerianIntegrator;
+class LagrangianEulerianLevelIntegrator;
 
 /**
  * @class LagrangianEulerianPatchStrategy
  *
- * A class to describe the abstract methods needed by LagrangianEulerianIntegrator.
+ * A class to describe the abstract methods needed by LagrangianEulerianLevelIntegrator.
  *
  * The abstract methods here provide all the operations needed to integrate a
  * hierarchy of patches through the Lagrangian-Eulerian scheme seen in
@@ -39,12 +39,12 @@ class LagrangianEulerianPatchStrategy:
         LagrangianEulerianPatchStrategy(const tbox::Dimension& dim);
 
         /**
-         * Register model variables with the LagrangianEulerianIntegrator.
+         * Register model variables with the LagrangianEulerianLevelIntegrator.
          *
          * @param integrator The integrator object being used.
          */
         virtual void registerModelVariables(
-                LagrangianEulerianIntegrator* integrator) = 0;
+                LagrangianEulerianLevelIntegrator* integrator) = 0;
 
         /**
          * Set up data on the patch.

@@ -1,5 +1,5 @@
-#ifndef included_LagrangianEulerianIntegrator
-#define included_LagrangianEulerianIntegrator
+#ifndef included_LagrangianEulerianLevelIntegrator
+#define included_LagrangianEulerianLevelIntegrator
 
 #include "LagrangianEulerianPatchStrategy.h"
 
@@ -19,15 +19,15 @@
 using namespace SAMRAI;
 
 /**
- * @class LagrangianEulerianIntegrator
+ * @class LagrangianEulerianLevelIntegrator
  *
  * Controls the steps necessary to advance the solution across the geometry.
  *
  * These methods are largely defined in SAMRAI::algs::TimeRefinementLevelStrategy, and
- * provide a mechanism for SAMRAI to use the LagrangianEulerianIntegrator to
+ * provide a mechanism for SAMRAI to use the LagrangianEulerianLevelIntegrator to
  * perform a complete timestep on the given solution state.
  */
-class LagrangianEulerianIntegrator:
+class LagrangianEulerianLevelIntegrator:
     public algs::TimeRefinementLevelStrategy,
     public mesh::StandardTagAndInitStrategy
 {
@@ -76,7 +76,7 @@ class LagrangianEulerianIntegrator:
          */
 
         /**
-         * Create a new LagrangianEulerianIntegrator.
+         * Create a new LagrangianEulerianLevelIntegrator.
          *
          * The patch_strategy object is the key parameter, as here we provide the
          * class implementing the LagrangianEulerianPatchStrategy methods in such
@@ -86,7 +86,7 @@ class LagrangianEulerianIntegrator:
          * @param input_db Input database containing necessary setup info.
          * @param patch_strategy Patch strategy object to use.
          */
-        LagrangianEulerianIntegrator(
+        LagrangianEulerianLevelIntegrator(
                 const std::string& object_name,
                 const boost::shared_ptr<tbox::Database>& input_db,
                 LagrangianEulerianPatchStrategy* patch_strategy);
@@ -94,7 +94,7 @@ class LagrangianEulerianIntegrator:
         /**
          * Default empty destructor.
          */
-        ~LagrangianEulerianIntegrator();
+        ~LagrangianEulerianLevelIntegrator();
 
         /**
          * Register a variable with the integrator, allowing

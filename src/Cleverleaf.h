@@ -2,7 +2,7 @@
 #define CLEVERLEAF_H 
 
 #include "LagrangianEulerianPatchStrategy.h"
-#include "LagrangianEulerianIntegrator.h"
+#include "LagrangianEulerianLevelIntegrator.h"
 
 #include "SAMRAI/appu/VisItDataWriter.h"
 #include "SAMRAI/mesh/StandardTagAndInitStrategy.h"
@@ -56,7 +56,7 @@ class Cleverleaf:
          */
         void registerVisItDataWriter(boost::shared_ptr<appu::VisItDataWriter> writer);
 
-        void registerModelVariables(LagrangianEulerianIntegrator* integrator);
+        void registerModelVariables(LagrangianEulerianLevelIntegrator* integrator);
 
         void initializeDataOnPatch(
                 hier::Patch&,

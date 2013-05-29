@@ -178,110 +178,110 @@ Cleverleaf::Cleverleaf(
 }
 
 void Cleverleaf::registerModelVariables(
-        LagrangianEulerianIntegrator* integrator) 
+        LagrangianEulerianLevelIntegrator* integrator) 
 {
     integrator->registerVariable(
             d_velocity,
-            LagrangianEulerianIntegrator::FIELD,
-            LagrangianEulerianIntegrator::PRIME_CELLS_EXCH |
-                LagrangianEulerianIntegrator::PRE_LAGRANGE_EXCH |
-                LagrangianEulerianIntegrator::PRE_SWEEP_1_MOM_EXCH |
-                LagrangianEulerianIntegrator::PRE_SWEEP_2_MOM_EXCH,
+            LagrangianEulerianLevelIntegrator::FIELD,
+            LagrangianEulerianLevelIntegrator::PRIME_CELLS_EXCH |
+                LagrangianEulerianLevelIntegrator::PRE_LAGRANGE_EXCH |
+                LagrangianEulerianLevelIntegrator::PRE_SWEEP_1_MOM_EXCH |
+                LagrangianEulerianLevelIntegrator::PRE_SWEEP_2_MOM_EXCH,
             d_nghosts,
             d_grid_geometry);
 
     integrator->registerVariable(
             d_massflux,
-            LagrangianEulerianIntegrator::NORMAL,
-            LagrangianEulerianIntegrator::PRE_SWEEP_1_MOM_EXCH |
-                LagrangianEulerianIntegrator::PRE_SWEEP_2_MOM_EXCH,
+            LagrangianEulerianLevelIntegrator::NORMAL,
+            LagrangianEulerianLevelIntegrator::PRE_SWEEP_1_MOM_EXCH |
+                LagrangianEulerianLevelIntegrator::PRE_SWEEP_2_MOM_EXCH,
             d_nghosts,
             d_grid_geometry);
 
     integrator->registerVariable(
             d_volflux,
-            LagrangianEulerianIntegrator::NORMAL,
-            LagrangianEulerianIntegrator::PRE_SWEEP_1_CELL_EXCH,
+            LagrangianEulerianLevelIntegrator::NORMAL,
+            LagrangianEulerianLevelIntegrator::PRE_SWEEP_1_CELL_EXCH,
             d_nghosts,
             d_grid_geometry);
 
     integrator->registerVariable(
             d_pressure,
-            LagrangianEulerianIntegrator::NORMAL,
-            LagrangianEulerianIntegrator::PRIME_CELLS_EXCH |
-                LagrangianEulerianIntegrator::PRE_LAGRANGE_EXCH |
-                LagrangianEulerianIntegrator::HALF_STEP_EXCH,
+            LagrangianEulerianLevelIntegrator::NORMAL,
+            LagrangianEulerianLevelIntegrator::PRIME_CELLS_EXCH |
+                LagrangianEulerianLevelIntegrator::PRE_LAGRANGE_EXCH |
+                LagrangianEulerianLevelIntegrator::HALF_STEP_EXCH,
             d_nghosts,
             d_grid_geometry);
 
     integrator->registerVariable(
             d_viscosity,
-            LagrangianEulerianIntegrator::NORMAL,
-            LagrangianEulerianIntegrator::PRIME_CELLS_EXCH |
-                LagrangianEulerianIntegrator::POST_VISCOSITY_EXCH,
+            LagrangianEulerianLevelIntegrator::NORMAL,
+            LagrangianEulerianLevelIntegrator::PRIME_CELLS_EXCH |
+                LagrangianEulerianLevelIntegrator::POST_VISCOSITY_EXCH,
             d_nghosts,
             d_grid_geometry);
 
     integrator->registerVariable(
             d_soundspeed,
-            LagrangianEulerianIntegrator::NORMAL,
-            LagrangianEulerianIntegrator::NO_EXCH,
+            LagrangianEulerianLevelIntegrator::NORMAL,
+            LagrangianEulerianLevelIntegrator::NO_EXCH,
             d_nghosts,
             d_grid_geometry);
 
     integrator->registerVariable(
             d_density,
-            LagrangianEulerianIntegrator::FIELD | LagrangianEulerianIntegrator::REVERT,
-            LagrangianEulerianIntegrator::PRIME_CELLS_EXCH |
-                LagrangianEulerianIntegrator::PRE_LAGRANGE_EXCH |
-                LagrangianEulerianIntegrator::PRE_SWEEP_1_CELL_EXCH |
-                LagrangianEulerianIntegrator::PRE_SWEEP_1_MOM_EXCH |
-                LagrangianEulerianIntegrator::PRE_SWEEP_2_MOM_EXCH,
+            LagrangianEulerianLevelIntegrator::FIELD | LagrangianEulerianLevelIntegrator::REVERT,
+            LagrangianEulerianLevelIntegrator::PRIME_CELLS_EXCH |
+                LagrangianEulerianLevelIntegrator::PRE_LAGRANGE_EXCH |
+                LagrangianEulerianLevelIntegrator::PRE_SWEEP_1_CELL_EXCH |
+                LagrangianEulerianLevelIntegrator::PRE_SWEEP_1_MOM_EXCH |
+                LagrangianEulerianLevelIntegrator::PRE_SWEEP_2_MOM_EXCH,
             d_nghosts, 
             d_grid_geometry);
 
     integrator->registerVariable(
             d_energy,
-            LagrangianEulerianIntegrator::FIELD | LagrangianEulerianIntegrator::REVERT,
-            LagrangianEulerianIntegrator::PRIME_CELLS_EXCH |
-                LagrangianEulerianIntegrator::PRE_LAGRANGE_EXCH |
-                LagrangianEulerianIntegrator::PRE_SWEEP_1_CELL_EXCH |
-                LagrangianEulerianIntegrator::PRE_SWEEP_1_MOM_EXCH |
-                LagrangianEulerianIntegrator::PRE_SWEEP_2_MOM_EXCH,
+            LagrangianEulerianLevelIntegrator::FIELD | LagrangianEulerianLevelIntegrator::REVERT,
+            LagrangianEulerianLevelIntegrator::PRIME_CELLS_EXCH |
+                LagrangianEulerianLevelIntegrator::PRE_LAGRANGE_EXCH |
+                LagrangianEulerianLevelIntegrator::PRE_SWEEP_1_CELL_EXCH |
+                LagrangianEulerianLevelIntegrator::PRE_SWEEP_1_MOM_EXCH |
+                LagrangianEulerianLevelIntegrator::PRE_SWEEP_2_MOM_EXCH,
             d_nghosts,
             d_grid_geometry);
 
     integrator->registerVariable(
             d_volume,
-            LagrangianEulerianIntegrator::NORMAL,
-            LagrangianEulerianIntegrator::NO_EXCH,
+            LagrangianEulerianLevelIntegrator::NORMAL,
+            LagrangianEulerianLevelIntegrator::NO_EXCH,
             d_nghosts,
             d_grid_geometry);
 
     integrator->registerVariable(
             d_celldeltas,
-            LagrangianEulerianIntegrator::NORMAL,
-            LagrangianEulerianIntegrator::NO_EXCH,
+            LagrangianEulerianLevelIntegrator::NORMAL,
+            LagrangianEulerianLevelIntegrator::NO_EXCH,
             d_nghosts,
             d_grid_geometry);
     integrator->registerVariable(
             d_cellcoords,
-            LagrangianEulerianIntegrator::NORMAL,
-            LagrangianEulerianIntegrator::NO_EXCH,
+            LagrangianEulerianLevelIntegrator::NORMAL,
+            LagrangianEulerianLevelIntegrator::NO_EXCH,
             d_nghosts,
             d_grid_geometry);
 
     integrator->registerVariable(
             d_vertexdeltas,
-            LagrangianEulerianIntegrator::NORMAL,
-            LagrangianEulerianIntegrator::NO_EXCH,
+            LagrangianEulerianLevelIntegrator::NORMAL,
+            LagrangianEulerianLevelIntegrator::NO_EXCH,
             d_nghosts,
             d_grid_geometry);
 
     integrator->registerVariable(
             d_vertexcoords,
-            LagrangianEulerianIntegrator::NORMAL,
-            LagrangianEulerianIntegrator::NO_EXCH,
+            LagrangianEulerianLevelIntegrator::NORMAL,
+            LagrangianEulerianLevelIntegrator::NO_EXCH,
             d_nghosts,
             d_grid_geometry);
 
