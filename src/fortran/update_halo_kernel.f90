@@ -288,7 +288,7 @@ SUBROUTINE update_halo_kernel_bottom(x_min,x_max,y_min,y_max,                   
       DO k=1,depth
 !$OMP DO
         DO j=x_min-depth,x_max+depth
-          density0(j,1-k)=density0(j,0+k)
+          density0(j,y_min-k)=density0(j,y_min+(k-1))
         ENDDO
 !$OMP END DO
       ENDDO
@@ -298,7 +298,7 @@ SUBROUTINE update_halo_kernel_bottom(x_min,x_max,y_min,y_max,                   
       DO k=1,depth
 !$OMP DO
         DO j=x_min-depth,x_max+depth
-          density1(j,1-k)=density1(j,0+k)
+          density1(j,y_min-k)=density1(j,y_min+(k-1))
         ENDDO
 !$OMP END DO
       ENDDO
@@ -308,7 +308,7 @@ SUBROUTINE update_halo_kernel_bottom(x_min,x_max,y_min,y_max,                   
       DO k=1,depth
 !$OMP DO
         DO j=x_min-depth,x_max+depth
-          energy0(j,1-k)=energy0(j,0+k)
+          energy0(j,y_min-k)=energy0(j,y_min+(k-1))
         ENDDO
 !$OMP END DO
       ENDDO
@@ -318,7 +318,7 @@ SUBROUTINE update_halo_kernel_bottom(x_min,x_max,y_min,y_max,                   
       DO k=1,depth
 !$OMP DO
         DO j=x_min-depth,x_max+depth
-          energy1(j,1-k)=energy1(j,0+k)
+          energy1(j,y_min-k)=energy1(j,y_min+(k-1))
         ENDDO
 !$OMP END DO
       ENDDO
@@ -328,7 +328,7 @@ SUBROUTINE update_halo_kernel_bottom(x_min,x_max,y_min,y_max,                   
       DO k=1,depth
 !$OMP DO
         DO j=x_min-depth,x_max+depth
-          pressure(j,1-k)=pressure(j,0+k)
+          pressure(j,y_min-k)=pressure(j,y_min+(k-1))
         ENDDO
 !$OMP END DO
       ENDDO
@@ -338,7 +338,7 @@ SUBROUTINE update_halo_kernel_bottom(x_min,x_max,y_min,y_max,                   
       DO k=1,depth
 !$OMP DO
         DO j=x_min-depth,x_max+depth
-          viscosity(j,1-k)=viscosity(j,0+k)
+          viscosity(j,y_min-k)=viscosity(j,y_min+(k-1))
         ENDDO
 !$OMP END DO
       ENDDO
@@ -348,7 +348,7 @@ SUBROUTINE update_halo_kernel_bottom(x_min,x_max,y_min,y_max,                   
       DO k=1,depth
 !$OMP DO
         DO j=x_min-depth,x_max+1+depth
-          xvel0(j,1-k)=xvel0(j,1+k)
+          xvel0(j,y_min-k)=xvel0(j,y_min+k)
         ENDDO
 !$OMP END DO
       ENDDO
@@ -358,7 +358,7 @@ SUBROUTINE update_halo_kernel_bottom(x_min,x_max,y_min,y_max,                   
       DO k=1,depth
 !$OMP DO
         DO j=x_min-depth,x_max+1+depth
-          xvel1(j,1-k)=xvel1(j,1+k)
+          xvel1(j,y_min-k)=xvel1(j,y_min+k)
         ENDDO
 !$OMP END DO
       ENDDO
@@ -368,7 +368,7 @@ SUBROUTINE update_halo_kernel_bottom(x_min,x_max,y_min,y_max,                   
       DO k=1,depth
 !$OMP DO
         DO j=x_min-depth,x_max+1+depth
-          yvel0(j,1-k)=-yvel0(j,1+k)
+          yvel0(j,y_min-k)=-yvel0(j,y_min+k)
         ENDDO
 !$OMP END DO
       ENDDO
@@ -378,7 +378,7 @@ SUBROUTINE update_halo_kernel_bottom(x_min,x_max,y_min,y_max,                   
       DO k=1,depth
 !$OMP DO
         DO j=x_min-depth,x_max+1+depth
-          yvel1(j,1-k)=-yvel1(j,1+k)
+          yvel1(j,y_min-k)=-yvel1(j,y_min+k)
         ENDDO
 !$OMP END DO
       ENDDO
@@ -388,7 +388,7 @@ SUBROUTINE update_halo_kernel_bottom(x_min,x_max,y_min,y_max,                   
       DO k=1,depth
 !$OMP DO
         DO j=x_min-depth,x_max+1+depth
-          vol_flux_x(j,1-k)=vol_flux_x(j,1+k)
+          vol_flux_x(j,y_min-k)=vol_flux_x(j,y_min+k)
         ENDDO
 !$OMP END DO
       ENDDO
@@ -398,7 +398,7 @@ SUBROUTINE update_halo_kernel_bottom(x_min,x_max,y_min,y_max,                   
       DO k=1,depth
 !$OMP DO
         DO j=x_min-depth,x_max+1+depth
-          mass_flux_x(j,1-k)=mass_flux_x(j,1+k)
+          mass_flux_x(j,y_min-k)=mass_flux_x(j,y_min+k)
         ENDDO
 !$OMP END DO
       ENDDO
@@ -408,7 +408,7 @@ SUBROUTINE update_halo_kernel_bottom(x_min,x_max,y_min,y_max,                   
       DO k=1,depth
 !$OMP DO
         DO j=x_min-depth,x_max+depth
-          vol_flux_y(j,1-k)=-vol_flux_y(j,1+k)
+          vol_flux_y(j,y_min-k)=-vol_flux_y(j,y_min+k)
         ENDDO
 !$OMP END DO
       ENDDO
@@ -418,7 +418,7 @@ SUBROUTINE update_halo_kernel_bottom(x_min,x_max,y_min,y_max,                   
       DO k=1,depth
 !$OMP DO
         DO j=x_min-depth,x_max+depth
-          mass_flux_y(j,1-k)=-mass_flux_y(j,1+k)
+          mass_flux_y(j,y_min-k)=-mass_flux_y(j,y_min+k)
         ENDDO
 !$OMP END DO
       ENDDO
@@ -491,7 +491,7 @@ SUBROUTINE update_halo_kernel_left(x_min,x_max,y_min,y_max,                     
 !$OMP DO
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
-          density0(1-j,k)=density0(0+j,k)
+          density0(x_min-j,k)=density0(x_min+(j-1),k)
         ENDDO
       ENDDO
 !$OMP END DO
@@ -501,7 +501,7 @@ SUBROUTINE update_halo_kernel_left(x_min,x_max,y_min,y_max,                     
 !$OMP DO
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
-          density1(1-j,k)=density1(0+j,k)
+          density1(x_min-j,k)=density1(x_min+(j-1),k)
         ENDDO
       ENDDO
 !$OMP END DO
@@ -511,7 +511,7 @@ SUBROUTINE update_halo_kernel_left(x_min,x_max,y_min,y_max,                     
 !$OMP DO
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
-          energy0(1-j,k)=energy0(0+j,k)
+          energy0(x_min-j,k)=energy0(x_min+(j-1),k)
         ENDDO
       ENDDO
 !$OMP END DO
@@ -521,7 +521,7 @@ SUBROUTINE update_halo_kernel_left(x_min,x_max,y_min,y_max,                     
 !$OMP DO
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
-          energy1(1-j,k)=energy1(0+j,k)
+          energy1(x_min-j,k)=energy1(x_min+(j-1),k)
         ENDDO
       ENDDO
 !$OMP END DO
@@ -531,7 +531,7 @@ SUBROUTINE update_halo_kernel_left(x_min,x_max,y_min,y_max,                     
 !$OMP DO
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
-          pressure(1-j,k)=pressure(0+j,k)
+          pressure(x_min-j,k)=pressure(x_min+(j-1),k)
         ENDDO
       ENDDO
 !$OMP END DO
@@ -541,7 +541,7 @@ SUBROUTINE update_halo_kernel_left(x_min,x_max,y_min,y_max,                     
 !$OMP DO
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
-          viscosity(1-j,k)=viscosity(0+j,k)
+          viscosity(x_min-j,k)=viscosity(x_min+(j-1),k)
         ENDDO
       ENDDO
 !$OMP END DO
@@ -551,7 +551,7 @@ SUBROUTINE update_halo_kernel_left(x_min,x_max,y_min,y_max,                     
 !$OMP DO
       DO k=y_min-depth,y_max+1+depth
         DO j=1,depth
-          xvel0(1-j,k)=-xvel0(1+j,k)
+          xvel0(x_min-j,k)=-xvel0(x_min+j,k)
         ENDDO
       ENDDO
 !$OMP END DO
@@ -561,7 +561,7 @@ SUBROUTINE update_halo_kernel_left(x_min,x_max,y_min,y_max,                     
 !$OMP DO
       DO k=y_min-depth,y_max+1+depth
         DO j=1,depth
-          xvel1(1-j,k)=-xvel1(1+j,k)
+          xvel1(x_min-j,k)=-xvel1(x_min+j,k)
         ENDDO
       ENDDO
 !$OMP END DO
@@ -571,7 +571,7 @@ SUBROUTINE update_halo_kernel_left(x_min,x_max,y_min,y_max,                     
 !$OMP DO
       DO k=y_min-depth,y_max+1+depth
         DO j=1,depth
-          yvel0(1-j,k)=yvel0(1+j,k)
+          yvel0(x_min-j,k)=yvel0(x_min+j,k)
         ENDDO
       ENDDO
 !$OMP END DO
@@ -581,7 +581,7 @@ SUBROUTINE update_halo_kernel_left(x_min,x_max,y_min,y_max,                     
 !$OMP DO
       DO k=y_min-depth,y_max+1+depth
         DO j=1,depth
-          yvel1(1-j,k)=yvel1(1+j,k)
+          yvel1(x_min-j,k)=yvel1(x_min+j,k)
         ENDDO
       ENDDO
 !$OMP END DO
@@ -591,7 +591,7 @@ SUBROUTINE update_halo_kernel_left(x_min,x_max,y_min,y_max,                     
 !$OMP DO
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
-          vol_flux_x(1-j,k)=-vol_flux_x(1+j,k)
+          vol_flux_x(x_min-j,k)=-vol_flux_x(x_min+j,k)
         ENDDO
       ENDDO
 !$OMP END DO
@@ -601,7 +601,7 @@ SUBROUTINE update_halo_kernel_left(x_min,x_max,y_min,y_max,                     
 !$OMP DO
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
-          mass_flux_x(1-j,k)=-mass_flux_x(1+j,k)
+          mass_flux_x(x_min-j,k)=-mass_flux_x(x_min+j,k)
         ENDDO
       ENDDO
 !$OMP END DO
@@ -611,7 +611,7 @@ SUBROUTINE update_halo_kernel_left(x_min,x_max,y_min,y_max,                     
 !$OMP DO
       DO k=y_min-depth,y_max+1+depth
         DO j=1,depth
-          vol_flux_y(1-j,k)=vol_flux_y(1+j,k)
+          vol_flux_y(x_min-j,k)=vol_flux_y(x_min+j,k)
         ENDDO
       ENDDO
 !$OMP END DO
@@ -621,7 +621,7 @@ SUBROUTINE update_halo_kernel_left(x_min,x_max,y_min,y_max,                     
 !$OMP DO
       DO k=y_min-depth,y_max+1+depth
         DO j=1,depth
-          mass_flux_y(1-j,k)=mass_flux_y(1+j,k)
+          mass_flux_y(x_min-j,k)=mass_flux_y(x_min+j,k)
         ENDDO
       ENDDO
 !$OMP END DO
@@ -797,7 +797,7 @@ SUBROUTINE update_halo_kernel_right(x_min,x_max,y_min,y_max,                    
 !$OMP DO
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
-          vol_flux_x(x_max+j+1,k)=-vol_flux_x(x_max+1-j,k)
+          vol_flux_x(x_max+j+1,k)=-vol_flux_x((x_max+1)-j,k)
         ENDDO
       ENDDO
 !$OMP END DO

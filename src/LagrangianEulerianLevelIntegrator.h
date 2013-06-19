@@ -28,7 +28,6 @@ using namespace SAMRAI;
  * perform a complete timestep on the given solution state.
  */
 class LagrangianEulerianLevelIntegrator:
-    public algs::TimeRefinementLevelStrategy,
     public mesh::StandardTagAndInitStrategy
 {
     public:
@@ -135,60 +134,17 @@ class LagrangianEulerianLevelIntegrator:
         void initializeLevelIntegrator(
                 const boost::shared_ptr<mesh::GriddingAlgorithmStrategy>& gridding_alg);
 
-        /**
-         * Return the stable dt for the given level.
-         *
-         * @param level Level to compute dt for.
-         * @param dt_time The current dt time.
-         * @param initial_time True if we are at the initial time.
-         *
-         * @returns 
-         */
-        double getLevelDt(
-                const boost::shared_ptr<hier::PatchLevel>& level,
-                const double dt_time,
-                const bool initial_time);
-
         double getMaxFinerLevelDt(
                     const int finer_level_number,
                     const double coarse_dt,
                     const hier::IntVector& ratio);
-
-        /**
-         * Advances the level from current_time to new_time.
-         *
-         * Takes the steps necessary to advance the level one timestep.
-         * This routine utilizes the methods from the LagrangianEulerianPatchStrategy
-         * to perform the necessary physics on each patch in the level.
-         *
-         * Communication and boundary computation is carried out at the appropriate
-         * points. 
-         *
-         * @param level level to advance.
-         * @param hierarchy the hierarchy of patches.
-         * @param current_time the current simulation time.
-         * @param new_time the time to advance to.
-         * @param first_step true if this is the first step.
-         * @param last_step true if this is the last step
-         * @param regrid_advance
-         *
-         * @returns the next dt value.
-         */
-        double advanceLevel(
-                const boost::shared_ptr<hier::PatchLevel>& level,
-                const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
-                const double current_time,
-                const double new_time,
-                const bool first_step,
-                const bool last_step,
-                const bool regrid_advance=false);
 
         void standardLevelSynchronization(
                 const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
                 const int coarsest_level,
                 const int finest_level,
                 const double sync_time,
-                const tbox::Array<double>& old_times);
+                const double old_time);
 
         void synchronizeNewLevels(
                 const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
@@ -196,14 +152,6 @@ class LagrangianEulerianLevelIntegrator:
                 const int finest_level,
                 const double sync_time,
                 const bool initial_time);
-
-        void resetTimeDependentData(
-                const boost::shared_ptr<hier::PatchLevel>& level,
-                const double new_time,
-                const bool can_be_refined);
-
-        void resetDataToPreadvanceState(
-                const boost::shared_ptr<hier::PatchLevel>& level);
 
         bool usingRefinedTimestepping() const;
 
@@ -233,6 +181,69 @@ class LagrangianEulerianLevelIntegrator:
                 const bool initial_time,
                 const bool uses_richardson_extrapolation_too);
 
+        void lagrangianPredictor(
+                const boost::shared_ptr<hier::PatchLevel>& level,
+                const double dt);
+
+        void halfStepHaloExchange(
+                const boost::shared_ptr<hier::PatchLevel>& level,
+                const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+                const double current_time);
+
+        void lagrangianCorrector(
+                const boost::shared_ptr<hier::PatchLevel>& level,
+                const double dt);
+
+        void preCellHaloExchange(
+                const boost::shared_ptr<hier::PatchLevel>& level,
+                const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+                const double current_time);
+
+        void advecCellSweep1(
+                const boost::shared_ptr<hier::PatchLevel>& level);
+
+        void preMomSweep1HaloExchange(
+                const boost::shared_ptr<hier::PatchLevel>& level,
+                const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+                const double current_time);
+
+        void advecMomSweep1(
+                const boost::shared_ptr<hier::PatchLevel>& level);
+
+        void preMomSweep2HaloExchange(
+                const boost::shared_ptr<hier::PatchLevel>& level,
+                const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+                const double current_time);
+
+        void advecCellSweep2(
+                const boost::shared_ptr<hier::PatchLevel>& level);
+
+        void advecMomSweep2(
+                const boost::shared_ptr<hier::PatchLevel>& level);
+
+        void timestepEoS(
+                const boost::shared_ptr<hier::PatchLevel>& level);
+
+        void primeBoundaryHaloExchange(
+                const boost::shared_ptr<hier::PatchLevel>& level,
+                const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+                const double current_time);
+
+        void viscosity(
+                const boost::shared_ptr<hier::PatchLevel>& level);
+
+        void postViscosityHaloExchange(
+                const boost::shared_ptr<hier::PatchLevel>& level,
+                const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+                const double current_time);
+
+        double calcDt(
+                const boost::shared_ptr<hier::PatchLevel>& level);
+
+        void stampDataTime(
+                const boost::shared_ptr<hier::PatchLevel>& level,
+                const double current_time);
+
         /**
          * Copy new field variable values back to timelevel 0.
          *
@@ -250,18 +261,6 @@ class LagrangianEulerianLevelIntegrator:
          */
         void revert(
                 const boost::shared_ptr<hier::PatchLevel>& level);
-
-        /**
-         * Perform cell-centered and momentum advection.
-         *
-         * @param level The level we are working on.
-         * @param hierarchy The patch hierarchy we are working on.
-         * @param current_time The current simulation time.
-         */
-        void advection(
-                const boost::shared_ptr<hier::PatchLevel>& level,
-                const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
-                double current_time);
 
         void fillBoundaries();
 

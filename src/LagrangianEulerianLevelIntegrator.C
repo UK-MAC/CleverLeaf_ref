@@ -6,7 +6,10 @@
 
 #include <string>
 
-#define LOOPPRINT 0
+#include "boost/current_function.hpp"
+
+//#define PRINT_FLOW std::cerr << "IN: " << BOOST_CURRENT_FUNCTION << std::endl;
+#define PRINT_FLOW
 
 LagrangianEulerianLevelIntegrator::LagrangianEulerianLevelIntegrator(
         const std::string& object_name,
@@ -65,7 +68,6 @@ LagrangianEulerianLevelIntegrator::~LagrangianEulerianLevelIntegrator()
 {
 }
 
-
 void LagrangianEulerianLevelIntegrator::initializeLevelIntegrator(
         const boost::shared_ptr<mesh::GriddingAlgorithmStrategy>& gridding_alg)
 {
@@ -87,118 +89,6 @@ void LagrangianEulerianLevelIntegrator::initializeLevelIntegrator(
  *
  *************************************************************************
  */
-double LagrangianEulerianLevelIntegrator::getLevelDt(
-        const boost::shared_ptr<hier::PatchLevel>& level,
-        const double dt_time,
-        const bool initial_time)
-{
-
-    const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
-
-    double dt = tbox::MathUtilities<double>::getMax();
-    double patch_dt;
-
-    level->allocatePatchData(d_var_cur_data, dt_time);
-    level->allocatePatchData(d_var_new_data, dt_time);
-
-#if LOOPPRINT
-    tbox::pout << "LagrangianEulerianLevelIntegrator: getLevelDt: ideal_gas corrector {{{" << std::endl;
-#endif
-    for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ip++) {
-        boost::shared_ptr<hier::Patch> patch = *ip;
-
-        d_patch_strategy->ideal_gas_knl(*patch, false);
-    }
-#if LOOPPRINT
-    tbox::pout << "}}}" << std::endl;
-#endif
-
-    /* 
-     * TODO: update_halos pressure, energy, density, velocity0
-     */
-
-    d_patch_strategy->setCurrentDataContext(d_scratch);
-    level->allocatePatchData(d_var_scratch_data, dt_time);
-    level->allocatePatchData(d_var_scratch_new_data, dt_time);
-    
-
-    d_bdry_fill_prime_halos->createSchedule(
-                level,
-                level->getLevelNumber()-1,
-                d_current_hierarchy,
-                d_patch_strategy)->fillData(dt_time);
-
-    d_bdry_fill_pre_lagrange->createSchedule(level, d_patch_strategy)->fillData(dt_time);
-
-    level->deallocatePatchData(d_var_scratch_data);
-    level->deallocatePatchData(d_var_scratch_new_data);
-    d_patch_strategy->setCurrentDataContext(d_current);
-
-
-
-#if LOOPPRINT
-    tbox::pout << "LagrangianEulerianLevelIntegrator: getLevelDt: viscosity {{{" << std::endl;
-#endif
-    for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ++ip) {
-        boost::shared_ptr<hier::Patch> patch = *ip;
-
-        d_patch_strategy->viscosity_knl(*patch);
-    }
-#if LOOPPRINT
-    tbox::pout << "}}}" << std::endl;
-#endif
-
-    /*
-     * TODO: update_halos viscosity
-     */
-    d_patch_strategy->setCurrentDataContext(d_scratch);
-    level->allocatePatchData(d_var_scratch_data, dt_time);
-    level->allocatePatchData(d_var_scratch_new_data, dt_time);
-
-    //d_bdry_fill_post_viscosity->createSchedule(level, d_patch_strategy)->fillData(dt_time);
-
-    d_bdry_fill_post_viscosity->createSchedule(
-                level,
-                level->getLevelNumber()-1,
-                d_current_hierarchy,
-                d_patch_strategy)->fillData(dt_time);
-
-    level->deallocatePatchData(d_var_scratch_data);
-    level->deallocatePatchData(d_var_scratch_new_data);
-    d_patch_strategy->setCurrentDataContext(d_current);
-
-#if LOOPPRINT
-    tbox::pout << "LagrangianEulerianLevelIntegrator: getLevelDt: calc_dt {{{" << std::endl;
-#endif
-    for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ++ip) {
-        boost::shared_ptr<hier::Patch> patch = *ip;
-
-        patch_dt = d_patch_strategy->
-            calc_dt_knl(*patch);
-
-
-        dt = tbox::MathUtilities<double>::Min(dt, patch_dt);
-    }
-#if LOOPPRINT
-    tbox::pout << "}}}" << std::endl;
-#endif
-
-    double global_dt = dt;
-
-    if (mpi.getSize() > 1) {
-        mpi.AllReduce(&global_dt, 1, MPI_MIN);
-    }
-
-    /*
-     * TODO: Hard code the max_timestep here for now...
-     */
-//    if (global_dt > 0.04) {
-//        return 0.04;
-//    } else {
-        return global_dt;
-//    }
-}
-
 
 double LagrangianEulerianLevelIntegrator::getMaxFinerLevelDt(
         const int finer_level_number,
@@ -208,167 +98,14 @@ double LagrangianEulerianLevelIntegrator::getMaxFinerLevelDt(
     return coarse_dt / double(ratio.max());
 }
 
-double LagrangianEulerianLevelIntegrator::advanceLevel(
-        const boost::shared_ptr<hier::PatchLevel>& level,
-        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
-        const double current_time,
-        const double new_time,
-        const bool first_step,
-        const bool last_step,
-        const bool regrid_advance)
-{
-
-    double dt = new_time - current_time;
-
-    d_current_hierarchy = hierarchy;
-
-    /*
-     * This routine performs the required steps for the predictor and corrector,
-     * and the advection. It mirrors the following routines occuring in Cloverleaf
-     * as hydro.f90:
-     *
-     *     CALL PdV(.TRUE.)
-     *     CALL accelerate()
-     *     CALL PdV(.FALSE.)
-     *     CALL flux_calc()
-     *     CALL advection()
-     *     CALL reset_field()
-     *
-     * All halo exchanges are handled by this routine, as well as ensuring correcting
-     * stepping over all levels of the AMR hierarchy.
-     */
-    level->allocatePatchData(d_var_cur_data, current_time);
-    level->allocatePatchData(d_var_new_data, current_time);
-
-    /*
-     * PdV kernel, predictor.
-     */
-#if LOOPPRINT
-    tbox::pout << "LagrangianEulerianLevelIntegrator: advanceLevel: PdV predictor {{{" << std::endl;
-#endif
-    for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
-
-        boost::shared_ptr<hier::Patch>patch=*p;
-
-        d_patch_strategy->pdv_knl(*patch,dt, true);
-    }
-#if LOOPPRINT
-    tbox::pout << "}}}" << std::endl;
-#endif
-
-    /*
-     * PdV kernel, predictor needs ideal gas call.
-     */
-#if LOOPPRINT
-    tbox::pout << "LagrangianEulerianLevelIntegrator: advanceLevel: ideal_gas predictor {{{" << std::endl;
-#endif
-    for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
-
-        boost::shared_ptr<hier::Patch>patch=*p;
-
-        d_patch_strategy->ideal_gas_knl(*patch,true);
-    }
-#if LOOPPRINT
-    tbox::pout << "}}}" << std::endl;
-#endif
-
-    /*
-     * TODO: Update pressure halos!
-     */
-    d_patch_strategy->setCurrentDataContext(d_scratch);
-    level->allocatePatchData(d_var_scratch_data, current_time);
-    level->allocatePatchData(d_var_scratch_new_data, current_time);
-    //d_bdry_fill_half_step->createSchedule(level, d_patch_strategy)->fillData(current_time);
-
-    d_bdry_fill_half_step->createSchedule(
-                level,
-                level->getLevelNumber()-1,
-                hierarchy,
-                d_patch_strategy)->fillData(current_time);
-
-    //tbox::pout << "Pressure halo updated!" << std::endl;
-    d_patch_strategy->setCurrentDataContext(d_current);
-    
-
-    /*
-     * Call revert to reset density and energy
-     */
-    revert(level);
-
-    /*
-     * Acceleration due to pressure/velocity
-     */ 
-#if LOOPPRINT
-    tbox::pout << "LagrangianEulerianLevelIntegrator: advanceLevel: acceleration {{{" << std::endl;
-#endif
-    for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
-
-        boost::shared_ptr<hier::Patch>patch=*p;
-
-        d_patch_strategy->accelerate(*patch,dt);
-    }
-#if LOOPPRINT
-    tbox::pout << "}}}" << std::endl;
-#endif
-
-   /*
-    * PdV kernel, corrector.
-    */
-#if LOOPPRINT
-    tbox::pout << "LagrangianEulerianLevelIntegrator: advanceLevel: PdV corrector {{{" << std::endl;
-#endif
-    for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
-
-        boost::shared_ptr<hier::Patch>patch=*p;
-
-        d_patch_strategy->pdv_knl(*patch,dt, false);
-    }
-#if LOOPPRINT
-    tbox::pout << "}}}" << std::endl;
-#endif
-
-   /*
-    * flux calculations...
-    */
-    for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
-
-        boost::shared_ptr<hier::Patch>patch=*p;
-
-        d_patch_strategy->flux_calc_knl(*patch,dt);
-    }
-
-   /*
-    * advection here...
-    */
-   advection(level, hierarchy, current_time);
-
-   advect_x = !advect_x;
-
-    /*
-     * reset_field is used to copy density, energy and velocity
-     * timelevel 1 values back to timelevel 0.
-     */
-
-    //level->setTime(new_time, d_var_cur_data);
-
-    resetField(level);
-
-    /*
-     * Compute our next dt.
-     */
-    return getLevelDt(level,dt,false);
-}
-
 void LagrangianEulerianLevelIntegrator::standardLevelSynchronization(
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const int coarsest_level,
         const int finest_level,
         const double sync_time,
-        const tbox::Array<double>& old_times)
+        const double old_time)
 {
     d_current_hierarchy = hierarchy;
-
-    double old_time = old_times[0];
 
     for (int fine_ln = finest_level; fine_ln > coarsest_level; fine_ln--) {
        const int coarse_ln = fine_ln - 1;
@@ -399,20 +136,6 @@ void LagrangianEulerianLevelIntegrator::synchronizeNewLevels(
     d_current_hierarchy = hierarchy;
 }
 
-void LagrangianEulerianLevelIntegrator::resetTimeDependentData(
-        const boost::shared_ptr<hier::PatchLevel>& level,
-        const double new_time,
-        const bool can_be_refined){}
-
-void LagrangianEulerianLevelIntegrator::resetDataToPreadvanceState(
-        const boost::shared_ptr<hier::PatchLevel>& level){}
-
-bool LagrangianEulerianLevelIntegrator::usingRefinedTimestepping() const
-{
-    return false;
-}
-
-
 void LagrangianEulerianLevelIntegrator::initializeLevelData (
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const int level_number,
@@ -435,24 +158,22 @@ void LagrangianEulerianLevelIntegrator::initializeLevelData (
      * time gets set when we allocate data, re-stamp it to current
      * time if we don't need to allocate.
      */
-    if (allocate_data) {
+    //if (allocate_data) {
         level->allocatePatchData(d_var_cur_data, init_data_time); 
         level->allocatePatchData(d_var_new_data, init_data_time); 
-    } else {
-        level->setTime(init_data_time, d_var_cur_data); 
-        level->setTime(init_data_time, d_var_new_data); 
-    }
+    //} else {
+        //level->setTime(init_data_time, d_var_cur_data); 
+        //level->setTime(init_data_time, d_var_new_data); 
+    //}
 
    level->allocatePatchData(d_var_scratch_data, init_data_time);
-    level->allocatePatchData(d_var_scratch_new_data, init_data_time);
+   level->allocatePatchData(d_var_scratch_new_data, init_data_time);
 
    const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
 
    if ((level_number > 0) || old_level) {
 
       const boost::shared_ptr<hier::PatchHierarchy> patch_hierarchy(hierarchy);
-
-      d_patch_strategy->setCurrentDataContext(d_scratch);
 
       boost::shared_ptr<xfer::RefineSchedule> sched(
          d_fill_new_level->createSchedule(level,
@@ -461,10 +182,7 @@ void LagrangianEulerianLevelIntegrator::initializeLevelData (
             hierarchy,
             d_patch_strategy));
 
-
       sched->fillData(init_data_time);
-
-      d_patch_strategy->setCurrentDataContext(d_current);
    }
 
     for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
@@ -479,25 +197,20 @@ void LagrangianEulerianLevelIntegrator::initializeLevelData (
 //
     boost::shared_ptr<xfer::RefineSchedule> refine_sched;
 
-    d_patch_strategy->setCurrentDataContext(d_scratch);
 
     refine_sched = d_bdry_fill_prime_halos->createSchedule(level, d_patch_strategy);
     //refine_sched->printClassData(tbox::pout);
     //tbox::pout << "Exchanged initial data" << std::endl;
     refine_sched->fillData(init_data_time);
     //level->deallocatePatchData(d_var_scratch_data);
-    d_patch_strategy->setCurrentDataContext(d_current);
 //   }
 
     if ((level_number > 0) || old_level) {
-
-        d_patch_strategy->setCurrentDataContext(d_scratch);
         level->allocatePatchData(d_var_scratch_data, init_data_time);
         level->allocatePatchData(d_var_scratch_new_data, init_data_time);
 
         const boost::shared_ptr<hier::PatchHierarchy> patch_hierarchy(hierarchy);
 
-        d_patch_strategy->setCurrentDataContext(d_scratch);
 
         boost::shared_ptr<xfer::RefineSchedule> sched(
                 d_bdry_fill_prime_halos->createSchedule(level,
@@ -507,8 +220,6 @@ void LagrangianEulerianLevelIntegrator::initializeLevelData (
                     d_patch_strategy));
 
         sched->fillData(init_data_time);
-
-        d_patch_strategy->setCurrentDataContext(d_current);
     }
 
     //printFieldSummary(init_data_time, 0.04);
@@ -723,7 +434,7 @@ void LagrangianEulerianLevelIntegrator::registerVariable(
                 scr_id,
                 refine_op);
         } else {
-            d_bdry_fill_pre_sweep1_cell->registerRefine(
+            d_bdry_fill_pre_sweep1_mom->registerRefine(
                     new_id,
                     new_id,
                     scr_new_id,
@@ -811,163 +522,6 @@ void LagrangianEulerianLevelIntegrator::revert(
    }
 }
 
-void LagrangianEulerianLevelIntegrator::advection(
-        const boost::shared_ptr<hier::PatchLevel>& level,
-        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
-        double current_time)
-{
-
-    int sweep_number=1;
-    LagrangianEulerianPatchStrategy::ADVEC_DIR direction;
-
-    if(advect_x)  direction = LagrangianEulerianPatchStrategy::X;
-    if(!advect_x) direction = LagrangianEulerianPatchStrategy::Y;
-
-  /*
-   * TODO: update energy, density and volflux halos
-   */
-    //d_bdry_fill_pre_sweep1_cell->createSchedule(level, d_patch_strategy)->fillData(current_time);
-
-    level->allocatePatchData(d_var_scratch_data, current_time);
-    level->allocatePatchData(d_var_scratch_new_data, current_time);
-
-    d_bdry_fill_pre_sweep1_cell->createSchedule(
-                level,
-                level->getLevelNumber()-1,
-                hierarchy,
-                d_patch_strategy)->fillData(current_time);
-
-    level->deallocatePatchData(d_var_scratch_data);
-    level->deallocatePatchData(d_var_scratch_new_data);
-
-#if LOOPPRINT
-    tbox::pout << "LagrangianEulerianLevelIntegrator: advection: advec_cell {{{" << std::endl;
-#endif
-    for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
-
-        boost::shared_ptr<hier::Patch>patch=*p;
-
-        d_patch_strategy->advec_cell(*patch,sweep_number,direction);
-    }
-
-#if LOOPPRINT
-    tbox::pout << "}}}" << std::endl;
-#endif
-
-  /*
-   * TODO: update density1, energy1, velocity1 and mass_flux halos
-   */
-    //d_bdry_fill_pre_sweep1_mom->createSchedule(level, d_patch_strategy)->fillData(current_time);
-    level->allocatePatchData(d_var_scratch_data, current_time);
-    level->allocatePatchData(d_var_scratch_new_data, current_time);
-
-    d_bdry_fill_pre_sweep1_mom->createSchedule(
-                level,
-                level->getLevelNumber()-1,
-                hierarchy,
-                d_patch_strategy)->fillData(current_time);
-
-    level->deallocatePatchData(d_var_scratch_data);
-    level->deallocatePatchData(d_var_scratch_new_data);
-#if LOOPPRINT
-    tbox::pout << "LagrangianEulerianLevelIntegrator: advection: advec_mom x {{{" << std::endl;
-#endif
-    for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
-
-        boost::shared_ptr<hier::Patch>patch=*p;
-
-        /*
-         * advection for x and y momentum.
-         */
-        d_patch_strategy->advec_mom(*patch,sweep_number,direction, LagrangianEulerianPatchStrategy::X);
-    }
-#if LOOPPRINT
-    tbox::pout << "}}}" << std::endl;
-#endif
-
-#if LOOPPRINT
-    tbox::pout << "LagrangianEulerianLevelIntegrator: advection: advec_mom y {{{" << std::endl;
-#endif
-    for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
-
-        boost::shared_ptr<hier::Patch>patch=*p;
-
-        /*
-         * advection for x and y momentum.
-         */
-        d_patch_strategy->advec_mom(*patch,sweep_number,direction, LagrangianEulerianPatchStrategy::Y);
-    }
-#if LOOPPRINT
-    tbox::pout << "}}}" << std::endl;
-#endif
-
-  sweep_number=2;
-
-  if(advect_x)  direction = LagrangianEulerianPatchStrategy::Y;
-  if(!advect_x) direction = LagrangianEulerianPatchStrategy::X;
-
-#if LOOPPRINT
-    tbox::pout << "LagrangianEulerianLevelIntegrator: advection sweep 2: advec_cell {{{" << std::endl;
-#endif
-    for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
-
-        boost::shared_ptr<hier::Patch>patch=*p;
-
-        d_patch_strategy->advec_cell(*patch,sweep_number,direction);
-    }
-#if LOOPPRINT
-    tbox::pout << "}}}" << std::endl;
-#endif
-
-  /*
-   * TODO: Update density1, energy1, vel1 and mass flux halos
-   */
-    //d_bdry_fill_pre_sweep2_mom->createSchedule(level, d_patch_strategy)->fillData(current_time);
-    level->allocatePatchData(d_var_scratch_data, current_time);
-    level->allocatePatchData(d_var_scratch_new_data, current_time);
-
-    d_bdry_fill_pre_sweep2_mom->createSchedule(
-                level,
-                level->getLevelNumber()-1,
-                hierarchy,
-                d_patch_strategy)->fillData(current_time);
-
-    level->deallocatePatchData(d_var_scratch_data);
-    level->deallocatePatchData(d_var_scratch_new_data);
-
-#if LOOPPRINT
-    tbox::pout << "LagrangianEulerianLevelIntegrator: advection: advec_mom x {{{" << std::endl;
-#endif
-    for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
-
-        boost::shared_ptr<hier::Patch>patch=*p;
-
-        /*
-         * advection for x and y momentum.
-         */
-        d_patch_strategy->advec_mom(*patch,sweep_number, direction, LagrangianEulerianPatchStrategy::X);
-    }
-#if LOOPPRINT
-    tbox::pout << "}}}" << std::endl;
-#endif
-
-#if LOOPPRINT
-    tbox::pout << "LagrangianEulerianLevelIntegrator: advection: advec_mom y {{{" << std::endl;
-#endif
-    for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
-
-        boost::shared_ptr<hier::Patch>patch=*p;
-
-        /*
-         * advection for x and y momentum.
-         */
-        d_patch_strategy->advec_mom(*patch,sweep_number, direction, LagrangianEulerianPatchStrategy::Y);
-    }
-#if LOOPPRINT
-    tbox::pout << "}}}" << std::endl;
-#endif
-}
-
 void LagrangianEulerianLevelIntegrator::printFieldSummary(
         double time,
         int step)
@@ -1017,4 +571,323 @@ void LagrangianEulerianLevelIntegrator::printFieldSummary(
     }
 }
 
+void LagrangianEulerianLevelIntegrator::lagrangianPredictor(
+        const boost::shared_ptr<hier::PatchLevel>& level,
+        const double dt)
+{
+    for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
 
+        boost::shared_ptr<hier::Patch>patch=*p;
+
+        d_patch_strategy->pdv_knl(*patch,dt, true);
+    }
+
+    for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
+
+        boost::shared_ptr<hier::Patch>patch=*p;
+
+        d_patch_strategy->ideal_gas_knl(*patch,true);
+    }
+}
+
+void LagrangianEulerianLevelIntegrator::halfStepHaloExchange(
+        const boost::shared_ptr<hier::PatchLevel>& level,
+        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+        const double current_time)
+{
+    PRINT_FLOW
+    std::cout << current_time << std::endl;
+
+    level->allocatePatchData(d_var_scratch_data, current_time);
+    level->allocatePatchData(d_var_scratch_new_data, current_time);
+
+    d_bdry_fill_half_step->createSchedule(
+                level,
+                level->getLevelNumber()-1,
+                hierarchy,
+                d_patch_strategy)->fillData(current_time);
+}
+
+void LagrangianEulerianLevelIntegrator::lagrangianCorrector(
+        const boost::shared_ptr<hier::PatchLevel>& level,
+        const double dt)
+{   
+    revert(level);
+
+    for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
+
+        boost::shared_ptr<hier::Patch>patch=*p;
+
+        d_patch_strategy->accelerate(*patch,dt);
+    }
+
+    for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
+
+        boost::shared_ptr<hier::Patch>patch=*p;
+
+        d_patch_strategy->pdv_knl(*patch,dt, false);
+    }
+
+    for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
+
+        boost::shared_ptr<hier::Patch>patch=*p;
+
+        d_patch_strategy->flux_calc_knl(*patch,dt);
+    }
+}
+
+void LagrangianEulerianLevelIntegrator::preCellHaloExchange(
+        const boost::shared_ptr<hier::PatchLevel>& level,
+        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+        const double current_time)
+{
+    PRINT_FLOW
+
+    level->allocatePatchData(d_var_scratch_data, current_time);
+    level->allocatePatchData(d_var_scratch_new_data, current_time);
+
+    d_bdry_fill_pre_sweep1_cell->createSchedule(
+                level,
+                level->getLevelNumber()-1,
+                hierarchy,
+                d_patch_strategy)->fillData(current_time);
+
+    level->deallocatePatchData(d_var_scratch_data);
+    level->deallocatePatchData(d_var_scratch_new_data);
+}
+
+void LagrangianEulerianLevelIntegrator::advecCellSweep1(
+        const boost::shared_ptr<hier::PatchLevel>& level)
+{
+    int sweep_number=1;
+    LagrangianEulerianPatchStrategy::ADVEC_DIR direction;
+
+    if(advect_x)  direction = LagrangianEulerianPatchStrategy::X;
+    if(!advect_x) direction = LagrangianEulerianPatchStrategy::Y;
+
+    for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
+
+        boost::shared_ptr<hier::Patch>patch=*p;
+
+        d_patch_strategy->advec_cell(*patch,sweep_number,direction);
+    }
+}
+
+void LagrangianEulerianLevelIntegrator::preMomSweep1HaloExchange(
+        const boost::shared_ptr<hier::PatchLevel>& level,
+        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+        const double current_time)
+{
+    PRINT_FLOW
+
+    level->allocatePatchData(d_var_scratch_data, current_time);
+    level->allocatePatchData(d_var_scratch_new_data, current_time);
+
+    d_bdry_fill_pre_sweep1_mom->createSchedule(
+                level,
+                level->getLevelNumber()-1,
+                hierarchy,
+                d_patch_strategy)->fillData(current_time);
+
+    level->deallocatePatchData(d_var_scratch_data);
+    level->deallocatePatchData(d_var_scratch_new_data);
+}
+
+void LagrangianEulerianLevelIntegrator::advecMomSweep1(
+        const boost::shared_ptr<hier::PatchLevel>& level)
+{
+    int sweep_number=1;
+    LagrangianEulerianPatchStrategy::ADVEC_DIR direction;
+
+    if(advect_x)  direction = LagrangianEulerianPatchStrategy::X;
+    if(!advect_x) direction = LagrangianEulerianPatchStrategy::Y;
+
+    for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
+
+        boost::shared_ptr<hier::Patch>patch=*p;
+
+        /*
+         * advection for x and y momentum.
+         */
+        d_patch_strategy->advec_mom(*patch,sweep_number,direction, LagrangianEulerianPatchStrategy::X);
+    }
+
+    for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
+
+        boost::shared_ptr<hier::Patch>patch=*p;
+
+        /*
+         * advection for x and y momentum.
+         */
+        d_patch_strategy->advec_mom(*patch,sweep_number,direction, LagrangianEulerianPatchStrategy::Y);
+    }
+}
+
+void LagrangianEulerianLevelIntegrator::preMomSweep2HaloExchange(
+        const boost::shared_ptr<hier::PatchLevel>& level,
+        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+        const double current_time)
+{
+    PRINT_FLOW
+
+    level->allocatePatchData(d_var_scratch_data, current_time);
+    level->allocatePatchData(d_var_scratch_new_data, current_time);
+
+    d_bdry_fill_pre_sweep2_mom->createSchedule(
+                level,
+                level->getLevelNumber()-1,
+                hierarchy,
+                d_patch_strategy)->fillData(current_time);
+
+    level->deallocatePatchData(d_var_scratch_data);
+    level->deallocatePatchData(d_var_scratch_new_data);
+}
+
+void LagrangianEulerianLevelIntegrator::advecCellSweep2(
+        const boost::shared_ptr<hier::PatchLevel>& level)
+{
+    int sweep_number=2;
+    LagrangianEulerianPatchStrategy::ADVEC_DIR direction;
+
+    if(advect_x)  direction = LagrangianEulerianPatchStrategy::Y;
+    if(!advect_x) direction = LagrangianEulerianPatchStrategy::X;
+
+    for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
+
+        boost::shared_ptr<hier::Patch>patch=*p;
+
+        d_patch_strategy->advec_cell(*patch,sweep_number,direction);
+    }
+}
+
+void LagrangianEulerianLevelIntegrator::advecMomSweep2(
+        const boost::shared_ptr<hier::PatchLevel>& level)
+{
+  int sweep_number=2;
+  LagrangianEulerianPatchStrategy::ADVEC_DIR direction;
+
+  if(advect_x)  direction = LagrangianEulerianPatchStrategy::Y;
+  if(!advect_x) direction = LagrangianEulerianPatchStrategy::X;
+
+    for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
+
+        boost::shared_ptr<hier::Patch>patch=*p;
+
+        /*
+         * advection for x and y momentum.
+         */
+        d_patch_strategy->advec_mom(*patch,sweep_number, direction, LagrangianEulerianPatchStrategy::X);
+    }
+
+    for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
+
+        boost::shared_ptr<hier::Patch>patch=*p;
+
+        /*
+         * advection for x and y momentum.
+         */
+        d_patch_strategy->advec_mom(*patch,sweep_number, direction, LagrangianEulerianPatchStrategy::Y);
+    }
+
+   advect_x = !advect_x;
+}
+
+void LagrangianEulerianLevelIntegrator::timestepEoS(
+        const boost::shared_ptr<hier::PatchLevel>& level)
+{
+    for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ip++) {
+        boost::shared_ptr<hier::Patch> patch = *ip;
+
+        d_patch_strategy->ideal_gas_knl(*patch, false);
+    }
+}
+
+void LagrangianEulerianLevelIntegrator::primeBoundaryHaloExchange(
+        const boost::shared_ptr<hier::PatchLevel>& level,
+        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+        const double current_time)
+{
+    PRINT_FLOW
+
+    level->allocatePatchData(d_var_scratch_data, current_time);
+    level->allocatePatchData(d_var_scratch_new_data, current_time);
+
+    d_bdry_fill_prime_halos->createSchedule(
+                level,
+                level->getLevelNumber()-1,
+                hierarchy,
+                d_patch_strategy)->fillData(current_time);
+
+    d_bdry_fill_pre_lagrange->createSchedule(level, d_patch_strategy)->fillData(current_time);
+
+    level->deallocatePatchData(d_var_scratch_data);
+    level->deallocatePatchData(d_var_scratch_new_data);
+}
+
+void LagrangianEulerianLevelIntegrator::viscosity(
+        const boost::shared_ptr<hier::PatchLevel>& level)
+{
+    for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ++ip) {
+        boost::shared_ptr<hier::Patch> patch = *ip;
+
+        d_patch_strategy->viscosity_knl(*patch);
+    }
+}
+
+void LagrangianEulerianLevelIntegrator::postViscosityHaloExchange(
+        const boost::shared_ptr<hier::PatchLevel>& level,
+        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+        const double current_time)
+{
+    PRINT_FLOW
+
+    level->allocatePatchData(d_var_scratch_data, current_time);
+    level->allocatePatchData(d_var_scratch_new_data, current_time);
+
+    d_bdry_fill_post_viscosity->createSchedule(
+                level,
+                level->getLevelNumber()-1,
+                hierarchy,
+                d_patch_strategy)->fillData(current_time);
+
+    level->deallocatePatchData(d_var_scratch_data);
+    level->deallocatePatchData(d_var_scratch_new_data);
+}
+
+double LagrangianEulerianLevelIntegrator::calcDt(
+        const boost::shared_ptr<hier::PatchLevel>& level)
+{
+    const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
+
+    double dt = tbox::MathUtilities<double>::getMax();
+    double patch_dt;
+
+#if LOOPPRINT
+    tbox::pout << "LagrangianEulerianLevelIntegrator: getLevelDt: calc_dt {{{" << std::endl;
+#endif
+    for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ++ip) {
+        boost::shared_ptr<hier::Patch> patch = *ip;
+
+        patch_dt = d_patch_strategy->
+            calc_dt_knl(*patch);
+
+
+        dt = tbox::MathUtilities<double>::Min(dt, patch_dt);
+    }
+
+    double global_dt = dt;
+
+    if (mpi.getSize() > 1) {
+        mpi.AllReduce(&global_dt, 1, MPI_MIN);
+    }
+
+    return global_dt;
+}
+
+void LagrangianEulerianLevelIntegrator::stampDataTime(
+        const boost::shared_ptr<hier::PatchLevel>& level,
+        const double current_time)
+{
+    level->allocatePatchData(d_var_cur_data, current_time);
+    level->allocatePatchData(d_var_new_data, current_time);
+}

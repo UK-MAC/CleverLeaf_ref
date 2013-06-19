@@ -3,9 +3,9 @@
 // Header for application-specific algorithm/data structure objects
 #include "Cleverleaf.h"
 #include "LagrangianEulerianLevelIntegrator.h"
+#include "LagrangianEulerianIntegrator.h"
 
 // Headers for SAMRAI
-#include "SAMRAI/algs/TimeRefinementIntegrator.h"
 #include "SAMRAI/mesh/BergerRigoutsos.h"
 #include "SAMRAI/geom/CartesianGridGeometry.h"
 #include "SAMRAI/mesh/GriddingAlgorithm.h"
@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
                 dim,
                 grid_geometry);
 
-        boost::shared_ptr<LagrangianEulerianLevelIntegrator> lagrangian_eulerian_integrator(
+        boost::shared_ptr<LagrangianEulerianLevelIntegrator> lagrangian_eulerian_level_integrator(
                 new LagrangianEulerianLevelIntegrator("LagrangianEulerianLevelIntegrator",
                     input_db->getDatabase("LagrangianEulerianLevelIntegrator"),
                     /*
@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
         boost::shared_ptr<mesh::StandardTagAndInitialize> error_detector(
                 new mesh::StandardTagAndInitialize(
                     "StandardTagAndInitialize",
-                    lagrangian_eulerian_integrator.get(),
+                    lagrangian_eulerian_level_integrator.get(),
                     input_db->getDatabase("StandardTagAndInitialize")));
 
         boost::shared_ptr<mesh::BergerRigoutsos> box_generator(
@@ -130,11 +130,11 @@ int main(int argc, char* argv[]) {
                     box_generator,
                     load_balancer));
 
-        boost::shared_ptr<algs::TimeRefinementIntegrator> time_integrator(
-                new algs::TimeRefinementIntegrator("TimeRefinementIntegrator",
-                    input_db->getDatabase("TimeRefinementIntegrator"),
+        boost::shared_ptr<LagrangianEulerianIntegrator> lagrangian_eulerian_integrator(
+                new LagrangianEulerianIntegrator(
+                    input_db->getDatabase("LagrangianEulerianIntegrator"),
                     patch_hierarchy,
-                    lagrangian_eulerian_integrator,
+                    lagrangian_eulerian_level_integrator,
                     gridding_algorithm));
 
         /*
@@ -146,7 +146,7 @@ int main(int argc, char* argv[]) {
          */
         boost::shared_ptr<appu::VisItDataWriter> visit_data_writer(
                 new appu::VisItDataWriter(dim,
-                    "Kamra VisIt Writer",
+                    "Cleverleaf VisIt Writer",
                     visit_dump_dirname,
                     visit_number_procs_per_file));
 
@@ -155,7 +155,7 @@ int main(int argc, char* argv[]) {
         /*
          * Initialise the hierarchy config and data on all patches
          */
-        double dt_now = time_integrator->initializeHierarchy();
+        double dt_now = lagrangian_eulerian_integrator->initializeHierarchy();
 
         visit_data_writer->writePlotData(patch_hierarchy,
                 0,
@@ -173,8 +173,8 @@ int main(int argc, char* argv[]) {
         tbox::plog << "\nVariable database..." << endl;
         hier::VariableDatabase::getDatabase()->printClassData(tbox::plog);
 
-        double loop_time = time_integrator->getIntegratorTime();
-        double loop_time_end = time_integrator->getEndTime();
+        double loop_time = lagrangian_eulerian_integrator->getIntegratorTime();
+        double loop_time_end = lagrangian_eulerian_integrator->getEndTime();
 
         /*
          * MAIN LOOP
@@ -182,9 +182,9 @@ int main(int argc, char* argv[]) {
          * Step count and integration time are maintained by algs::TimeRefinementIntegrator
          */
         while ((loop_time < loop_time_end) &&
-                time_integrator->stepsRemaining()) {
+                lagrangian_eulerian_integrator->stepsRemaining()) {
 
-            int iteration_num = time_integrator->getIntegratorStep() + 1;
+            int iteration_num = lagrangian_eulerian_integrator->getIntegratorStep() + 1;
 
             tbox::pout << "++++++++++++++++++++++++++++++++++++++++++++" << endl;
             tbox::pout << "At begining of timestep # " << iteration_num - 1
@@ -192,7 +192,7 @@ int main(int argc, char* argv[]) {
             tbox::pout << "Simulation time is " << loop_time << endl;
             tbox::pout << "Current dt is " << dt_now << endl;
 
-            double dt_new = time_integrator->advanceHierarchy(dt_now);
+            double dt_new = lagrangian_eulerian_integrator->advanceHierarchy(dt_now);
 
             loop_time += dt_now;
             dt_now = dt_new;
@@ -213,12 +213,11 @@ int main(int argc, char* argv[]) {
 
             if ((field_summary_interval > 0)
                     && (iteration_num % field_summary_interval) == 0) {
-                tbox::pout << "Writing field summary..." << endl;
-                lagrangian_eulerian_integrator->printFieldSummary(loop_time, iteration_num);
+                //lagrangian_eulerian_integrator->printFieldSummary(loop_time, iteration_num);
             }
         }
 
-        lagrangian_eulerian_integrator->printFieldSummary(loop_time, time_integrator->getIntegratorStep()+1);
+        //lagrangian_eulerian_integrator->printFieldSummary(loop_time, lagrangian_eulerian_integrator->getIntegratorStep()+1);
 
         /*
          * Deallocate objects

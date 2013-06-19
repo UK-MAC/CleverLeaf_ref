@@ -677,6 +677,14 @@ void Cleverleaf::initializeDataOnPatch(
                 patch.getPatchData(d_volume, getCurrentDataContext()),
                 boost::detail::dynamic_cast_tag());
 
+        boost::shared_ptr<pdat::EdgeData<double> > v_volflux(
+                patch.getPatchData(d_volflux, getCurrentDataContext()),
+                boost::detail::dynamic_cast_tag());
+
+        // Fill volflux with 0.0 for now
+        v_volflux->fillAll(0.0);
+
+
         /*
          * Fill in the volume array...
          */
@@ -1521,7 +1529,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
 
     if(!patch.inHierarchy()) {
         std::cerr << "PATCH NOT IN HIERARCHY" << std::endl;
-    //    return;
+        return;
     }
 
     boost::shared_ptr<pdat::CellData<double> > v_pressure(
@@ -1567,8 +1575,6 @@ void Cleverleaf::setPhysicalBoundaryConditions(
     boost::shared_ptr<pdat::CellData<double> > v_soundspeed( 
             patch.getPatchData(d_soundspeed, getScratchDataContext()),
             boost::detail::dynamic_cast_tag());
-
-    hier::IntVector ghosts = v_pressure->getGhostCellWidth();
 
     const hier::Index ifirst = patch.getBox().lower();
     const hier::Index ilast = patch.getBox().upper();

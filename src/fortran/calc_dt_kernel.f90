@@ -54,8 +54,8 @@ SUBROUTINE calc_dt_kernel(x_min,x_max,y_min,y_max,             &
   INTEGER :: x_min,x_max,y_min,y_max
   REAL(KIND=8)  :: g_small,g_big,dtmin,dt_min_val
   REAL(KIND=8)  :: dtc_safe,dtu_safe,dtv_safe,dtdiv_safe
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+2) :: xarea
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+3) :: yarea
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: xarea
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: yarea
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2)             :: cellx
   REAL(KIND=8), DIMENSION(y_min-2:y_max+2)             :: celly
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2)             :: celldx
@@ -143,6 +143,8 @@ SUBROUTINE calc_dt_kernel(x_min,x_max,y_min,y_max,             &
   jk_control=jk_control-(jk_control-INT(jk_control))
   jldt=MOD(INT(jk_control),x_max)
   kldt=1+(jk_control/x_max)
+  jldt = x_min + (jldt-1)
+  kldt = y_min + (kldt-1)
   xl_pos=cellx(jldt)
   yl_pos=celly(kldt)
 

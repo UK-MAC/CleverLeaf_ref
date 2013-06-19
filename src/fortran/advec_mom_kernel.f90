@@ -76,16 +76,16 @@ SUBROUTINE advec_mom_kernel(x_min,x_max,y_min,y_max,   &
   REAL(KIND=8) :: vdiffuw2,vdiffdw2,auw2,limiter2
   REAL(KIND=8), POINTER, DIMENSION(:,:) :: vel1
 
-  vector = .TRUE.
+  vector = .FALSE.
 
   ! Choose the correct velocity, ideally, remove this pointer
   !  if it affects performance.
   ! Leave this one in as a test of performance
   IF(which_vel.EQ.1)THEN
-    PRINT *, 'UPDATING xvel'
+!    PRINT *, 'UPDATING xvel'
     vel1=>xvel1
   ELSE
-    PRINT *, 'UPDATING yvel'
+!    PRINT *, 'UPDATING yvel'
     vel1=>yvel1
   ENDIF
 
@@ -233,7 +233,7 @@ SUBROUTINE advec_mom_kernel(x_min,x_max,y_min,y_max,   &
       ENDDO
     ENDDO
 
-    PRINT *, 'vel1(x_min, y_min) = ', vel1(x_min, y_min)
+    !PRINT *, 'vel1(x_min, y_min) = ', vel1(x_min, y_min)
 
 !$OMP END DO
   ELSEIF(direction.EQ.2)THEN
@@ -242,13 +242,13 @@ SUBROUTINE advec_mom_kernel(x_min,x_max,y_min,y_max,   &
       DO j=x_min,x_max+1
         ! Find staggered mesh mass fluxes and nodal masses and volumes.
 
-        ! Print out mass_fluxes here!
-        IF (j.EQ.x_min .AND. k.EQ.y_min) THEN
-          PRINT *, mass_flux_y(j-1,k)
-          PRINT *, mass_flux_y(j,k)
-          PRINT *, mass_flux_y(j-1,k+1)
-          PRINT *, mass_flux_y(j,k+1)
-        ENDIF
+!        ! Print out mass_fluxes here!
+!        IF (j.EQ.x_min .AND. k.EQ.y_min) THEN
+!          !PRINT *, mass_flux_y(j-1,k)
+!          !PRINT *, mass_flux_y(j,k)
+!          !PRINT *, mass_flux_y(j-1,k+1)
+!          !PRINT *, mass_flux_y(j,k+1)
+!        ENDIF
 
         node_flux(j,k)=0.25_8*(mass_flux_y(j-1,k  )+mass_flux_y(j  ,k  ) &
                               +mass_flux_y(j-1,k+1)+mass_flux_y(j  ,k+1))
@@ -345,8 +345,8 @@ SUBROUTINE advec_mom_kernel(x_min,x_max,y_min,y_max,   &
       ENDDO
     ENDDO
 !$OMP END DO
-    PRINT *, 'mom_flux(x_min,y_min), mom_flux(x_min,y_min) = ', mom_flux(x_min,y_min), ', ', mom_flux(x_min,y_min-1)
-    PRINT *, 'vel1(x_min, y_min) = ', vel1(x_min, y_min)
+    !PRINT *, 'mom_flux(x_min,y_min), mom_flux(x_min,y_min) = ', mom_flux(x_min,y_min), ', ', mom_flux(x_min,y_min-1)
+    !PRINT *, 'vel1(x_min, y_min) = ', vel1(x_min, y_min)
   ENDIF
 
 !$OMP END PARALLEL
