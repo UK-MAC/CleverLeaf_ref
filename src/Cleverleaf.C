@@ -1528,7 +1528,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
 {
 
     if(!patch.inHierarchy()) {
-        std::cerr << "PATCH NOT IN HIERARCHY" << std::endl;
+        //std::cerr << "PATCH NOT IN HIERARCHY" << std::endl;
         return;
     }
 
