@@ -65,10 +65,11 @@ class LagrangianEulerianIntegrator {
         void getMinHeirarchyDt(const bool initial_time);
 
         double d_dt;
+        double d_grow_dt;
+        double d_max_dt;
 
         double d_start_time;
         double d_end_time;
-        double d_grow_dt;
 
         double d_integrator_time;
 

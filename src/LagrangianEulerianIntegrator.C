@@ -16,6 +16,7 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
     d_end_time = input_db->getDoubleWithDefault("end_time", 1.0);
     d_end_step = input_db->getIntegerWithDefault("max_integrator_steps", 100000000);
     d_grow_dt = input_db->getDoubleWithDefault("grow_dt", 1.5);
+    d_max_dt = input_db->getDoubleWithDefault("max_dt", tbox::MathUtilities<double>::getMax());
     d_integrator_time = d_start_time;
 
     d_dt = 0.04;
@@ -298,6 +299,8 @@ void LagrangianEulerianIntegrator::getMinHeirarchyDt(const bool initial_time)
 {
    int finest_level_number = d_patch_hierarchy->getFinestLevelNumber();
    int level_num;
+   double dt_old = d_dt;
+   double dt = tbox::MathUtilities<double>::getMax();
 
    for (level_num = 0; level_num <= finest_level_number; level_num++) {
       boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
@@ -324,10 +327,15 @@ void LagrangianEulerianIntegrator::getMinHeirarchyDt(const bool initial_time)
    double level_dt;
 
    for (level_num = 0; level_num <= finest_level_number; level_num++) {
-      boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
+     boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
 
      level_dt = d_level_integrator->calcDt(patch_level);
 
-     d_dt = tbox::MathUtilities<double>::Min(d_dt, level_dt);
+     dt = tbox::MathUtilities<double>::Min(dt, level_dt);
    }
+
+   //std::cout << "dt_old: " << dt_old << " d_grow_dt: " << d_grow_dt << " = " << (dt_old*d_grow_dt) << std::endl;
+
+  d_dt = tbox::MathUtilities<double>::Min(dt, (dt_old*d_grow_dt));
+  d_dt = tbox::MathUtilities<double>::Min(d_dt, d_max_dt);
 }

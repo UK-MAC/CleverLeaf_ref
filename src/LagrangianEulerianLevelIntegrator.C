@@ -596,7 +596,6 @@ void LagrangianEulerianLevelIntegrator::halfStepHaloExchange(
         const double current_time)
 {
     PRINT_FLOW
-    std::cout << current_time << std::endl;
 
     level->allocatePatchData(d_var_scratch_data, current_time);
     level->allocatePatchData(d_var_scratch_new_data, current_time);
