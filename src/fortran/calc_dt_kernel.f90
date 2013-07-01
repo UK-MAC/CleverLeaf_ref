@@ -78,12 +78,11 @@ SUBROUTINE calc_dt_kernel(x_min,x_max,y_min,y_max,             &
 
   REAL(KIND=8)     :: div,dsx,dsy,dtut,dtvt,dtct,dtdivt,cc,dv1,dv2,jk_control
 
-!$OMP PARALLEL
-
   small=0
-
   dt_min_val = g_big
   jk_control=1.1
+
+!$OMP PARALLEL
 
 !$OMP DO PRIVATE(dsx,dsy,cc,dv1,dv2,div,dtct,dtut,dtvt,dtdivt)
   DO k=y_min,y_max
@@ -92,8 +91,8 @@ SUBROUTINE calc_dt_kernel(x_min,x_max,y_min,y_max,             &
        dsx=celldx(j)
        dsy=celldy(k)
 
-       cc=soundspeed(j,k)**2
-       cc=cc+2.0*viscosity(j,k)/density0(j,k)
+       cc=soundspeed(j,k)*soundspeed(j,k)
+       cc=cc+2.0_8*viscosity(j,k)/density0(j,k)
        cc=MAX(SQRT(cc),g_small)
 
        dtct=dtc_safe*MIN(dsx,dsy)/cc
@@ -105,19 +104,19 @@ SUBROUTINE calc_dt_kernel(x_min,x_max,y_min,y_max,             &
 
        div=div+dv2-dv1
 
-       dtut=dtu_safe*2.0*volume(j,k)/MAX(ABS(dv1),ABS(dv2),g_small*volume(j,k))
+       dtut=dtu_safe*2.0_8*volume(j,k)/MAX(ABS(dv1),ABS(dv2),g_small*volume(j,k))
 
        dv1=(yvel0(j,k  )+yvel0(j+1,k  ))*yarea(j,k  )
        dv2=(yvel0(j,k+1)+yvel0(j+1,k+1))*yarea(j,k+1)
 
        div=div+dv2-dv1
 
-       dtvt=dtv_safe*2.0*volume(j,k)/MAX(ABS(dv1),ABS(dv2),g_small*volume(j,k))
+       dtvt=dtv_safe*2.0_8*volume(j,k)/MAX(ABS(dv1),ABS(dv2),g_small*volume(j,k))
 
-       div=div/(2.0*volume(j,k))
+       div=div/(2.0_8*volume(j,k))
 
        IF(div.LT.-g_small)THEN
-         dtdivt=dtdiv_safe*(-1.0/div)
+         dtdivt=dtdiv_safe*(-1.0_8/div)
        ELSE
          dtdivt=g_big
        ENDIF
@@ -143,8 +142,6 @@ SUBROUTINE calc_dt_kernel(x_min,x_max,y_min,y_max,             &
   jk_control=jk_control-(jk_control-INT(jk_control))
   jldt=MOD(INT(jk_control),x_max)
   kldt=1+(jk_control/x_max)
-  jldt = x_min + (jldt-1)
-  kldt = y_min + (kldt-1)
   xl_pos=cellx(jldt)
   yl_pos=celly(kldt)
 
