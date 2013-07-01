@@ -17,6 +17,8 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
     d_end_step = input_db->getIntegerWithDefault("max_integrator_steps", 100000000);
     d_grow_dt = input_db->getDoubleWithDefault("grow_dt", 1.5);
     d_max_dt = input_db->getDoubleWithDefault("max_dt", tbox::MathUtilities<double>::getMax());
+    d_fix_dt = input_db->getBoolWithDefault("fix_dt", false);
+
     d_integrator_time = d_start_time;
 
     d_dt = 0.04;
@@ -276,6 +278,7 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
       if (d_patch_hierarchy->getFinestLevelNumber() > 0) {
 
          const bool initial_time = false;
+
          d_level_integrator->synchronizeNewLevels(
             d_patch_hierarchy,
             coarse_level_number,
@@ -336,6 +339,10 @@ void LagrangianEulerianIntegrator::getMinHeirarchyDt(const bool initial_time)
 
    //std::cout << "dt_old: " << dt_old << " d_grow_dt: " << d_grow_dt << " = " << (dt_old*d_grow_dt) << std::endl;
 
-  d_dt = tbox::MathUtilities<double>::Min(dt, (dt_old*d_grow_dt));
-  d_dt = tbox::MathUtilities<double>::Min(d_dt, d_max_dt);
+   if(d_fix_dt) {
+       d_dt = d_max_dt;
+   } else {
+       d_dt = tbox::MathUtilities<double>::Min(dt, (dt_old*d_grow_dt));
+       d_dt = tbox::MathUtilities<double>::Min(d_dt, d_max_dt);
+   }
 }
