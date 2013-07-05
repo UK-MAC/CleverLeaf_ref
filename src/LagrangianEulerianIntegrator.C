@@ -69,7 +69,7 @@ void LagrangianEulerianIntegrator::initializeLevelData(const int level_number)
    bool initial_time = true;
 
    if (d_patch_hierarchy->levelCanBeRefined(level_number)) {
-      int tag_buffer = 4;
+      int tag_buffer = 2;
 
       double regrid_start_time =
           d_integrator_time - d_dt;
@@ -192,7 +192,6 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
    getMinHeirarchyDt(false);
 
    d_integrator_time += dt;
-
    d_integrator_step++;
 
    int coarse_level_number = 0;
@@ -212,51 +211,6 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
    bool regrid_now = (d_integrator_step % d_regrid_interval == 0);
 
    if (regrid_now) {
-      /*
-       * Regrid all levels, from coarsest to finest.  If the error
-       * estimation procedure uses time integration (e.g. Richardson
-       * extrapolation) then we must supply the oldest time at which
-       * data is stored.
-       *
-       * If the error coarsen ratio is two, data will be stored
-       * from the previous timestep (at d_level_old_time).  If the
-       * error coarsen ratio is three, data will be stored
-       * from two previous timesteps (at d_level_old_old_time).
-       *
-       * If we are not using time integration, the oldest time
-       * information should not be used, so it is set to NaNs
-       * to throw an assertion if it is accessed.
-       */
-
-      tbox::Array<double> regrid_start_time;
-
-      if (!d_gridding_algorithm->getTagAndInitializeStrategy()->
-          usesTimeIntegration(d_integrator_step, d_integrator_time)) {
-
-         int max_levels = d_patch_hierarchy->getMaxNumberOfLevels();
-         regrid_start_time.resizeArray(max_levels);
-         for (int i = 0; i < regrid_start_time.getSize(); i++) {
-            regrid_start_time[i] = 0.;
-         }
-
-      } else {
-
-//         if (d_gridding_algorithm->getTagAndInitializeStrategy()->getErrorCoarsenRatio() == 2) {
-//            regrid_start_time = d_level_old_time;
-//         } else if (d_gridding_algorithm->getTagAndInitializeStrategy()->getErrorCoarsenRatio() ==
-//                    3) {
-//            regrid_start_time = d_level_old_old_time;
-//         } else {
-//            TBOX_ERROR(
-//               d_object_name << ": the supplied gridding "
-//                             << "algorithm uses an error coarsen ratio of "
-//                             << d_gridding_algorithm->
-//               getTagAndInitializeStrategy()->getErrorCoarsenRatio()
-//                             << " which is not supported in this class"
-//                             << std::endl);
-//         }
-
-      }
 
       int max_levels = d_patch_hierarchy->getMaxNumberOfLevels();
       d_tag_buffer.resizeArray(max_levels);
@@ -269,8 +223,7 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
          coarse_level_number,
          d_tag_buffer,
          d_integrator_step,
-         d_integrator_time,
-         regrid_start_time);
+         d_integrator_time);
 
       /*
        * Synchronize data on new levels.
@@ -286,7 +239,6 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
             d_integrator_time,
             initial_time);
       }
-
    }
 
    return d_dt;
@@ -312,7 +264,7 @@ void LagrangianEulerianIntegrator::getMinHeirarchyDt(const bool initial_time)
 
    for (level_num = 0; level_num <= finest_level_number; level_num++) {
       boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
-      d_level_integrator->primeBoundaryHaloExchange(patch_level, d_patch_hierarchy, d_integrator_time);
+      d_level_integrator->preLagrangeHaloExchange(patch_level, d_patch_hierarchy, d_integrator_time);
    }
 
    for (level_num = 0; level_num <= finest_level_number; level_num++) {

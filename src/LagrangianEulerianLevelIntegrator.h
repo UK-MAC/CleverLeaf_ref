@@ -224,6 +224,11 @@ class LagrangianEulerianLevelIntegrator:
         void timestepEoS(
                 const boost::shared_ptr<hier::PatchLevel>& level);
 
+        void preLagrangeHaloExchange(
+                const boost::shared_ptr<hier::PatchLevel>& level,
+                const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+                const double current_time);
+
         void primeBoundaryHaloExchange(
                 const boost::shared_ptr<hier::PatchLevel>& level,
                 const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
