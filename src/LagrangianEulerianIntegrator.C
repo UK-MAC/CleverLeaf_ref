@@ -183,6 +183,8 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
      d_level_integrator->advecMomSweep2(patch_level);
    }
 
+   d_level_integrator->swapAdvecDir();
+
    for (level_num = 0; level_num <= finest_level_number; level_num++) {
       boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
 

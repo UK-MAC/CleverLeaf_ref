@@ -829,7 +829,10 @@ void LagrangianEulerianLevelIntegrator::advecMomSweep2(
          */
         d_patch_strategy->advec_mom(*patch,sweep_number, direction, LagrangianEulerianPatchStrategy::Y);
     }
+}
 
+void LagrangianEulerianLevelIntegrator::swapAdvecDir()
+{
    advect_x = !advect_x;
 }
 
@@ -963,4 +966,14 @@ void LagrangianEulerianLevelIntegrator::stampDataTime(
 
     level->allocatePatchData(d_var_cur_data, current_time);
     level->allocatePatchData(d_var_new_data, current_time);
+}
+
+void LagrangianEulerianLevelIntegrator::debugLevel(
+                const boost::shared_ptr<hier::PatchLevel>& level)
+{
+    for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ++ip) {
+        boost::shared_ptr<hier::Patch> patch = *ip;
+
+        d_patch_strategy->debug_knl(*patch);
+    }
 }

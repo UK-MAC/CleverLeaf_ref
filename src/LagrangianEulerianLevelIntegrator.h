@@ -249,6 +249,11 @@ class LagrangianEulerianLevelIntegrator:
                 const boost::shared_ptr<hier::PatchLevel>& level,
                 const double current_time);
 
+        void debugLevel(
+                const boost::shared_ptr<hier::PatchLevel>& level);
+        
+        void swapAdvecDir();
+
         /**
          * Copy new field variable values back to timelevel 0.
          *
