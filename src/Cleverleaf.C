@@ -69,6 +69,9 @@ extern "C" {
     void F90_FUNC(update_halo_kernel_right, UPDATE_HALO_KERNEL_RIGHT)
         (int*,int*,int*,int*,double*,double*,double*,double*,double*,double*,
          double*,double*,double*,double*,double*,double*,double*,double*,double*,int*,int*);
+
+    void F90_FUNC(debug_kernel, DEBUG_KERNEL)
+        (int*, int*, int*, int*, double*, double*, double*, double*);
 }
 
 
@@ -1922,4 +1925,36 @@ void Cleverleaf::tagGradientDetectorCells(
    for (pdat::CellIterator ic(pbox, true); ic != icend; ++ic) {
       (*tags)(*ic, 0) = (*temp_tags)(*ic, 0);
    }
+}
+
+void Cleverleaf::debug_knl(hier::Patch& patch)
+{
+    boost::shared_ptr<pdat::NodeData<double> > v_vel0(
+            patch.getPatchData(d_velocity, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::NodeData<double> > v_vel1(
+            patch.getPatchData(d_velocity, getNewDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    const hier::Index ifirst = patch.getBox().lower();
+    const hier::Index ilast = patch.getBox().upper();
+
+    int xmin = ifirst(0); 
+    int xmax = ilast(0); 
+    int ymin = ifirst(1); 
+    int ymax = ilast(1); 
+
+    double* xvel0 = v_vel0->getPointer(0);
+    double* xvel1 = v_vel1->getPointer(0);
+
+    double* yvel0 = v_vel0->getPointer(1);
+    double* yvel1 = v_vel1->getPointer(1);
+
+    F90_FUNC(debug_kernel, DEBUG_KERNEL)
+        (&xmin, &xmax, &ymin, &ymax,
+         xvel0,
+         yvel0,
+         xvel1,
+         yvel1);
 }

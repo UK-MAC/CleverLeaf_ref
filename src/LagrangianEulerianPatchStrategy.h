@@ -156,6 +156,8 @@ class LagrangianEulerianPatchStrategy:
                 const bool initial_error,
                 const int tag_index) = 0;
 
+        virtual void debug_knl(hier::Patch& patch) = 0;
+
         /**
          * Get the data context corresponding to the current time.
          *

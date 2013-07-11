@@ -114,6 +114,8 @@ class Cleverleaf:
                 const bool initial_error,
                 const int tag_index);
 
+        void debug_knl(hier::Patch& patch);
+
     private:
 
         boost::shared_ptr<hier::PatchHierarchy> d_hierarchy;
