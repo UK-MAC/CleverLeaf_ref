@@ -130,6 +130,8 @@ class Cleverleaf:
         boost::shared_ptr<tbox::Database> input_db;
         const std::string state_prefix;
 
+        bool d_tag_all;
+
         /*
          * Variables
          */

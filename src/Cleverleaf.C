@@ -190,6 +190,8 @@ Cleverleaf::Cleverleaf(
     d_grid_geometry->addRefineOperator(typeid(pdat::NodeVariable<double>).name(), cndlr);
     d_grid_geometry->addRefineOperator(typeid(pdat::EdgeVariable<double>).name(), cedclr);
     d_grid_geometry->addRefineOperator(typeid(pdat::CellVariable<double>).name(), ccdclr);
+
+    d_tag_all = input_database->getBoolWithDefault("tag_all", false);
 }
 
 void Cleverleaf::registerModelVariables(
@@ -1913,9 +1915,11 @@ void Cleverleaf::tagGradientDetectorCells(
          energy0,
          temp_tags_array);
 
-    F90_FUNC(tag_all_kernel,TAG_ALL_KERNEL)
-        (&ifirst(0), &ilast(0), &ifirst(1), &ilast(1),
-         temp_tags_array);
+    if(d_tag_all) {
+        F90_FUNC(tag_all_kernel,TAG_ALL_KERNEL)
+            (&ifirst(0), &ilast(0), &ifirst(1), &ilast(1),
+             temp_tags_array);
+    }
 
     /*
      * Update tags
