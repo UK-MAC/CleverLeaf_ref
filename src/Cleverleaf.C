@@ -70,6 +70,18 @@ extern "C" {
         (int*,int*,int*,int*,double*,double*,double*,double*,double*,double*,
          double*,double*,double*,double*,double*,double*,double*,double*,double*,int*,int*);
 
+    void F90_FUNC(tag_q_kernel,TAG_Q_KERNEL)
+        (int*,int*,int*,int*,double*,int*);
+
+    void F90_FUNC(tag_energy_kernel,TAG_ENERGY_KERNEL)
+        (int*,int*,int*,int*,double*,int*);
+
+    void F90_FUNC(tag_density_kernel,TAG_DENSITY_KERNEL)
+        (int*,int*,int*,int*,double*,int*);
+
+    void F90_FUNC(tag_all_kernel,TAG_ALL_KERNEL)
+        (int*,int*,int*,int*,int*);
+
     void F90_FUNC(debug_kernel, DEBUG_KERNEL)
         (int*, int*, int*, int*, double*, double*, double*, double*);
 }
@@ -1830,6 +1842,10 @@ void Cleverleaf::tagGradientDetectorCells(
             patch.getPatchData(d_energy, getCurrentDataContext()),
             boost::detail::dynamic_cast_tag());
 
+    boost::shared_ptr<pdat::CellData<double> > v_viscosity(
+            patch.getPatchData(d_viscosity, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
     hier::Box pbox = patch.getBox();
     hier::BoxContainer domain_boxes;
     d_grid_geometry->computePhysicalDomain(domain_boxes, patch_geom->getRatio(), hier::BlockId::zero());
@@ -1879,44 +1895,27 @@ void Cleverleaf::tagGradientDetectorCells(
 
     double* density0 = v_density->getPointer();
     double* energy0 = v_energy->getPointer();
+    double* viscosity = v_viscosity->getPointer();
+    int* temp_tags_array = temp_tags->getPointer();
 
-    for(int k = ifirst(1); k <= ilast(1)+1; k++) {
-        for(int j = ifirst(0); j <= ilast(0)+1; j++) {
+    F90_FUNC(tag_q_kernel,TAG_Q_KERNEL)
+        (&ifirst(0), &ilast(0), &ifirst(1), &ilast(1),
+         viscosity,
+         temp_tags_array);
 
-            int n1 = POLY2(j,k, xmin, ymin, nx);
+    F90_FUNC(tag_density_kernel,TAG_DENSITY_KERNEL)
+        (&ifirst(0), &ilast(0), &ifirst(1), &ilast(1),
+         density0,
+         temp_tags_array);
 
-            double d2x = abs(density0(j+1,k) - 2.0*density0(j,k) + density0(j-1,k));
-            double d2y = abs(density0(j,k+1) - 2.0*density0(j,k) + density0(j,k-1));
+    F90_FUNC(tag_energy_kernel,TAG_ENERGY_KERNEL)
+        (&ifirst(0), &ilast(0), &ifirst(1), &ilast(1),
+         energy0,
+         temp_tags_array);
 
-            double dxy = abs(density0(j+1,k+1) - 2.0*density0(j,k) + density0(j-1,k-1));
-            double dyx = abs(density0(j-1,k+1) - 2.0*density0(j,k) + density0(j+1,k-1));
-
-            double dd = max(d2x,max(d2y,max(dxy,dyx)));
-
-            if (dd > 0.1 ) {
-                temp_tags->getPointer(0)[n1] = 1;
-            }
-        }
-    }
-
-    for(int k = ifirst(1); k <= ilast(1)+1; k++) {
-        for(int j = ifirst(0); j <= ilast(0)+1; j++) {
-
-            int n1 = POLY2(j,k, xmin, ymin, nx);
-
-            double d2x = abs(energy0(j+1,k) - 2.0*energy0(j,k) + energy0(j-1,k));
-            double d2y = abs(energy0(j,k+1) - 2.0*energy0(j,k) + energy0(j,k-1));
-
-            double dxy = abs(energy0(j+1,k+1) - 2.0*energy0(j,k) + energy0(j-1,k-1));
-            double dyx = abs(energy0(j-1,k+1) - 2.0*energy0(j,k) + energy0(j+1,k-1));
-
-            double dd = max(d2x,max(d2y,max(dxy,dyx)));
-
-            if (dd > 0.1 ) {
-                temp_tags->getPointer(0)[n1] = 1;
-            }
-        }
-    }
+    F90_FUNC(tag_all_kernel,TAG_ALL_KERNEL)
+        (&ifirst(0), &ilast(0), &ifirst(1), &ilast(1),
+         temp_tags_array);
 
     /*
      * Update tags
