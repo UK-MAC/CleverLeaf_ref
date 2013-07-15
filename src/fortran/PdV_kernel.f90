@@ -91,6 +91,10 @@ SUBROUTINE PdV_kernel(prdct,                                          &
                            ,volume(j,k)+right_flux-left_flux                      &
                            ,volume(j,k)+top_flux-bottom_flux)
  
+        IF ((volume_change(j,k) .LT. 0.0) .OR. (min_cell_volume .LT. 0.0)) THEN
+            WRITE (*,*) "Negative cell volume at: (", j, ",", k, ") = ", volume_change(j,k)
+        ENDIF
+
         recip_volume=1.0/volume(j,k) 
 
         energy_change=(pressure(j,k)/density0(j,k)+viscosity(j,k)/density0(j,k))*total_flux*recip_volume
@@ -126,6 +130,11 @@ SUBROUTINE PdV_kernel(prdct,                                          &
                            ,volume(j,k)+right_flux-left_flux                      &
                            ,volume(j,k)+top_flux-bottom_flux)
  
+
+        IF ((volume_change(j,k) .LT. 0.0) .OR. (min_cell_volume .LT. 0.0)) THEN
+            WRITE (*,*) "Negative cell volume at: (", j, ",", k, ") = ", volume_change(j,k)
+        ENDIF
+
         recip_volume=1.0/volume(j,k) 
 
         energy_change=(pressure(j,k)/density0(j,k)+viscosity(j,k)/density0(j,k))*total_flux*recip_volume
