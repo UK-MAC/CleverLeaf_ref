@@ -142,8 +142,6 @@ SUBROUTINE calc_dt_kernel(x_min,x_max,y_min,y_max,             &
   jk_control=jk_control-(jk_control-INT(jk_control))
   jldt=MOD(INT(jk_control),x_max)
   kldt=1+(jk_control/x_max)
-  xl_pos=cellx(jldt)
-  yl_pos=celly(kldt)
 
   IF(dt_min_val.LT.dtmin) small=1
 
