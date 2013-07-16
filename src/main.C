@@ -83,7 +83,11 @@ int main(int argc, char* argv[]) {
                     input_db->getDatabase("PatchHierarchy")));
 
         int visit_number_procs_per_file = 1;
-        const std::string visit_dump_dirname = "cleverleaf.visit";
+        std::string visit_dump_dirname = input_filename;
+        visit_dump_dirname.erase(0, visit_dump_dirname.find_last_of("/")+1);
+        visit_dump_dirname.erase(visit_dump_dirname.find_last_of("."), string::npos);
+
+        visit_dump_dirname += ".visit";
 
         Cleverleaf* cleverleaf = new Cleverleaf(
                 main_db,
@@ -157,9 +161,11 @@ int main(int argc, char* argv[]) {
          */
         double dt_now = lagrangian_eulerian_integrator->initializeHierarchy();
 
-        visit_data_writer->writePlotData(patch_hierarchy,
-                0,
-                0.0);
+        if(vis_dump_interval > 0) {
+            visit_data_writer->writePlotData(patch_hierarchy,
+                    0,
+                    0.0);
+        }
 
         /*
          * After creating all objects and initializing their state, we
@@ -217,7 +223,11 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        //lagrangian_eulerian_integrator->printFieldSummary(loop_time, lagrangian_eulerian_integrator->getIntegratorStep()+1);
+        if (vis_dump_interval > 0) {
+            visit_data_writer->writePlotData(patch_hierarchy,
+                    lagrangian_eulerian_integrator->getIntegratorStep() + 1,
+                    loop_time);
+        }
 
         /*
          * Deallocate objects
