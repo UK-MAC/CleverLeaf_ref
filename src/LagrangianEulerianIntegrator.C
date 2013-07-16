@@ -196,6 +196,10 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
    d_integrator_time += dt;
    d_integrator_step++;
 
+   if ((d_integrator_time + d_dt) > d_end_time) {
+       d_dt = d_end_time - d_integrator_time;
+   }
+
    int coarse_level_number = 0;
 
    if (finest_level_number > 0) {
@@ -290,8 +294,6 @@ void LagrangianEulerianIntegrator::getMinHeirarchyDt(const bool initial_time)
 
      dt = tbox::MathUtilities<double>::Min(dt, level_dt);
    }
-
-   //std::cout << "dt_old: " << dt_old << " d_grow_dt: " << d_grow_dt << " = " << (dt_old*d_grow_dt) << std::endl;
 
    if(d_fix_dt) {
        d_dt = d_max_dt;
