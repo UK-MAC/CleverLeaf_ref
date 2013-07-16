@@ -1635,7 +1635,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
 
     const tbox::Array<hier::BoundaryBox>& edge_bdry = pgeom->getCodimensionBoundaries(Bdry::EDGE2D);
 
-    int* fields = (int*)malloc(15*sizeof(int));
+    int* fields = (int*) malloc(15*sizeof(int));
 
     for(int i = 0; i < 15; i++) {
         fields[i] = 1;
@@ -1736,6 +1736,8 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                       exit(-1);
         }
     }
+    
+    free(fields);
 }
 
 void Cleverleaf::field_summary(
