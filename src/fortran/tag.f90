@@ -29,6 +29,8 @@ SUBROUTINE tag_q_kernel(x_min,x_max,y_min,y_max,&
 
   INTEGER :: j,k
 
+!$OMP PARALLEL
+!$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
       IF (viscosity(j,k) .GT. 0.001) THEN
@@ -44,6 +46,8 @@ SUBROUTINE tag_q_kernel(x_min,x_max,y_min,y_max,&
       ENDIF
     ENDDO
   ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
 END SUBROUTINE tag_q_kernel
 
@@ -60,6 +64,8 @@ SUBROUTINE tag_density_kernel(x_min,x_max,y_min,y_max,&
   INTEGER :: j,k
   REAL(KIND=8) :: d2x,d2y,dxy,dyx,dd
 
+!$OMP PARALLEL
+!$OMP DO PRIVATE(d2x,d2y,dxy,dyx,dd)
   DO k=y_min,y_max
     DO j=x_min,x_max
       d2x = abs(density(j+1,k) - 2.0*density(j,k) + density(j-1,k));
@@ -83,6 +89,8 @@ SUBROUTINE tag_density_kernel(x_min,x_max,y_min,y_max,&
       ENDIF
     ENDDO
   ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
 END SUBROUTINE tag_density_kernel
 
@@ -99,6 +107,9 @@ SUBROUTINE tag_energy_kernel(x_min,x_max,y_min,y_max,&
   INTEGER :: j,k
   REAL(KIND=8) :: d2x,d2y,dxy,dyx,dd
 
+
+!$OMP PARALLEL
+!$OMP DO PRIVATE(d2x,d2y,dxy,dyx,dd)
   DO k=y_min,y_max
     DO j=x_min,x_max
       d2x = abs(energy(j+1,k) - 2.0*energy(j,k) + energy(j-1,k));
@@ -122,6 +133,8 @@ SUBROUTINE tag_energy_kernel(x_min,x_max,y_min,y_max,&
       ENDIF
     ENDDO
   ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
 END SUBROUTINE tag_energy_kernel
 
@@ -135,6 +148,8 @@ SUBROUTINE tag_all_kernel(x_min,x_max,y_min,y_max,&
 
   INTEGER :: j,k
 
+!$OMP PARALLEL
+!$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
         tags(j,k) = 1
@@ -148,5 +163,7 @@ SUBROUTINE tag_all_kernel(x_min,x_max,y_min,y_max,&
         tags(j+1,k+1) = 1
     ENDDO
   ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
 END SUBROUTINE tag_all_kernel
