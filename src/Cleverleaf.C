@@ -1633,7 +1633,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
             patch.getPatchGeometry(),
             boost::detail::dynamic_cast_tag());
 
-    const tbox::Array<hier::BoundaryBox>& edge_bdry = pgeom->getCodimensionBoundaries(Bdry::EDGE2D);
+    const std::vector<hier::BoundaryBox>& edge_bdry = pgeom->getCodimensionBoundaries(Bdry::EDGE2D);
 
     int* fields = (int*) malloc(15*sizeof(int));
 
@@ -1641,7 +1641,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
         fields[i] = 1;
     }
 
-    for(int i = 0; i < edge_bdry.getSize(); i++) {
+    for(int i = 0; i < edge_bdry.size(); i++) {
         switch(edge_bdry[i].getLocationIndex()) {
             case (BdryLoc::YLO) :
                 F90_FUNC(update_halo_kernel_bottom, UPDATE_HALO_KERNEL_BOTTOM)
@@ -1860,8 +1860,8 @@ void Cleverleaf::tagGradientDetectorCells(
      * Construct domain bounding box
      */
     hier::Box domain(d_dim);
-    for (hier::BoxContainer::iterator i(domain_boxes); i != domain_boxes.end(); ++i) {
-        domain += *i;
+    for (hier::BoxContainer::iterator ib = domain_boxes.begin(); ib != domain_boxes.end(); ++ib) {
+        domain += *ib;
     }
 
     hier::Index domfirst = domain.lower();
@@ -1926,8 +1926,9 @@ void Cleverleaf::tagGradientDetectorCells(
     /*
      * Update tags
      */
-   pdat::CellIterator icend(pbox, false);
-   for (pdat::CellIterator ic(pbox, true); ic != icend; ++ic) {
+   pdat::CellIterator icend(pdat::CellGeometry::end(pbox));
+
+   for (pdat::CellIterator ic(pdat::CellGeometry::begin(pbox)); ic != icend; ++ic) {
       (*tags)(*ic, 0) = (*temp_tags)(*ic, 0);
    }
 }

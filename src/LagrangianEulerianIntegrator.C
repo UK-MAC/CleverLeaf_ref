@@ -219,8 +219,8 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
    if (regrid_now) {
 
       int max_levels = d_patch_hierarchy->getMaxNumberOfLevels();
-      d_tag_buffer.resizeArray(max_levels);
-      for (int i = 0; i < d_tag_buffer.getSize(); i++) {
+      d_tag_buffer.resize(max_levels);
+      for (int i = 0; i < d_tag_buffer.size(); i++) {
           d_tag_buffer[i] = 2;
       }
 

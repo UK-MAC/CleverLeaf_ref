@@ -9,6 +9,8 @@
 
 #include "boost/shared_ptr.hpp"
 
+#include <vector>
+
 using namespace SAMRAI;
 
 class LagrangianEulerianIntegrator {
@@ -78,7 +80,7 @@ class LagrangianEulerianIntegrator {
         int d_end_step;
 
         int d_regrid_interval;
-        tbox::Array<int> d_tag_buffer;
+        std::vector<int> d_tag_buffer;
 
         boost::shared_ptr<hier::PatchHierarchy> d_patch_hierarchy;
         boost::shared_ptr<LagrangianEulerianLevelIntegrator> d_level_integrator;
