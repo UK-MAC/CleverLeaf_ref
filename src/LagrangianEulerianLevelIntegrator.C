@@ -931,8 +931,6 @@ double LagrangianEulerianLevelIntegrator::calcDt(
 {
     PRINT_FLOW
 
-    const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
-
     double dt = tbox::MathUtilities<double>::getMax();
     double patch_dt;
 
@@ -949,13 +947,7 @@ double LagrangianEulerianLevelIntegrator::calcDt(
         dt = tbox::MathUtilities<double>::Min(dt, patch_dt);
     }
 
-    double global_dt = dt;
-
-    if (mpi.getSize() > 1) {
-        mpi.AllReduce(&global_dt, 1, MPI_MIN);
-    }
-
-    return global_dt;
+    return dt;
 }
 
 void LagrangianEulerianLevelIntegrator::stampDataTime(

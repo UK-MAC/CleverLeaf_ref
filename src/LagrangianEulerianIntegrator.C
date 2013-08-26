@@ -263,6 +263,8 @@ void LagrangianEulerianIntegrator::getMinHeirarchyDt(const bool initial_time)
    double dt_old = d_dt;
    double dt = tbox::MathUtilities<double>::getMax();
 
+   const tbox::SAMRAI_MPI& mpi(tbox::SAMRAI_MPI::getSAMRAIWorld());
+
    for (level_num = 0; level_num <= finest_level_number; level_num++) {
       boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
      d_level_integrator->timestepEoS(patch_level);
@@ -294,6 +296,12 @@ void LagrangianEulerianIntegrator::getMinHeirarchyDt(const bool initial_time)
 
      dt = tbox::MathUtilities<double>::Min(dt, level_dt);
    }
+
+    double global_dt = dt;
+
+    if (mpi.getSize() > 1) {
+        mpi.AllReduce(&global_dt, 1, MPI_MIN);
+    }
 
    if(d_fix_dt) {
        d_dt = d_max_dt;
