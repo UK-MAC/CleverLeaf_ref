@@ -15,6 +15,7 @@
 #include "SAMRAI/mesh/StandardTagAndInitialize.h"
 #include "SAMRAI/appu/VisItDataWriter.h"
 #include "SAMRAI/tbox/InputManager.h"
+#include "SAMRAI/tbox/PIO.h"
 
 // Normal headers
 #include <stdio.h>
@@ -64,6 +65,22 @@ int main(int argc, char* argv[]) {
 
         int vis_dump_interval = main_db->getIntegerWithDefault("vis_dump_interval", 1);
         int field_summary_interval = main_db->getIntegerWithDefault("field_summary_interval", 10);
+
+        /*
+         * Setup log file.
+         */
+
+        string log_filename = input_filename + ".log";
+        log_filename = main_db->getStringWithDefault("log_filename", input_filename + ".log");
+
+        bool log_all_nodes = false;
+        log_all_nodes = main_db->getBoolWithDefault("log_all_nodes", log_all_nodes);
+
+        if (log_all_nodes) {
+            tbox::PIO::logAllNodes(log_filename);
+        } else {
+            tbox::PIO::logOnlyNodeZero(log_filename);
+        }
 
         /*
          * Create data and algorithm objects.
