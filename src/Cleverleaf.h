@@ -155,5 +155,23 @@ class Cleverleaf:
          * Variable contexts
          */
         boost::shared_ptr<hier::VariableContext> d_plot_context;
+
+        int* d_exchange_fields;
+
+        static const int FIELD_DENSITY0 = 0;
+        static const int FIELD_DENSITY1 = 1;
+        static const int FIELD_ENERGY0 = 2;
+        static const int FIELD_ENERGY1 = 3;
+        static const int FIELD_PRESSURE = 4;
+        static const int FIELD_VISCOSITY = 5;
+        static const int FIELD_SOUNDSPEED = 6;
+        static const int FIELD_XVEL0 = 7;
+        static const int FIELD_XVEL1 = 8;
+        static const int FIELD_YVEL0 = 9;
+        static const int FIELD_YVEL1 = 10;
+        static const int FIELD_VOL_FLUX_X = 11;
+        static const int FIELD_VOL_FLUX_Y = 12;
+        static const int FIELD_MASS_FLUX_X = 13;
+        static const int FIELD_MASS_FLUX_Y = 14;
 };
 #endif

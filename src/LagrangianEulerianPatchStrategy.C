@@ -82,3 +82,9 @@ void LagrangianEulerianPatchStrategy::postprocessRefine(
      * Dummy implementation!
      */
 }
+
+void LagrangianEulerianPatchStrategy::setExchangeFlag(
+        const int exchange)
+{
+    d_which_exchange = exchange;
+}

@@ -165,7 +165,8 @@ Cleverleaf::Cleverleaf(
     d_celldeltas(new pdat::CellVariable<double>(d_dim, "celldelta", d_dim.getValue())),
     d_cellcoords(new pdat::CellVariable<double>(d_dim, "cellcoords", d_dim.getValue())),
     d_vertexdeltas(new pdat::NodeVariable<double>(d_dim, "vertexdeltas", d_dim.getValue())),
-    d_vertexcoords(new pdat::NodeVariable<double>(d_dim, "vertexcoords", d_dim.getValue()))
+    d_vertexcoords(new pdat::NodeVariable<double>(d_dim, "vertexcoords", d_dim.getValue())),
+    d_exchange_fields(new int[15])
 {
 
     d_hierarchy = hierarchy;
@@ -1544,11 +1545,6 @@ void Cleverleaf::setPhysicalBoundaryConditions(
         const hier::IntVector& ghost_width_to_fill)
 {
 
-    if(!patch.inHierarchy()) {
-        //std::cerr << "PATCH NOT IN HIERARCHY" << std::endl;
-        return;
-    }
-
     boost::shared_ptr<pdat::CellData<double> > v_pressure(
             patch.getPatchData(d_pressure, getScratchDataContext()),
             boost::detail::dynamic_cast_tag());
@@ -1601,31 +1597,31 @@ void Cleverleaf::setPhysicalBoundaryConditions(
     int ymin = ifirst(1); 
     int ymax = ilast(1); 
 
-    int nx = xmax - xmin +1;
+    int nx = xmax - xmin + 1;
 
-    double* pressure = v_pressure->getPointer();
+    double* pressure;
 
-    double* density0 = v_density0->getPointer();
-    double* density1 = v_density1->getPointer();
+    double* density0;
+    double* density1;
 
-    double* energy0 = v_energy0->getPointer();
-    double* energy1 = v_energy1->getPointer();
+    double* energy0;
+    double* energy1;
 
-    double* viscosity = v_viscosity->getPointer();
+    double* viscosity;
 
-    double* xvel0 = v_vel0->getPointer(0);
-    double* xvel1 = v_vel1->getPointer(0);
+    double* xvel0;
+    double* xvel1;
 
-    double* yvel0 = v_vel0->getPointer(1);
-    double* yvel1 = v_vel1->getPointer(1);
+    double* yvel0;
+    double* yvel1;
 
-    double* mass_flux_x = v_massflux->getPointer(1);
-    double* mass_flux_y = v_massflux->getPointer(0);
+    double* mass_flux_x;
+    double* mass_flux_y;
 
-    double* vol_flux_x = v_volflux->getPointer(1);
-    double* vol_flux_y = v_volflux->getPointer(0);
+    double* vol_flux_x;
+    double* vol_flux_y;
 
-    double* soundspeed = v_soundspeed->getPointer();
+    double* soundspeed;
 
     int depth = ghost_width_to_fill[0];
 
@@ -1635,10 +1631,128 @@ void Cleverleaf::setPhysicalBoundaryConditions(
 
     const std::vector<hier::BoundaryBox>& edge_bdry = pgeom->getCodimensionBoundaries(Bdry::EDGE2D);
 
-    int* fields = (int*) malloc(15*sizeof(int));
-
     for(int i = 0; i < 15; i++) {
-        fields[i] = 1;
+        d_exchange_fields[i] = 0;
+    }
+
+    switch(d_which_exchange) {
+        case LagrangianEulerianLevelIntegrator::FIELD_EXCH:
+            {
+                d_exchange_fields[FIELD_DENSITY0] = 1;
+                d_exchange_fields[FIELD_ENERGY0] = 1;
+                d_exchange_fields[FIELD_XVEL0] = 1;
+                d_exchange_fields[FIELD_YVEL0] = 1;
+
+                density0 = v_density0->getPointer();
+                energy0 = v_energy0->getPointer();
+                xvel0 = v_vel0->getPointer(0);
+                yvel0 = v_vel0->getPointer(1);
+            } break;
+        case LagrangianEulerianLevelIntegrator::PRIME_CELLS_EXCH: 
+            {
+                d_exchange_fields[FIELD_DENSITY0] = 1;
+                d_exchange_fields[FIELD_DENSITY1] = 1;
+                d_exchange_fields[FIELD_ENERGY0] = 1;
+                d_exchange_fields[FIELD_ENERGY1] = 1;
+                d_exchange_fields[FIELD_PRESSURE] = 1;
+                d_exchange_fields[FIELD_VISCOSITY] = 1;
+                d_exchange_fields[FIELD_XVEL0] = 1;
+                d_exchange_fields[FIELD_XVEL1] = 1;
+                d_exchange_fields[FIELD_YVEL0] = 1;
+                d_exchange_fields[FIELD_YVEL1] = 1;
+
+                pressure = v_pressure->getPointer();
+
+                density0 = v_density0->getPointer();
+                density1 = v_density1->getPointer();
+
+                energy0 = v_energy0->getPointer();
+                energy1 = v_energy1->getPointer();
+
+                viscosity = v_viscosity->getPointer();
+
+                xvel0 = v_vel0->getPointer(0);
+                xvel1 = v_vel1->getPointer(0);
+
+                yvel0 = v_vel0->getPointer(1);
+                yvel1 = v_vel1->getPointer(1);
+            } break;
+        case LagrangianEulerianLevelIntegrator::PRE_LAGRANGE_EXCH:
+            {
+                d_exchange_fields[FIELD_XVEL0] = 1;
+                d_exchange_fields[FIELD_YVEL0] = 1;
+                d_exchange_fields[FIELD_PRESSURE] = 1;
+                d_exchange_fields[FIELD_DENSITY0] = 1;
+                d_exchange_fields[FIELD_ENERGY0] = 1;
+
+                pressure = v_pressure->getPointer();
+                density0 = v_density0->getPointer();
+                energy0 = v_energy0->getPointer();
+                xvel0 = v_vel0->getPointer(0);
+                yvel0 = v_vel0->getPointer(1);
+            } break;
+        case LagrangianEulerianLevelIntegrator::POST_VISCOSITY_EXCH:
+            {
+                d_exchange_fields[FIELD_VISCOSITY] = 1;
+
+                viscosity = v_viscosity->getPointer();
+            } break;
+        case LagrangianEulerianLevelIntegrator::HALF_STEP_EXCH:
+            {
+                d_exchange_fields[FIELD_PRESSURE] = 1;
+
+                pressure = v_pressure->getPointer();
+            } break;
+        case LagrangianEulerianLevelIntegrator::PRE_SWEEP_1_CELL_EXCH:
+            {
+                d_exchange_fields[FIELD_VOL_FLUX_X] = 1;
+                d_exchange_fields[FIELD_VOL_FLUX_Y] = 1;
+                d_exchange_fields[FIELD_DENSITY1] = 1;
+                d_exchange_fields[FIELD_ENERGY1] = 1;
+
+                density1 = v_density1->getPointer();
+                energy1 = v_energy1->getPointer();
+                vol_flux_x = v_volflux->getPointer(1);
+                vol_flux_y = v_volflux->getPointer(0);
+            } break;
+        case LagrangianEulerianLevelIntegrator::PRE_SWEEP_1_MOM_EXCH:
+            {
+                d_exchange_fields[FIELD_XVEL1] = 1;
+                d_exchange_fields[FIELD_YVEL1] = 1;
+                d_exchange_fields[FIELD_DENSITY1] = 1;
+                d_exchange_fields[FIELD_ENERGY1] = 1;
+                d_exchange_fields[FIELD_MASS_FLUX_X] = 1;
+                d_exchange_fields[FIELD_MASS_FLUX_Y] = 1;
+
+                density1 = v_density1->getPointer();
+                energy1 = v_energy1->getPointer();
+
+                xvel1 = v_vel1->getPointer(0);
+                yvel1 = v_vel1->getPointer(1);
+
+                mass_flux_x = v_massflux->getPointer(1);
+                mass_flux_y = v_massflux->getPointer(0);
+            } break;
+        case LagrangianEulerianLevelIntegrator::PRE_SWEEP_2_MOM_EXCH:
+            {
+                d_exchange_fields[FIELD_XVEL1] = 1;
+                d_exchange_fields[FIELD_YVEL1] = 1;
+                d_exchange_fields[FIELD_DENSITY1] = 1;
+                d_exchange_fields[FIELD_ENERGY1] = 1;
+                d_exchange_fields[FIELD_MASS_FLUX_X] = 1;
+                d_exchange_fields[FIELD_MASS_FLUX_Y] = 1;
+
+                density1 = v_density1->getPointer();
+                energy1 = v_energy1->getPointer();
+
+                xvel1 = v_vel1->getPointer(0);
+                yvel1 = v_vel1->getPointer(1);
+
+                mass_flux_x = v_massflux->getPointer(1);
+                mass_flux_y = v_massflux->getPointer(0);
+            } break;
+        default : tbox::perr << "[ERROR] Unknown exchange id in setPhysicalBoundaryConditions... " << std::endl;
+                  exit(-1);
     }
 
     for(int i = 0; i < edge_bdry.size(); i++) {
@@ -1661,7 +1775,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                      vol_flux_y,
                      mass_flux_x,
                      mass_flux_y,
-                     fields,
+                     d_exchange_fields,
                      &depth);
                 break;
 
@@ -1684,7 +1798,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                      vol_flux_y,
                      mass_flux_x,
                      mass_flux_y,
-                     fields,
+                     d_exchange_fields,
                      &depth);
                 break;
 
@@ -1707,7 +1821,7 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                      vol_flux_y,
                      mass_flux_x,
                      mass_flux_y,
-                     fields,
+                     d_exchange_fields,
                      &depth);
                 break;
 
@@ -1729,15 +1843,13 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                      vol_flux_y,
                      mass_flux_x,
                      mass_flux_y,
-                     fields,
+                     d_exchange_fields,
                      &depth);
                 break;
             default : tbox::perr << "[ERROR] Unknown edge location in setPhysicalBoundaryConditions... " << std::endl;
                       exit(-1);
         }
     }
-    
-    free(fields);
 }
 
 void Cleverleaf::field_summary(

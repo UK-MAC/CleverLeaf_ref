@@ -297,10 +297,8 @@ void LagrangianEulerianIntegrator::getMinHeirarchyDt(const bool initial_time)
      dt = tbox::MathUtilities<double>::Min(dt, level_dt);
    }
 
-    double global_dt = dt;
-
     if (mpi.getSize() > 1) {
-        mpi.AllReduce(&global_dt, 1, MPI_MIN);
+        mpi.AllReduce(&dt, 1, MPI_MIN);
     }
 
    if(d_fix_dt) {

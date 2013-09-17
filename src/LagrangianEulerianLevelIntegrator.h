@@ -70,6 +70,8 @@ class LagrangianEulerianLevelIntegrator:
         const static int PRE_SWEEP_1_MOM_EXCH = 32;
         /** Exchanged before momentum advection sweep 2 */
         const static int PRE_SWEEP_2_MOM_EXCH = 64;
+        /** Used to fill a new level */
+        const static int FIELD_EXCH = 128;
         /**
          * @}
          */

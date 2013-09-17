@@ -286,6 +286,9 @@ class LagrangianEulerianPatchStrategy:
                     const hier::Patch& coarse,
                     const hier::Box& fine_box,
                     const hier::IntVector& ratio);
+
+        void setExchangeFlag(const int exchange);
+
     private:
         const tbox::Dimension d_dim;
 
@@ -293,5 +296,8 @@ class LagrangianEulerianPatchStrategy:
         boost::shared_ptr<hier::VariableContext> d_current_data_context;
         boost::shared_ptr<hier::VariableContext> d_scratch_data_context;
         boost::shared_ptr<hier::VariableContext> d_scratch_new_data_context;
+    protected:
+        int d_which_exchange;
+
 };
 #endif
