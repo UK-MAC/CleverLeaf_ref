@@ -26,6 +26,10 @@
 using namespace std;
 using namespace SAMRAI;
 
+string getFilenameFromPath(const string path);
+string createUniqueFilename(const string name, const string extension);
+bool fileExists(const string path);
+
 int main(int argc, char* argv[]) {
 
     tbox::SAMRAI_MPI::init(&argc, &argv);
@@ -35,29 +39,32 @@ int main(int argc, char* argv[]) {
     const tbox::SAMRAI_MPI& mpi(tbox::SAMRAI_MPI::getSAMRAIWorld());
 
     {
-        string input_filename;
+        string input_path;
 
         if ((argc != 2)) {
             tbox::pout << "USAGE: " << argv[0] << " <input filename>"
                 << endl;
         } else {
-            input_filename = argv[1];
+            input_path = argv[1];
         }
 
-        tbox::plog << "input filename = " << input_filename << endl;
+        tbox::plog << "Reading input from: " << input_path << endl;
 
         boost::shared_ptr<tbox::InputDatabase> input_db(new tbox::InputDatabase("input_db"));
-        tbox::InputManager::getManager()->parseInputFile(input_filename, input_db);
+        tbox::InputManager::getManager()->parseInputFile(input_path, input_db);
 
         boost::shared_ptr<tbox::Database> main_db = input_db->getDatabase("Cleverleaf");
+
+        string input_file = getFilenameFromPath(input_path);
+        string basename = main_db->getStringWithDefault("basename", input_file);
 
         const tbox::Dimension dim(static_cast<unsigned short>(main_db->getInteger("dim")));
 
         int vis_dump_interval = main_db->getIntegerWithDefault("vis_dump_interval", 1);
         int field_summary_interval = main_db->getIntegerWithDefault("field_summary_interval", 10);
 
-        string log_filename = input_filename + ".log";
-        log_filename = main_db->getStringWithDefault("log_filename", input_filename + ".log");
+        string log_basename = main_db->getStringWithDefault("log_filename", basename);
+        string log_filename = createUniqueFilename(log_basename, "log");
 
         bool log_all_nodes = false;
         log_all_nodes = main_db->getBoolWithDefault("log_all_nodes", log_all_nodes);
@@ -78,12 +85,6 @@ int main(int argc, char* argv[]) {
                     grid_geometry,
                     input_db->getDatabase("PatchHierarchy")));
 
-        int visit_number_procs_per_file = 1;
-        std::string visit_dump_dirname = input_filename;
-        visit_dump_dirname.erase(0, visit_dump_dirname.find_last_of("/")+1);
-        visit_dump_dirname.erase(visit_dump_dirname.find_last_of("."), string::npos);
-
-        visit_dump_dirname += ".visit";
 
         Cleverleaf* cleverleaf = new Cleverleaf(
                 main_db,
@@ -133,10 +134,13 @@ int main(int argc, char* argv[]) {
                     lagrangian_eulerian_level_integrator,
                     gridding_algorithm));
 
+        int visit_number_procs_per_file = 1;
+        std::string visit_dirname = createUniqueFilename(basename, "visit");
+
         boost::shared_ptr<appu::VisItDataWriter> visit_data_writer(
                 new appu::VisItDataWriter(dim,
                     "Cleverleaf VisIt Writer",
-                    visit_dump_dirname,
+                    visit_dirname,
                     visit_number_procs_per_file));
 
         cleverleaf->registerVisItDataWriter(visit_data_writer);
@@ -214,4 +218,54 @@ int main(int argc, char* argv[]) {
     tbox::SAMRAIManager::shutdown();
     tbox::SAMRAIManager::finalize();
     tbox::SAMRAI_MPI::finalize();
+}
+
+string getFilenameFromPath(const string path)
+{
+    std::cout << "path: " << path << std::endl;
+
+    size_t start = path.find_last_of("/");
+    start += 1;
+
+    size_t end = path.find_last_of(".");
+
+    if(start == string::npos)
+        start = 0;
+
+    if(end == string::npos)
+        end = path.length();
+
+    size_t count = end - start;
+
+    std::cout << "start, end, count: " << start << ", " << end << ", " << count << std::endl;
+
+    return path.substr(start, count);
+}
+
+string createUniqueFilename(const string name, const string extension)
+{
+    int unique_id = -1;
+    stringstream ss;
+    string filename;
+
+    do {
+        ss.str("");
+        ss.clear();
+        unique_id++;
+        ss << name << "." << unique_id << "." << extension;
+        filename = ss.str();
+    } while (fileExists(filename));
+
+    return filename;
+}
+
+bool fileExists(const string path)
+{
+    ifstream ifile(path.c_str());
+
+    if(ifile) {
+        return true;
+    } else {
+        return false;
+    }
 }
