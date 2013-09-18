@@ -124,9 +124,6 @@ void CartesianCellDoubleMassWeightedAverage::coarsen(
                   }
 
                   carray[POLY2(j,k,cilo(0), cilo(1), (cihi(0)-cilo(0)+1))] = seM/(cmass_array[POLY2(j,k,cilo(0), cilo(1), (cihi(0) - cilo(0) + 1))]*Vc);
-
-//                  std::cout << "Updating energy coarse(" << j << "," << k << ") = " << carray[POLY2(j,k,cilo(0), cilo(1), (cihi(0)-cilo(0)+1))];
-
               }
           }
 

@@ -29,7 +29,8 @@ class LagrangianEulerianPatchStrategy:
          */
         enum ADVEC_DIR {
             X = 1,
-            Y = 2 };
+            Y = 2
+        };
 
         /**
          * Simple constructor to set the dimension of the problem.
@@ -296,8 +297,10 @@ class LagrangianEulerianPatchStrategy:
         boost::shared_ptr<hier::VariableContext> d_current_data_context;
         boost::shared_ptr<hier::VariableContext> d_scratch_data_context;
         boost::shared_ptr<hier::VariableContext> d_scratch_new_data_context;
+
     protected:
         int d_which_exchange;
 
 };
+
 #endif

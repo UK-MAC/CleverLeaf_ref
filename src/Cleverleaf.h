@@ -1,5 +1,5 @@
-#ifndef CLEVERLEAF_H 
-#define CLEVERLEAF_H 
+#ifndef included_Cleverleaf
+#define included_Cleverleaf
 
 #include "LagrangianEulerianPatchStrategy.h"
 #include "LagrangianEulerianLevelIntegrator.h"

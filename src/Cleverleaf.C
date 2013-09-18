@@ -559,9 +559,9 @@ void Cleverleaf::initializeDataOnPatch(
         boost::shared_ptr<tbox::Database> states_db = input_db->getDatabase("states");
         int nstates = states_db->getInteger("num_states");
 
-        for(int i = 0; i < nstates; i++) {
+        for(int state = 0; state < nstates; state++) {
             std::ostringstream state_stream;
-            state_stream << state_prefix << i;
+            state_stream << state_prefix << state;
 
             boost::shared_ptr<tbox::Database> current_state = states_db->getDatabase(state_stream.str());
 
@@ -580,7 +580,7 @@ void Cleverleaf::initializeDataOnPatch(
 
             if (state_geometry.compare("RECTANGLE") == 0) {
 
-                if (i != 0) {
+                if (state != 0) {
                     double* state_min = new double[2];
                     double* state_max = new double[2];
 
@@ -636,6 +636,8 @@ void Cleverleaf::initializeDataOnPatch(
                                     +(celly[n1]-y_center)*(celly[n1]-y_center));
 
                         if((float)cell_radius <= (float)state_radius) {
+
+
                             density(i,j) = state_density;
                             energy(i,j) = state_energy;
 

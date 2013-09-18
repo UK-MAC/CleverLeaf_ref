@@ -210,27 +210,29 @@ void LagrangianEulerianLevelIntegrator::initializeLevelData (
 
 //    } else {
 //
-    boost::shared_ptr<xfer::RefineSchedule> refine_sched;
+    if (!initial_time) {
+        boost::shared_ptr<xfer::RefineSchedule> refine_sched;
 
-    d_patch_strategy->setExchangeFlag(PRIME_CELLS_EXCH);
+        d_patch_strategy->setExchangeFlag(PRIME_CELLS_EXCH);
 
-    if ((level_number > 0) || old_level) {
-        level->allocatePatchData(d_var_scratch_data, init_data_time);
-        level->allocatePatchData(d_var_scratch_new_data, init_data_time);
+        if ((level_number > 0) || old_level) {
+            level->allocatePatchData(d_var_scratch_data, init_data_time);
+            level->allocatePatchData(d_var_scratch_new_data, init_data_time);
 
-        const boost::shared_ptr<hier::PatchHierarchy> patch_hierarchy(hierarchy);
+            const boost::shared_ptr<hier::PatchHierarchy> patch_hierarchy(hierarchy);
 
-        boost::shared_ptr<xfer::RefineSchedule> sched(
-                d_bdry_fill_prime_halos->createSchedule(level,
-                    old_level,
-                    level_number-1,
-                    hierarchy,
-                    d_patch_strategy));
+            boost::shared_ptr<xfer::RefineSchedule> sched(
+                    d_bdry_fill_prime_halos->createSchedule(level,
+                        old_level,
+                        level_number-1,
+                        hierarchy,
+                        d_patch_strategy));
 
-        sched->fillData(init_data_time);
-    } else {
-        refine_sched = d_bdry_fill_prime_halos->createSchedule(level, d_patch_strategy);
-        refine_sched->fillData(init_data_time);
+            sched->fillData(init_data_time);
+        } else {
+            refine_sched = d_bdry_fill_prime_halos->createSchedule(level, d_patch_strategy);
+            refine_sched->fillData(init_data_time);
+        }
     }
 
     //printFieldSummary(init_data_time, 0.04);

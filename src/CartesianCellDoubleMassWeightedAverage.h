@@ -1,5 +1,5 @@
-#ifndef CARTESIANCELLMASSVOLUMEWEIGHTEDAVERAGE_H
-#define CARTESIANCELLMASSVOLUMEWEIGHTEDAVERAGE_H
+#ifndef included_CartesianCellDoubleMassWeightedAverage
+#define included_CartesianCellDoubleMassWeightedAverage
 
 #include "SAMRAI/hier/CoarsenOperator.h"
 #include "SAMRAI/hier/Box.h"
