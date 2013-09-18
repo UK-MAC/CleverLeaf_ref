@@ -18,8 +18,8 @@
 #include "SAMRAI/tbox/PIO.h"
 
 // Normal headers
-#include <stdio.h>
-#include <stdlib.h>
+#include <iostream>
+#include <cstdlib>
 #include <string>
 #include <fstream>
 
@@ -28,18 +28,15 @@ using namespace SAMRAI;
 
 int main(int argc, char* argv[]) {
 
-    // Initialise MPI
     tbox::SAMRAI_MPI::init(&argc, &argv);
     tbox::SAMRAIManager::initialize();
     tbox::SAMRAIManager::startup();
 
     const tbox::SAMRAI_MPI& mpi(tbox::SAMRAI_MPI::getSAMRAIWorld());
 
-    // Everything wrapped in a block so that the SAMRAI pointers get deallocated properly.
     {
         string input_filename;
 
-        // Error check arguments
         if ((argc != 2)) {
             tbox::pout << "USAGE: " << argv[0] << " <input filename>"
                 << endl;
@@ -49,26 +46,15 @@ int main(int argc, char* argv[]) {
 
         tbox::plog << "input filename = " << input_filename << endl;
 
-        /*
-         * Create input database and parse input file.
-         */
-
         boost::shared_ptr<tbox::InputDatabase> input_db(new tbox::InputDatabase("input_db"));
         tbox::InputManager::getManager()->parseInputFile(input_filename, input_db);
 
-        /*
-         * Read in main data.
-         */
         boost::shared_ptr<tbox::Database> main_db = input_db->getDatabase("Cleverleaf");
 
         const tbox::Dimension dim(static_cast<unsigned short>(main_db->getInteger("dim")));
 
         int vis_dump_interval = main_db->getIntegerWithDefault("vis_dump_interval", 1);
         int field_summary_interval = main_db->getIntegerWithDefault("field_summary_interval", 10);
-
-        /*
-         * Setup log file.
-         */
 
         string log_filename = input_filename + ".log";
         log_filename = main_db->getStringWithDefault("log_filename", input_filename + ".log");
@@ -82,9 +68,6 @@ int main(int argc, char* argv[]) {
             tbox::PIO::logOnlyNodeZero(log_filename);
         }
 
-        /*
-         * Create data and algorithm objects.
-         */
         boost::shared_ptr<geom::CartesianGridGeometry> grid_geometry(
                 new geom::CartesianGridGeometry(dim,
                     "CartesianGeometry",
@@ -92,10 +75,6 @@ int main(int argc, char* argv[]) {
 
         boost::shared_ptr<hier::PatchHierarchy> patch_hierarchy(
                 new hier::PatchHierarchy("PatchHierarchy",
-                    /* 
-                     * Pass the grid geometry into the patch hierarchy, 
-                     * following the Strategy pattern.
-                     */
                     grid_geometry,
                     input_db->getDatabase("PatchHierarchy")));
 
@@ -115,10 +94,6 @@ int main(int argc, char* argv[]) {
         boost::shared_ptr<LagrangianEulerianLevelIntegrator> lagrangian_eulerian_level_integrator(
                 new LagrangianEulerianLevelIntegrator("LagrangianEulerianLevelIntegrator",
                     input_db->getDatabase("LagrangianEulerianLevelIntegrator"),
-                    /*
-                     * Pass the Cleverleaf model to the integrator,
-                     * again following the Strategy pattern.
-                     */
                     cleverleaf));
 
         boost::shared_ptr<mesh::StandardTagAndInitialize> error_detector(
@@ -158,13 +133,6 @@ int main(int argc, char* argv[]) {
                     lagrangian_eulerian_level_integrator,
                     gridding_algorithm));
 
-        /*
-         * All the SAMRAI components are now created!
-         */
-
-        /*
-         * Set up ViSiT writer here.
-         */
         boost::shared_ptr<appu::VisItDataWriter> visit_data_writer(
                 new appu::VisItDataWriter(dim,
                     "Cleverleaf VisIt Writer",
@@ -173,9 +141,6 @@ int main(int argc, char* argv[]) {
 
         cleverleaf->registerVisItDataWriter(visit_data_writer);
 
-        /*
-         * Initialise the hierarchy config and data on all patches
-         */
         double dt_now = lagrangian_eulerian_integrator->initializeHierarchy();
 
         if(vis_dump_interval > 0) {
@@ -184,11 +149,6 @@ int main(int argc, char* argv[]) {
                     0.0);
         }
 
-        /*
-         * After creating all objects and initializing their state, we
-         * print the input database and variable database contents
-         * to the log file.
-         */
         tbox::plog << "\nCheck input data and variables before simulation:"
             << endl;
         tbox::plog << "Input database..." << endl;
@@ -199,11 +159,6 @@ int main(int argc, char* argv[]) {
         double loop_time = lagrangian_eulerian_integrator->getIntegratorTime();
         double loop_time_end = lagrangian_eulerian_integrator->getEndTime();
 
-        /*
-         * MAIN LOOP
-         *
-         * Step count and integration time are maintained by algs::TimeRefinementIntegrator
-         */
         while ((loop_time < loop_time_end) &&
                 lagrangian_eulerian_integrator->stepsRemaining()) {
 
@@ -224,9 +179,6 @@ int main(int argc, char* argv[]) {
             tbox::pout << "Simulation time is " << loop_time << endl;
             tbox::pout << "++++++++++++++++++++++++++++++++++++++++++++" << endl;
 
-            /*
-             * Write out visualisation data
-             */
             if ((vis_dump_interval > 0)
                     && (iteration_num % vis_dump_interval) == 0) {
                 visit_data_writer->writePlotData(patch_hierarchy,
@@ -236,7 +188,6 @@ int main(int argc, char* argv[]) {
 
             if ((field_summary_interval > 0)
                     && (iteration_num % field_summary_interval) == 0) {
-                //lagrangian_eulerian_integrator->printFieldSummary(loop_time, iteration_num);
             }
         }
 
