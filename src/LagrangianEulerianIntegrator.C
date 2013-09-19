@@ -1,5 +1,15 @@
 #include "LagrangianEulerianIntegrator.h"
 
+tbox::StartupShutdownManager::Handler LagrangianEulerianIntegrator::s_initialize_handler(
+        LagrangianEulerianIntegrator::initializeCallback,
+        0,
+        0,
+        LagrangianEulerianIntegrator::finalizeCallback,
+        tbox::StartupShutdownManager::priorityTimers);
+
+boost::shared_ptr<tbox::Timer> LagrangianEulerianIntegrator::t_initialize_hierarchy;
+boost::shared_ptr<tbox::Timer> LagrangianEulerianIntegrator::t_advance_hierarchy;
+
 LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
         const boost::shared_ptr<tbox::Database>& input_db,
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
@@ -26,6 +36,8 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
 
 double LagrangianEulerianIntegrator::initializeHierarchy()
 {
+
+    t_initialize_hierarchy->start();
 
     d_level_integrator->initializeLevelIntegrator(d_gridding_algorithm);
 
@@ -58,6 +70,8 @@ double LagrangianEulerianIntegrator::initializeHierarchy()
 
     getMinHeirarchyDt(true);
 
+    t_initialize_hierarchy->stop();
+
     return d_dt;
 }
 
@@ -79,9 +93,6 @@ void LagrangianEulerianIntegrator::initializeLevelData(const int level_number)
               true,
               d_integrator_step,
               d_integrator_time,
-              /*
-               * TODO: check how this works!
-               */
               regrid_start_time);
 
       /*
@@ -103,158 +114,161 @@ void LagrangianEulerianIntegrator::initializeLevelData(const int level_number)
 
 double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
 {
-   int finest_level_number = d_patch_hierarchy->getFinestLevelNumber();
-   double dt_new = tbox::MathUtilities<double>::getMax();
+    t_advance_hierarchy->start();
 
-   int level_num;
+    int finest_level_number = d_patch_hierarchy->getFinestLevelNumber();
+    double dt_new = tbox::MathUtilities<double>::getMax();
 
-   for (level_num = 0; level_num <= finest_level_number; level_num++) {
-       boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
+    int level_num;
 
-       d_level_integrator->stampDataTime(patch_level, d_integrator_time);
-   }
+    for (level_num = 0; level_num <= finest_level_number; level_num++) {
+        boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
 
-   for (level_num = 0; level_num <= finest_level_number; level_num++) {
-       boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
+        d_level_integrator->stampDataTime(patch_level, d_integrator_time);
+    }
 
-       d_level_integrator->lagrangianPredictor(patch_level, dt);
-   }
+    for (level_num = 0; level_num <= finest_level_number; level_num++) {
+        boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
 
-   for (level_num = 0; level_num <= finest_level_number; level_num++) {
-      boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
+        d_level_integrator->lagrangianPredictor(patch_level, dt);
+    }
 
-     d_level_integrator->halfStepHaloExchange(patch_level,
-            d_patch_hierarchy,
-            d_integrator_time);
-   }
+    for (level_num = 0; level_num <= finest_level_number; level_num++) {
+        boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
 
-   for (level_num = 0; level_num <= finest_level_number; level_num++) {
-      boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
+        d_level_integrator->halfStepHaloExchange(patch_level,
+                d_patch_hierarchy,
+                d_integrator_time);
+    }
 
-     d_level_integrator->lagrangianCorrector(patch_level, dt);
-   }
+    for (level_num = 0; level_num <= finest_level_number; level_num++) {
+        boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
 
-   for (level_num = 0; level_num <= finest_level_number; level_num++) {
-      boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
+        d_level_integrator->lagrangianCorrector(patch_level, dt);
+    }
 
-     d_level_integrator->preCellHaloExchange(patch_level,
-            d_patch_hierarchy,
-            d_integrator_time);
-   }
+    for (level_num = 0; level_num <= finest_level_number; level_num++) {
+        boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
 
-   for (level_num = 0; level_num <= finest_level_number; level_num++) {
-      boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
+        d_level_integrator->preCellHaloExchange(patch_level,
+                d_patch_hierarchy,
+                d_integrator_time);
+    }
 
-     d_level_integrator->advecCellSweep1(patch_level);
-   }
+    for (level_num = 0; level_num <= finest_level_number; level_num++) {
+        boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
 
-   for (level_num = 0; level_num <= finest_level_number; level_num++) {
-      boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
+        d_level_integrator->advecCellSweep1(patch_level);
+    }
 
-     d_level_integrator->preMomSweep1HaloExchange(patch_level,
-            d_patch_hierarchy,
-            d_integrator_time);
-   }
+    for (level_num = 0; level_num <= finest_level_number; level_num++) {
+        boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
 
-   for (level_num = 0; level_num <= finest_level_number; level_num++) {
-      boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
+        d_level_integrator->preMomSweep1HaloExchange(patch_level,
+                d_patch_hierarchy,
+                d_integrator_time);
+    }
 
-     d_level_integrator->advecMomSweep1(patch_level);
-   }
+    for (level_num = 0; level_num <= finest_level_number; level_num++) {
+        boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
 
-   for (level_num = 0; level_num <= finest_level_number; level_num++) {
-      boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
+        d_level_integrator->advecMomSweep1(patch_level);
+    }
 
-     d_level_integrator->advecCellSweep2(patch_level);
-   }
+    for (level_num = 0; level_num <= finest_level_number; level_num++) {
+        boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
 
-   for (level_num = 0; level_num <= finest_level_number; level_num++) {
+        d_level_integrator->advecCellSweep2(patch_level);
+    }
 
-      boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
+    for (level_num = 0; level_num <= finest_level_number; level_num++) {
 
-     d_level_integrator->preMomSweep2HaloExchange(patch_level,
-            d_patch_hierarchy,
-            d_integrator_time);
-   }
+        boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
 
-   for (level_num = 0; level_num <= finest_level_number; level_num++) {
-      boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
+        d_level_integrator->preMomSweep2HaloExchange(patch_level,
+                d_patch_hierarchy,
+                d_integrator_time);
+    }
 
-     d_level_integrator->advecMomSweep2(patch_level);
-   }
+    for (level_num = 0; level_num <= finest_level_number; level_num++) {
+        boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
 
-   d_level_integrator->swapAdvecDir();
+        d_level_integrator->advecMomSweep2(patch_level);
+    }
 
-   for (level_num = 0; level_num <= finest_level_number; level_num++) {
-      boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
+    d_level_integrator->swapAdvecDir();
 
-     d_level_integrator->resetField(patch_level);
-   }
+    for (level_num = 0; level_num <= finest_level_number; level_num++) {
+        boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_num));
 
-   getMinHeirarchyDt(false);
+        d_level_integrator->resetField(patch_level);
+    }
 
-   d_integrator_time += dt;
-   d_integrator_step++;
+    getMinHeirarchyDt(false);
 
-   if ((d_integrator_time + d_dt) > d_end_time) {
-       d_dt = d_end_time - d_integrator_time;
-   }
+    d_integrator_time += dt;
+    d_integrator_step++;
 
-   int coarse_level_number = 0;
+    if ((d_integrator_time + d_dt) > d_end_time) {
+        d_dt = d_end_time - d_integrator_time;
+    }
 
-   if (finest_level_number > 0) {
-      d_level_integrator->standardLevelSynchronization(
-         d_patch_hierarchy,
-         0,
-         finest_level_number,
-         d_integrator_time,
-         d_integrator_time - dt);
-   }
+    int coarse_level_number = 0;
 
-   /*
-    * Are we ready to re-grid??
-    */
-   bool regrid_now = (d_integrator_step % d_regrid_interval == 0);
+    if (finest_level_number > 0) {
+        d_level_integrator->standardLevelSynchronization(
+                d_patch_hierarchy,
+                0,
+                finest_level_number,
+                d_integrator_time,
+                d_integrator_time - dt);
+    }
 
-   if (regrid_now) {
+    /*
+     * Are we ready to re-grid??
+     */
+    bool regrid_now = (d_integrator_step % d_regrid_interval == 0);
 
-      int max_levels = d_patch_hierarchy->getMaxNumberOfLevels();
-      d_tag_buffer.resize(max_levels);
-      for (int i = 0; i < d_tag_buffer.size(); i++) {
-          d_tag_buffer[i] = 2;
-      }
+    if (regrid_now) {
 
-      d_gridding_algorithm->
-      regridAllFinerLevels(
-         coarse_level_number,
-         d_tag_buffer,
-         d_integrator_step,
-         d_integrator_time);
+        int max_levels = d_patch_hierarchy->getMaxNumberOfLevels();
+        d_tag_buffer.resize(max_levels);
+        for (int i = 0; i < d_tag_buffer.size(); i++) {
+            d_tag_buffer[i] = 2;
+        }
 
-      /*
-       * Synchronize data on new levels.
-       */
-      if (d_patch_hierarchy->getFinestLevelNumber() > 0) {
+        d_gridding_algorithm->
+            regridAllFinerLevels(
+                    coarse_level_number,
+                    d_tag_buffer,
+                    d_integrator_step,
+                    d_integrator_time);
 
-         const bool initial_time = false;
+        /*
+         * Synchronize data on new levels.
+         */
+        if (d_patch_hierarchy->getFinestLevelNumber() > 0) {
 
-         d_level_integrator->synchronizeNewLevels(
-            d_patch_hierarchy,
-            coarse_level_number,
-            d_patch_hierarchy->getFinestLevelNumber(),
-            d_integrator_time,
-            initial_time);
-      }
-   }
+            const bool initial_time = false;
 
-   return d_dt;
+            d_level_integrator->synchronizeNewLevels(
+                    d_patch_hierarchy,
+                    coarse_level_number,
+                    d_patch_hierarchy->getFinestLevelNumber(),
+                    d_integrator_time,
+                    initial_time);
+        }
+    }
+
+    t_advance_hierarchy->stop();
+
+    return d_dt;
 }
 
 bool LagrangianEulerianIntegrator::stepsRemaining() const
 {
     return (d_end_step - d_integrator_step) > 0;
 }
-
 
 void LagrangianEulerianIntegrator::getMinHeirarchyDt(const bool initial_time)
 {
@@ -307,4 +321,18 @@ void LagrangianEulerianIntegrator::getMinHeirarchyDt(const bool initial_time)
        d_dt = tbox::MathUtilities<double>::Min(dt, (dt_old*d_grow_dt));
        d_dt = tbox::MathUtilities<double>::Min(d_dt, d_max_dt);
    }
+}
+
+void LagrangianEulerianIntegrator::initializeCallback()
+{
+    t_initialize_hierarchy = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianIntegrator::initializeHierarchy()");
+    t_advance_hierarchy = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianIntegrator::advanceHierarchy()");
+}
+
+void LagrangianEulerianIntegrator::finalizeCallback()
+{
+    t_initialize_hierarchy.reset();
+    t_advance_hierarchy.reset();
 }
