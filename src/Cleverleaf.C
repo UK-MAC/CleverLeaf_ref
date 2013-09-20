@@ -549,8 +549,8 @@ void Cleverleaf::initializeDataOnPatch(
         /*
          * Fill density and energy with some data, these are our initial conditions.
          */
-        v_energy->fillAll(1.0);
-        v_density->fillAll(1.0);
+        v_energy->fillAll(0.0);
+        v_density->fillAll(0.0);
         double* density = v_density->getPointer();
         double* energy = v_energy->getPointer();
         double* xvel0 = velocity->getPointer(0);

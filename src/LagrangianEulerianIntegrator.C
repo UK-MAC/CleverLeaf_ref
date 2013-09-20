@@ -64,10 +64,6 @@ double LagrangianEulerianIntegrator::initializeHierarchy()
                 true);
     }
 
-    /*
-     * TODO: calculate min hierarchy dt
-     */
-
     getMinHeirarchyDt(true);
 
     t_initialize_hierarchy->stop();

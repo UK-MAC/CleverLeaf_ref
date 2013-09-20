@@ -5,6 +5,8 @@
 #include "SAMRAI/tbox/MathUtilities.h"
 #include "SAMRAI/xfer/CoarsenSchedule.h"
 #include "SAMRAI/xfer/RefineSchedule.h"
+#include "SAMRAI/xfer/PatchLevelFillPattern.h"
+#include "SAMRAI/xfer/PatchLevelBorderFillPattern.h"
 
 #include <string>
 
@@ -225,36 +227,49 @@ void LagrangianEulerianLevelIntegrator::initializeLevelData (
                 initial_time);
     }
 
-//    } else {
-//
-    if (!initial_time) {
-        boost::shared_ptr<xfer::RefineSchedule> refine_sched;
 
-        d_patch_strategy->setExchangeFlag(PRIME_CELLS_EXCH);
+    d_patch_strategy->setExchangeFlag(PRIME_CELLS_EXCH);
 
+    if(initial_time) {
+        t_prime_halos_exchange_create->start();
+        refine_schedule = 
+            d_bdry_fill_prime_halos->createSchedule(level, d_patch_strategy);
+        t_prime_halos_exchange_create->stop();
+
+        t_prime_halos_exchange_fill->start();
+        refine_schedule->fillData(init_data_time);
+        t_prime_halos_exchange_fill->stop();
+    } else {
         if ((level_number > 0) || old_level) {
             level->allocatePatchData(d_var_scratch_data, init_data_time);
             level->allocatePatchData(d_var_scratch_new_data, init_data_time);
 
             const boost::shared_ptr<hier::PatchHierarchy> patch_hierarchy(hierarchy);
 
-            boost::shared_ptr<xfer::RefineSchedule> sched(
-                    d_bdry_fill_prime_halos->createSchedule(level,
+            t_prime_halos_exchange_create->start();
+            refine_schedule =
+                d_bdry_fill_prime_halos->createSchedule(
+                        level,
                         old_level,
                         level_number-1,
                         hierarchy,
-                        d_patch_strategy));
+                        d_patch_strategy);
+            t_prime_halos_exchange_create->stop();
 
-            sched->fillData(init_data_time);
+            t_prime_halos_exchange_fill->start();
+            refine_schedule->fillData(init_data_time);
+            t_prime_halos_exchange_fill->stop();
         } else {
-            refine_sched = d_bdry_fill_prime_halos->createSchedule(level, d_patch_strategy);
-            refine_sched->fillData(init_data_time);
+            t_prime_halos_exchange_create->start();
+            refine_schedule = 
+                d_bdry_fill_prime_halos->createSchedule(level, d_patch_strategy);
+            t_prime_halos_exchange_create->stop();
+
+            t_prime_halos_exchange_fill->start();
+            refine_schedule->fillData(init_data_time);
+            t_prime_halos_exchange_fill->stop();
         }
     }
-
-    //printFieldSummary(init_data_time, 0.04);
-
-
 }
 
 void LagrangianEulerianLevelIntegrator::resetHierarchyConfiguration (
