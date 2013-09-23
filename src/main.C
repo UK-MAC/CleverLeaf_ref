@@ -16,6 +16,7 @@
 #include "SAMRAI/appu/VisItDataWriter.h"
 #include "SAMRAI/tbox/InputManager.h"
 #include "SAMRAI/tbox/PIO.h"
+#include "SAMRAI/tbox/TimerManager.h"
 
 // Normal headers
 #include <iostream>
@@ -73,6 +74,10 @@ int main(int argc, char* argv[]) {
             tbox::PIO::logAllNodes(log_filename);
         } else {
             tbox::PIO::logOnlyNodeZero(log_filename);
+        }
+
+        if(input_db->isDatabase("TimerManager")) {
+            tbox::TimerManager::createManager(input_db->getDatabase("TimerManager"));
         }
 
         boost::shared_ptr<geom::CartesianGridGeometry> grid_geometry(
@@ -200,6 +205,8 @@ int main(int argc, char* argv[]) {
                     lagrangian_eulerian_integrator->getIntegratorStep() + 1,
                     loop_time);
         }
+
+        tbox::TimerManager::getManager()->print(tbox::plog);
 
         /*
          * Deallocate objects

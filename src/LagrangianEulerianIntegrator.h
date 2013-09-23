@@ -6,6 +6,8 @@
 #include "SAMRAI/mesh/GriddingAlgorithmStrategy.h"
 #include "SAMRAI/hier/PatchHierarchy.h"
 #include "SAMRAI/tbox/Database.h"
+#include "SAMRAI/tbox/Timer.h"
+#include "SAMRAI/tbox/StartupShutdownManager.h"
 
 #include "boost/shared_ptr.hpp"
 
@@ -85,6 +87,14 @@ class LagrangianEulerianIntegrator {
         boost::shared_ptr<hier::PatchHierarchy> d_patch_hierarchy;
         boost::shared_ptr<LagrangianEulerianLevelIntegrator> d_level_integrator;
         boost::shared_ptr<mesh::GriddingAlgorithmStrategy> d_gridding_algorithm;
+
+        static boost::shared_ptr<tbox::Timer> t_initialize_hierarchy;
+        static boost::shared_ptr<tbox::Timer> t_advance_hierarchy;
+
+        static void initializeCallback();
+        static void finalizeCallback();
+
+        static tbox::StartupShutdownManager::Handler s_initialize_handler;
 };
 
 #endif

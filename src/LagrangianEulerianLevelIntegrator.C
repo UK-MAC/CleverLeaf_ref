@@ -1,16 +1,48 @@
 #include "LagrangianEulerianLevelIntegrator.h"
 
-#include "SAMRAI/tbox/MathUtilities.h"
-#include "SAMRAI/hier/VariableDatabase.h"
 #include "SAMRAI/hier/Patch.h"
+#include "SAMRAI/hier/VariableDatabase.h"
+#include "SAMRAI/tbox/MathUtilities.h"
+#include "SAMRAI/xfer/CoarsenSchedule.h"
+#include "SAMRAI/xfer/RefineSchedule.h"
+#include "SAMRAI/xfer/PatchLevelFillPattern.h"
+#include "SAMRAI/xfer/PatchLevelBorderFillPattern.h"
 
 #include <string>
 
-#include "boost/current_function.hpp"
+tbox::StartupShutdownManager::Handler LagrangianEulerianLevelIntegrator::s_initialize_handler(
+        LagrangianEulerianLevelIntegrator::initializeCallback,
+        0,
+        0,
+        LagrangianEulerianLevelIntegrator::finalizeCallback,
+        tbox::StartupShutdownManager::priorityTimers);
 
-//#define PRINT_FLOW std::cerr << "IN: " << BOOST_CURRENT_FUNCTION << std::endl;
-//#define PRINT_FLOW std::cerr << "IN: " << __func__ << std::endl;
-#define PRINT_FLOW
+boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_synchronize_levels_create;
+boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_synchronize_levels_fill;
+
+boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_fill_new_levels_create;
+boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_fill_new_levels_fill;
+
+boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_half_step_exchange_create;
+boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_half_step_exchange_fill;
+
+boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_prime_halos_exchange_create;
+boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_prime_halos_exchange_fill;
+
+boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_pre_lagrange_exchange_create;
+boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_pre_lagrange_exchange_fill;
+
+boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_post_viscosity_exchange_create;
+boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_post_viscosity_exchange_fill;
+
+boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_pre_sweep1_cell_exchange_create;
+boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_pre_sweep1_cell_exchange_fill;
+
+boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_pre_sweep1_mom_exchange_create;
+boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_pre_sweep1_mom_exchange_fill;
+
+boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_pre_sweep2_mom_exchange_create;
+boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_pre_sweep2_mom_exchange_fill;
 
 LagrangianEulerianLevelIntegrator::LagrangianEulerianLevelIntegrator(
         const std::string& object_name,
@@ -18,8 +50,6 @@ LagrangianEulerianLevelIntegrator::LagrangianEulerianLevelIntegrator(
         LagrangianEulerianPatchStrategy* patch_strategy):
     d_dim(patch_strategy->getDim())
 {
-    PRINT_FLOW
-
     d_object_name = object_name;
 
     d_patch_strategy = patch_strategy;
@@ -74,33 +104,17 @@ LagrangianEulerianLevelIntegrator::~LagrangianEulerianLevelIntegrator()
 void LagrangianEulerianLevelIntegrator::initializeLevelIntegrator(
         const boost::shared_ptr<mesh::GriddingAlgorithmStrategy>& gridding_alg)
 {
-    PRINT_FLOW
-
     /*
      * Register model variables here.
      */
     d_patch_strategy->registerModelVariables(this);
 }
 
-/*
- *************************************************************************
- *
- * Invoke dt calculation routines in patch strategy and take a min
- * over all patches on the level.  The result will be the max of the
- * next timestep on the level. If the boolean recompute_dt is true,
- * the max timestep on the level will be computed.  If it is false,
- * the method will simply access the latest dt stored in the time
- * refinement integrator.
- *
- *************************************************************************
- */
-
 double LagrangianEulerianLevelIntegrator::getMaxFinerLevelDt(
         const int finer_level_number,
         const double coarse_dt,
         const hier::IntVector& ratio)
 {
-    PRINT_FLOW
 
     return coarse_dt / double(ratio.max());
 }
@@ -112,27 +126,30 @@ void LagrangianEulerianLevelIntegrator::standardLevelSynchronization(
         const double sync_time,
         const double old_time)
 {
-    PRINT_FLOW
+    boost::shared_ptr<xfer::CoarsenSchedule> coarsen_schedule;
 
     d_current_hierarchy = hierarchy;
 
     for (int fine_ln = finest_level; fine_ln > coarsest_level; fine_ln--) {
-       const int coarse_ln = fine_ln - 1;
+        const int coarse_ln = fine_ln - 1;
 
-       boost::shared_ptr<hier::PatchLevel> fine_level = hierarchy->getPatchLevel(fine_ln);
-       boost::shared_ptr<hier::PatchLevel> coarse_level = hierarchy->getPatchLevel(coarse_ln);
+        boost::shared_ptr<hier::PatchLevel> fine_level = hierarchy->getPatchLevel(fine_ln);
+        boost::shared_ptr<hier::PatchLevel> coarse_level = hierarchy->getPatchLevel(coarse_ln);
 
-       const boost::shared_ptr<hier::PatchHierarchy> patch_hierarchy = hierarchy;
+        const boost::shared_ptr<hier::PatchHierarchy> patch_hierarchy = hierarchy;
 
-      d_patch_strategy->setExchangeFlag(FIELD_EXCH);
- /*
-  * Sync
-  */
-       d_coarsen_field_data->createSchedule(
-               coarse_level,
-               fine_level)->coarsenData();
+        d_patch_strategy->setExchangeFlag(FIELD_EXCH);
 
+        t_synchronize_levels_create->start();
+        coarsen_schedule = 
+            d_coarsen_field_data->createSchedule(
+                    coarse_level,
+                    fine_level);
+        t_synchronize_levels_create->stop();
 
+        t_synchronize_levels_fill->start();
+        coarsen_schedule->coarsenData();
+        t_synchronize_levels_fill->stop();
     }
 }
 
@@ -143,7 +160,6 @@ void LagrangianEulerianLevelIntegrator::synchronizeNewLevels(
         const double sync_time,
         const bool initial_time)
 {
-    PRINT_FLOW
 
     d_current_hierarchy = hierarchy;
 }
@@ -157,13 +173,12 @@ void LagrangianEulerianLevelIntegrator::initializeLevelData (
         const boost::shared_ptr<hier::PatchLevel>& old_level,
         const bool allocate_data)
 {
-    PRINT_FLOW
-
     d_current_hierarchy = hierarchy;
 
     boost::shared_ptr<hier::PatchLevel> level(
             hierarchy->getPatchLevel(level_number));
 
+    boost::shared_ptr<xfer::RefineSchedule> refine_schedule;
 
     /* 
      * Allocate storage needed to initialize level and fill data
@@ -190,14 +205,18 @@ void LagrangianEulerianLevelIntegrator::initializeLevelData (
 
       const boost::shared_ptr<hier::PatchHierarchy> patch_hierarchy(hierarchy);
 
-      boost::shared_ptr<xfer::RefineSchedule> sched(
-         d_fill_new_level->createSchedule(level,
-            old_level,
-            level_number-1,
-            hierarchy,
-            d_patch_strategy));
+      t_fill_new_levels_create->start();
+      refine_schedule = 
+          d_fill_new_level->createSchedule(level,
+                  old_level,
+                  level_number-1,
+                  hierarchy,
+                  d_patch_strategy);
+      t_fill_new_levels_create->stop();
 
-      sched->fillData(init_data_time);
+      t_fill_new_levels_fill->start();
+      refine_schedule->fillData(init_data_time);
+      t_fill_new_levels_fill->stop();
    }
 
     for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
@@ -208,36 +227,49 @@ void LagrangianEulerianLevelIntegrator::initializeLevelData (
                 initial_time);
     }
 
-//    } else {
-//
-    if (!initial_time) {
-        boost::shared_ptr<xfer::RefineSchedule> refine_sched;
 
-        d_patch_strategy->setExchangeFlag(PRIME_CELLS_EXCH);
+    d_patch_strategy->setExchangeFlag(PRIME_CELLS_EXCH);
 
+    if(initial_time) {
+        t_prime_halos_exchange_create->start();
+        refine_schedule = 
+            d_bdry_fill_prime_halos->createSchedule(level, d_patch_strategy);
+        t_prime_halos_exchange_create->stop();
+
+        t_prime_halos_exchange_fill->start();
+        refine_schedule->fillData(init_data_time);
+        t_prime_halos_exchange_fill->stop();
+    } else {
         if ((level_number > 0) || old_level) {
             level->allocatePatchData(d_var_scratch_data, init_data_time);
             level->allocatePatchData(d_var_scratch_new_data, init_data_time);
 
             const boost::shared_ptr<hier::PatchHierarchy> patch_hierarchy(hierarchy);
 
-            boost::shared_ptr<xfer::RefineSchedule> sched(
-                    d_bdry_fill_prime_halos->createSchedule(level,
+            t_prime_halos_exchange_create->start();
+            refine_schedule =
+                d_bdry_fill_prime_halos->createSchedule(
+                        level,
                         old_level,
                         level_number-1,
                         hierarchy,
-                        d_patch_strategy));
+                        d_patch_strategy);
+            t_prime_halos_exchange_create->stop();
 
-            sched->fillData(init_data_time);
+            t_prime_halos_exchange_fill->start();
+            refine_schedule->fillData(init_data_time);
+            t_prime_halos_exchange_fill->stop();
         } else {
-            refine_sched = d_bdry_fill_prime_halos->createSchedule(level, d_patch_strategy);
-            refine_sched->fillData(init_data_time);
+            t_prime_halos_exchange_create->start();
+            refine_schedule = 
+                d_bdry_fill_prime_halos->createSchedule(level, d_patch_strategy);
+            t_prime_halos_exchange_create->stop();
+
+            t_prime_halos_exchange_fill->start();
+            refine_schedule->fillData(init_data_time);
+            t_prime_halos_exchange_fill->stop();
         }
     }
-
-    //printFieldSummary(init_data_time, 0.04);
-
-
 }
 
 void LagrangianEulerianLevelIntegrator::resetHierarchyConfiguration (
@@ -253,8 +285,6 @@ void LagrangianEulerianLevelIntegrator::applyGradientDetector (
         const bool initial_time,
         const bool uses_richardson_extrapolation_too)
 {
-    PRINT_FLOW
-
    boost::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(level_number));
 
    const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
@@ -276,10 +306,6 @@ void LagrangianEulerianLevelIntegrator::registerVariable(
         const hier::IntVector ghosts,
         const boost::shared_ptr<hier::BaseGridGeometry>& transfer_geom)
 {
-    PRINT_FLOW
-
-    //tbox::pout << "Registering variable: " << var->getName() << std::endl;
-
     const tbox::Dimension dim(ghosts.getDim());
 
     hier::VariableDatabase* variable_db = hier::VariableDatabase::getDatabase();
@@ -490,8 +516,6 @@ boost::shared_ptr<hier::VariableContext> LagrangianEulerianLevelIntegrator::getP
 void LagrangianEulerianLevelIntegrator::resetField(
    const boost::shared_ptr<hier::PatchLevel>& level)
 {
-    PRINT_FLOW
-
    for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ++ip) {
       boost::shared_ptr<hier::Patch> patch = *ip;
 
@@ -517,8 +541,6 @@ void LagrangianEulerianLevelIntegrator::resetField(
 void LagrangianEulerianLevelIntegrator::revert(
    const boost::shared_ptr<hier::PatchLevel>& level)
 {
-    PRINT_FLOW
-
    for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ++ip) {
       boost::shared_ptr<hier::Patch> patch = *ip;
 
@@ -544,8 +566,6 @@ void LagrangianEulerianLevelIntegrator::printFieldSummary(
         double time,
         int step)
 {
-    PRINT_FLOW
-
     boost::shared_ptr<hier::PatchLevel> level = d_current_hierarchy->getPatchLevel(0);
     const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
 
@@ -595,8 +615,6 @@ void LagrangianEulerianLevelIntegrator::lagrangianPredictor(
         const boost::shared_ptr<hier::PatchLevel>& level,
         const double dt)
 {
-    PRINT_FLOW
-
     for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
 
         boost::shared_ptr<hier::Patch>patch=*p;
@@ -617,29 +635,35 @@ void LagrangianEulerianLevelIntegrator::halfStepHaloExchange(
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time)
 {
-    PRINT_FLOW
+    boost::shared_ptr<xfer::RefineSchedule> refine_schedule;
 
     d_patch_strategy->setExchangeFlag(HALF_STEP_EXCH);
 
     level->allocatePatchData(d_var_scratch_data, current_time);
     level->allocatePatchData(d_var_scratch_new_data, current_time);
 
-    d_bdry_fill_half_step->createSchedule(
+    t_half_step_exchange_create->start();
+    refine_schedule = 
+        d_bdry_fill_half_step->createSchedule(
                 level,
                 level->getLevelNumber()-1,
                 hierarchy,
-                d_patch_strategy)->fillData(current_time);
+                d_patch_strategy);
+    t_half_step_exchange_create->stop();
+
+    t_half_step_exchange_fill->start();
+    refine_schedule->fillData(current_time);
+    t_half_step_exchange_fill->stop();
 
     level->deallocatePatchData(d_var_scratch_data);
     level->deallocatePatchData(d_var_scratch_new_data);
+
 }
 
 void LagrangianEulerianLevelIntegrator::lagrangianCorrector(
         const boost::shared_ptr<hier::PatchLevel>& level,
         const double dt)
 {   
-    PRINT_FLOW
-
     revert(level);
 
     for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
@@ -669,20 +693,25 @@ void LagrangianEulerianLevelIntegrator::preCellHaloExchange(
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time)
 {
-    PRINT_FLOW
+    boost::shared_ptr<xfer::RefineSchedule> refine_schedule;
 
     d_patch_strategy->setExchangeFlag(PRE_SWEEP_1_CELL_EXCH);
 
     level->allocatePatchData(d_var_scratch_data, current_time);
     level->allocatePatchData(d_var_scratch_new_data, current_time);
 
-    d_bdry_fill_pre_sweep1_cell->createSchedule(
+    t_pre_sweep1_cell_exchange_create->start();
+    refine_schedule = 
+        d_bdry_fill_pre_sweep1_cell->createSchedule(
                 level,
                 level->getLevelNumber()-1,
                 hierarchy,
-                d_patch_strategy)->fillData(current_time);
+                d_patch_strategy);
+    t_pre_sweep1_cell_exchange_create->stop();
 
-//    d_bdry_fill_pre_sweep1_cell->createSchedule(level, d_patch_strategy)->fillData(current_time);
+    t_pre_sweep1_cell_exchange_fill->start();
+    refine_schedule->fillData(current_time);
+    t_pre_sweep1_cell_exchange_fill->stop();
 
     level->deallocatePatchData(d_var_scratch_data);
     level->deallocatePatchData(d_var_scratch_new_data);
@@ -691,8 +720,6 @@ void LagrangianEulerianLevelIntegrator::preCellHaloExchange(
 void LagrangianEulerianLevelIntegrator::advecCellSweep1(
         const boost::shared_ptr<hier::PatchLevel>& level)
 {
-    PRINT_FLOW
-
     int sweep_number=1;
     LagrangianEulerianPatchStrategy::ADVEC_DIR direction;
 
@@ -712,31 +739,34 @@ void LagrangianEulerianLevelIntegrator::preMomSweep1HaloExchange(
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time)
 {
-    PRINT_FLOW
+    boost::shared_ptr<xfer::RefineSchedule> refine_schedule;
 
     d_patch_strategy->setExchangeFlag(PRE_SWEEP_1_MOM_EXCH);
 
     level->allocatePatchData(d_var_scratch_data, current_time);
     level->allocatePatchData(d_var_scratch_new_data, current_time);
 
-    d_bdry_fill_pre_sweep1_mom->createSchedule(
+    t_pre_sweep1_mom_exchange_create->start();
+    refine_schedule =
+        d_bdry_fill_pre_sweep1_mom->createSchedule(
                 level,
                 level->getLevelNumber()-1,
                 hierarchy,
-                d_patch_strategy)->fillData(current_time);
+                d_patch_strategy);
+    t_pre_sweep1_mom_exchange_create->stop();
 
-//  d_bdry_fill_pre_sweep1_mom->createSchedule(level, d_patch_strategy)->fillData(current_time);
+    t_pre_sweep1_mom_exchange_fill->start();
+    refine_schedule->fillData(current_time);
+    t_pre_sweep1_mom_exchange_fill->stop();
 
-  level->deallocatePatchData(d_var_scratch_data);
-  level->deallocatePatchData(d_var_scratch_new_data);
+    level->deallocatePatchData(d_var_scratch_data);
+    level->deallocatePatchData(d_var_scratch_new_data);
 }
 
 
 void LagrangianEulerianLevelIntegrator::advecMomSweep1(
         const boost::shared_ptr<hier::PatchLevel>& level)
 {
-    PRINT_FLOW
-
     int sweep_number=1;
     LagrangianEulerianPatchStrategy::ADVEC_DIR direction;
 
@@ -769,20 +799,25 @@ void LagrangianEulerianLevelIntegrator::preMomSweep2HaloExchange(
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time)
 {
-    PRINT_FLOW
+    boost::shared_ptr<xfer::RefineSchedule> refine_schedule;
 
     d_patch_strategy->setExchangeFlag(PRE_SWEEP_2_MOM_EXCH);
 
     level->allocatePatchData(d_var_scratch_data, current_time);
     level->allocatePatchData(d_var_scratch_new_data, current_time);
 
-    d_bdry_fill_pre_sweep2_mom->createSchedule(
+    t_pre_sweep2_mom_exchange_create->start();
+    refine_schedule =
+        d_bdry_fill_pre_sweep2_mom->createSchedule(
                 level,
                 level->getLevelNumber()-1,
                 hierarchy,
-                d_patch_strategy)->fillData(current_time);
+                d_patch_strategy);
+    t_pre_sweep2_mom_exchange_create->stop();
 
-//    d_bdry_fill_pre_sweep2_mom->createSchedule(level, d_patch_strategy)->fillData(current_time);
+    t_pre_sweep2_mom_exchange_fill->start();
+    refine_schedule->fillData(current_time);
+    t_pre_sweep2_mom_exchange_fill->stop();
 
     level->deallocatePatchData(d_var_scratch_data);
     level->deallocatePatchData(d_var_scratch_new_data);
@@ -791,8 +826,6 @@ void LagrangianEulerianLevelIntegrator::preMomSweep2HaloExchange(
 void LagrangianEulerianLevelIntegrator::advecCellSweep2(
         const boost::shared_ptr<hier::PatchLevel>& level)
 {
-    PRINT_FLOW
-
     int sweep_number=2;
     LagrangianEulerianPatchStrategy::ADVEC_DIR direction;
 
@@ -810,8 +843,6 @@ void LagrangianEulerianLevelIntegrator::advecCellSweep2(
 void LagrangianEulerianLevelIntegrator::advecMomSweep2(
         const boost::shared_ptr<hier::PatchLevel>& level)
 {
-    PRINT_FLOW
-
   int sweep_number=2;
   LagrangianEulerianPatchStrategy::ADVEC_DIR direction;
 
@@ -847,8 +878,6 @@ void LagrangianEulerianLevelIntegrator::swapAdvecDir()
 void LagrangianEulerianLevelIntegrator::timestepEoS(
         const boost::shared_ptr<hier::PatchLevel>& level)
 {
-    PRINT_FLOW
-
     for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ip++) {
         boost::shared_ptr<hier::Patch> patch = *ip;
 
@@ -861,18 +890,26 @@ void LagrangianEulerianLevelIntegrator::preLagrangeHaloExchange(
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time)
 {
-    PRINT_FLOW
+    boost::shared_ptr<xfer::RefineSchedule> refine_schedule;
 
     d_patch_strategy->setExchangeFlag(PRE_LAGRANGE_EXCH);
 
     level->allocatePatchData(d_var_scratch_data, current_time);
     level->allocatePatchData(d_var_scratch_new_data, current_time);
 
-    d_bdry_fill_pre_lagrange->createSchedule(
+
+    t_pre_lagrange_exchange_create->start();
+    refine_schedule = 
+        d_bdry_fill_pre_lagrange->createSchedule(
                 level,
                 level->getLevelNumber()-1,
                 hierarchy,
-                d_patch_strategy)->fillData(current_time);
+                d_patch_strategy);
+    t_pre_lagrange_exchange_create->stop();
+
+    t_pre_lagrange_exchange_fill->start();
+    refine_schedule->fillData(current_time);
+    t_pre_lagrange_exchange_fill->stop();
 
     level->deallocatePatchData(d_var_scratch_data);
     level->deallocatePatchData(d_var_scratch_new_data);
@@ -883,20 +920,25 @@ void LagrangianEulerianLevelIntegrator::primeBoundaryHaloExchange(
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time)
 {
-    PRINT_FLOW
+    boost::shared_ptr<xfer::RefineSchedule> refine_schedule;
 
     d_patch_strategy->setExchangeFlag(PRIME_CELLS_EXCH);
 
     level->allocatePatchData(d_var_scratch_data, current_time);
     level->allocatePatchData(d_var_scratch_new_data, current_time);
 
-    d_bdry_fill_prime_halos->createSchedule(
+    t_prime_halos_exchange_create->start();
+    refine_schedule = 
+        d_bdry_fill_prime_halos->createSchedule(
                 level,
                 level->getLevelNumber()-1,
                 hierarchy,
-                d_patch_strategy)->fillData(current_time);
+                d_patch_strategy);
+    t_prime_halos_exchange_create->stop();
 
-//    d_bdry_fill_prime_halos->createSchedule(level, d_patch_strategy)->fillData(current_time);
+    t_prime_halos_exchange_fill->start();
+    refine_schedule->fillData(current_time);
+    t_prime_halos_exchange_fill->stop();
 
     level->deallocatePatchData(d_var_scratch_data);
     level->deallocatePatchData(d_var_scratch_new_data);
@@ -905,8 +947,6 @@ void LagrangianEulerianLevelIntegrator::primeBoundaryHaloExchange(
 void LagrangianEulerianLevelIntegrator::viscosity(
         const boost::shared_ptr<hier::PatchLevel>& level)
 {
-    PRINT_FLOW
-
     for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ++ip) {
         boost::shared_ptr<hier::Patch> patch = *ip;
 
@@ -919,20 +959,25 @@ void LagrangianEulerianLevelIntegrator::postViscosityHaloExchange(
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time)
 {
-    PRINT_FLOW
+    boost::shared_ptr<xfer::RefineSchedule> refine_schedule;
 
     d_patch_strategy->setExchangeFlag(POST_VISCOSITY_EXCH);
 
     level->allocatePatchData(d_var_scratch_data, current_time);
     level->allocatePatchData(d_var_scratch_new_data, current_time);
 
-    d_bdry_fill_post_viscosity->createSchedule(
+    t_post_viscosity_exchange_create->start();
+    refine_schedule = 
+        d_bdry_fill_post_viscosity->createSchedule(
                 level,
                 level->getLevelNumber()-1,
                 hierarchy,
-                d_patch_strategy)->fillData(current_time);
+                d_patch_strategy);
+    t_post_viscosity_exchange_create->stop();
 
-//    d_bdry_fill_post_viscosity->createSchedule(level, d_patch_strategy)->fillData(current_time);
+    t_post_viscosity_exchange_fill->start();
+    refine_schedule->fillData(current_time);
+    t_post_viscosity_exchange_fill->stop();
 
     level->deallocatePatchData(d_var_scratch_data);
     level->deallocatePatchData(d_var_scratch_new_data);
@@ -941,8 +986,6 @@ void LagrangianEulerianLevelIntegrator::postViscosityHaloExchange(
 double LagrangianEulerianLevelIntegrator::calcDt(
         const boost::shared_ptr<hier::PatchLevel>& level)
 {
-    PRINT_FLOW
-
     double dt = tbox::MathUtilities<double>::getMax();
     double patch_dt;
 
@@ -966,8 +1009,6 @@ void LagrangianEulerianLevelIntegrator::stampDataTime(
         const boost::shared_ptr<hier::PatchLevel>& level,
         const double current_time)
 {
-    PRINT_FLOW
-
     level->allocatePatchData(d_var_cur_data, current_time);
     level->allocatePatchData(d_var_new_data, current_time);
 }
@@ -980,4 +1021,83 @@ void LagrangianEulerianLevelIntegrator::debugLevel(
 
         d_patch_strategy->debug_knl(*patch);
     }
+}
+
+void LagrangianEulerianLevelIntegrator::initializeCallback()
+{
+    t_synchronize_levels_create = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianLevelIntegrator::t_synchronize_levels_create");
+    t_synchronize_levels_fill = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianLevelIntegrator::t_synchronize_levels_fill");
+
+    t_fill_new_levels_create = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianLevelIntegrator::t_fill_new_levels_create");
+    t_fill_new_levels_fill = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianLevelIntegrator::t_fill_new_levels_fill");
+
+    t_half_step_exchange_create = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianLevelIntegrator::t_half_step_exchange_create");
+    t_half_step_exchange_fill = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianLevelIntegrator::t_half_step_exchange_fill");
+
+    t_prime_halos_exchange_create = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianLevelIntegrator::t_prime_halos_exchange_create");
+    t_prime_halos_exchange_fill = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianLevelIntegrator::t_prime_halos_exchange_fill");
+
+    t_pre_lagrange_exchange_create = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianLevelIntegrator::t_pre_lagrange_exchange_create");
+    t_pre_lagrange_exchange_fill = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianLevelIntegrator::t_pre_lagrange_exchange_fill");
+
+    t_post_viscosity_exchange_create = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianLevelIntegrator::t_post_viscosity_exchange_create");
+    t_post_viscosity_exchange_fill = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianLevelIntegrator::t_post_viscosity_exchange_fill");
+
+    t_pre_sweep1_cell_exchange_create = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianLevelIntegrator::t_pre_sweep1_cell_exchange_create");
+    t_pre_sweep1_cell_exchange_fill = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianLevelIntegrator::t_pre_sweep1_cell_exchange_fill");
+
+    t_pre_sweep1_mom_exchange_create = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianLevelIntegrator::t_pre_sweep1_mom_exchange_create");
+    t_pre_sweep1_mom_exchange_fill = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianLevelIntegrator::t_pre_sweep1_mom_exchange_fill");
+
+    t_pre_sweep2_mom_exchange_create = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianLevelIntegrator::t_pre_sweep2_mom_exchange_create");
+    t_pre_sweep2_mom_exchange_fill = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianLevelIntegrator::t_pre_sweep2_mom_exchange_fill");
+
+}
+
+void LagrangianEulerianLevelIntegrator::finalizeCallback()
+{
+    t_synchronize_levels_create.reset();
+    t_synchronize_levels_fill.reset();
+
+    t_fill_new_levels_create.reset();
+    t_fill_new_levels_fill.reset();
+
+    t_half_step_exchange_create.reset();
+    t_half_step_exchange_fill.reset();
+
+    t_prime_halos_exchange_create.reset();
+    t_prime_halos_exchange_fill.reset();
+
+    t_pre_lagrange_exchange_create.reset();
+    t_pre_lagrange_exchange_fill.reset();
+
+    t_post_viscosity_exchange_create.reset();
+    t_post_viscosity_exchange_fill.reset();
+
+    t_pre_sweep1_cell_exchange_create.reset();
+    t_pre_sweep1_cell_exchange_fill.reset();
+
+    t_pre_sweep1_mom_exchange_create.reset();
+    t_pre_sweep1_mom_exchange_fill.reset();
+
+    t_pre_sweep2_mom_exchange_create.reset();
+    t_pre_sweep2_mom_exchange_fill.reset();
 }

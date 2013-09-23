@@ -12,6 +12,8 @@
 #include "SAMRAI/xfer/RefineAlgorithm.h"
 #include "SAMRAI/xfer/CoarsenAlgorithm.h"
 #include "SAMRAI/hier/BaseGridGeometry.h"
+#include "SAMRAI/tbox/Timer.h"
+#include "SAMRAI/tbox/StartupShutdownManager.h"
 
 #include <string>
 #include <list>
@@ -353,6 +355,39 @@ class LagrangianEulerianLevelIntegrator:
         bool advect_x;
 
         boost::shared_ptr<hier::PatchHierarchy> d_current_hierarchy;
+
+        static boost::shared_ptr<tbox::Timer> t_synchronize_levels_create;
+        static boost::shared_ptr<tbox::Timer> t_synchronize_levels_fill;
+
+        static boost::shared_ptr<tbox::Timer> t_fill_new_levels_create;
+        static boost::shared_ptr<tbox::Timer> t_fill_new_levels_fill;
+
+        static boost::shared_ptr<tbox::Timer> t_half_step_exchange_create;
+        static boost::shared_ptr<tbox::Timer> t_half_step_exchange_fill;
+
+        static boost::shared_ptr<tbox::Timer> t_prime_halos_exchange_create;
+        static boost::shared_ptr<tbox::Timer> t_prime_halos_exchange_fill;
+
+        static boost::shared_ptr<tbox::Timer> t_pre_lagrange_exchange_create;
+        static boost::shared_ptr<tbox::Timer> t_pre_lagrange_exchange_fill;
+
+        static boost::shared_ptr<tbox::Timer> t_post_viscosity_exchange_create;
+        static boost::shared_ptr<tbox::Timer> t_post_viscosity_exchange_fill;
+
+        static boost::shared_ptr<tbox::Timer> t_pre_sweep1_cell_exchange_create;
+        static boost::shared_ptr<tbox::Timer> t_pre_sweep1_cell_exchange_fill;
+
+        static boost::shared_ptr<tbox::Timer> t_pre_sweep1_mom_exchange_create;
+        static boost::shared_ptr<tbox::Timer> t_pre_sweep1_mom_exchange_fill;
+
+        static boost::shared_ptr<tbox::Timer> t_pre_sweep2_mom_exchange_create;
+        static boost::shared_ptr<tbox::Timer> t_pre_sweep2_mom_exchange_fill;
+
+
+        static void initializeCallback();
+        static void finalizeCallback();
+
+        static tbox::StartupShutdownManager::Handler s_initialize_handler;
 };
 
 #endif
