@@ -222,8 +222,6 @@ int main(int argc, char* argv[]) {
 
 string getFilenameFromPath(const string path)
 {
-    std::cout << "path: " << path << std::endl;
-
     size_t start = path.find_last_of("/");
     start += 1;
 
@@ -236,8 +234,6 @@ string getFilenameFromPath(const string path)
         end = path.length();
 
     size_t count = end - start;
-
-    std::cout << "start, end, count: " << start << ", " << end << ", " << count << std::endl;
 
     return path.substr(start, count);
 }
