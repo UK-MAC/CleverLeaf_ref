@@ -391,6 +391,8 @@ class LagrangianEulerianLevelIntegrator:
         static boost::shared_ptr<tbox::Timer> t_pre_sweep2_mom_exchange_create;
         static boost::shared_ptr<tbox::Timer> t_pre_sweep2_mom_exchange_fill;
 
+        static boost::shared_ptr<tbox::Timer> t_tag_gradient_detector_cells;
+
 
         static void initializeCallback();
         static void finalizeCallback();

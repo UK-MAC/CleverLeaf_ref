@@ -44,6 +44,8 @@ boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_pre_sweep1_m
 boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_pre_sweep2_mom_exchange_create;
 boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_pre_sweep2_mom_exchange_fill;
 
+boost::shared_ptr<tbox::Timer> LagrangianEulerianLevelIntegrator::t_tag_gradient_detector_cells;
+
 LagrangianEulerianLevelIntegrator::LagrangianEulerianLevelIntegrator(
         const std::string& object_name,
         const boost::shared_ptr<tbox::Database>& input_db,
@@ -368,6 +370,8 @@ void LagrangianEulerianLevelIntegrator::applyGradientDetector (
 
    const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
 
+   t_tag_gradient_detector_cells->start();
+
     for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ++ip) {
       boost::shared_ptr<hier::Patch> patch(*ip);
       d_patch_strategy->
@@ -376,6 +380,8 @@ void LagrangianEulerianLevelIntegrator::applyGradientDetector (
          initial_time,
          tag_index);
    }
+
+   t_tag_gradient_detector_cells->stop();
 }
 
 void LagrangianEulerianLevelIntegrator::registerVariable(
@@ -1070,6 +1076,8 @@ void LagrangianEulerianLevelIntegrator::initializeCallback()
     t_pre_sweep2_mom_exchange_fill = tbox::TimerManager::getManager()->
         getTimer("LagrangianEulerianLevelIntegrator::t_pre_sweep2_mom_exchange_fill");
 
+    t_tag_gradient_detector_cells = tbox::TimerManager::getManager()->
+        getTimer("LagrangianEulerianLevelIntegrator::t_tag_gradient_detector_cells");
 }
 
 void LagrangianEulerianLevelIntegrator::finalizeCallback()
@@ -1100,4 +1108,6 @@ void LagrangianEulerianLevelIntegrator::finalizeCallback()
 
     t_pre_sweep2_mom_exchange_create.reset();
     t_pre_sweep2_mom_exchange_fill.reset();
+
+    t_tag_gradient_detector_cells.reset();
 }
