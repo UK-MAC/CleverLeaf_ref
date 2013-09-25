@@ -8,9 +8,18 @@
 
 #define POLY2(i, j, imin, jmin, nx) ((i - imin) + (j - jmin) * (nx))
 
+tbox::StartupShutdownManager::Handler CartesianCellDoubleVolumeWeightedAverage::s_initialize_handler(
+        CartesianCellDoubleVolumeWeightedAverage::initializeCallback,
+        0,
+        0,
+        CartesianCellDoubleVolumeWeightedAverage::finalizeCallback,
+        tbox::StartupShutdownManager::priorityTimers);
+
+boost::shared_ptr<tbox::Timer> CartesianCellDoubleVolumeWeightedAverage::t_coarsen;
+
 CartesianCellDoubleVolumeWeightedAverage::CartesianCellDoubleVolumeWeightedAverage(
-   const tbox::Dimension& dim):
-   hier::CoarsenOperator("VOLUME_WEIGHTED_COARSEN")
+        const tbox::Dimension& dim):
+    hier::CoarsenOperator("VOLUME_WEIGHTED_COARSEN")
 {
 }
 
@@ -19,94 +28,110 @@ CartesianCellDoubleVolumeWeightedAverage::~CartesianCellDoubleVolumeWeightedAver
 }
 
 bool CartesianCellDoubleVolumeWeightedAverage::findCoarsenOperator(
-   const boost::shared_ptr<SAMRAI::hier::Variable>& var,
-   const std::string& op_name) const
+        const boost::shared_ptr<SAMRAI::hier::Variable>& var,
+        const std::string& op_name) const
 {
-   const boost::shared_ptr<pdat::CellVariable<double> > cast_var(var, boost::detail::dynamic_cast_tag());
+    const boost::shared_ptr<pdat::CellVariable<double> > cast_var(var, boost::detail::dynamic_cast_tag());
 
-   if (cast_var && (op_name == getOperatorName())) {
-      return true;
-   } else {
-      return false;
-   }
+    if (cast_var && (op_name == getOperatorName())) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 int CartesianCellDoubleVolumeWeightedAverage::getOperatorPriority() const
 {
-   return 1;
+    return 1;
 }
 
 hier::IntVector
 CartesianCellDoubleVolumeWeightedAverage::getStencilWidth( const tbox::Dimension &dim ) const {
-   return hier::IntVector::getZero(dim);
+    return hier::IntVector::getZero(dim);
 }
 
 void CartesianCellDoubleVolumeWeightedAverage::coarsen(
-   hier::Patch& coarse,
-   const hier::Patch& fine,
-   const int dst_component,
-   const int src_component,
-   const hier::Box& coarse_box,
-   const hier::IntVector& ratio) const
+        hier::Patch& coarse,
+        const hier::Patch& fine,
+        const int dst_component,
+        const int src_component,
+        const hier::Box& coarse_box,
+        const hier::IntVector& ratio) const
 {
-   const tbox::Dimension& dim(fine.getDim());
 
-   boost::shared_ptr<pdat::CellData<double> > fdata(fine.getPatchData(src_component), boost::detail::dynamic_cast_tag());
-   boost::shared_ptr<pdat::CellData<double> > cdata(coarse.getPatchData(dst_component), boost::detail::dynamic_cast_tag());
+    t_coarsen->start();
 
-   const hier::Index filo = fdata->getGhostBox().lower();
-   const hier::Index fihi = fdata->getGhostBox().upper();
-   const hier::Index cilo = cdata->getGhostBox().lower();
-   const hier::Index cihi = cdata->getGhostBox().upper();
+    const tbox::Dimension& dim(fine.getDim());
 
-   const boost::shared_ptr<geom::CartesianPatchGeometry> fgeom(fine.getPatchGeometry(), boost::detail::dynamic_cast_tag());
-   const boost::shared_ptr<geom::CartesianPatchGeometry> cgeom(coarse.getPatchGeometry(), boost::detail::dynamic_cast_tag());
+    boost::shared_ptr<pdat::CellData<double> > fdata(fine.getPatchData(src_component), boost::detail::dynamic_cast_tag());
+    boost::shared_ptr<pdat::CellData<double> > cdata(coarse.getPatchData(dst_component), boost::detail::dynamic_cast_tag());
 
-   const hier::Index ifirstc = coarse_box.lower();
-   const hier::Index ilastc = coarse_box.upper();
+    const hier::Index filo = fdata->getGhostBox().lower();
+    const hier::Index fihi = fdata->getGhostBox().upper();
+    const hier::Index cilo = cdata->getGhostBox().lower();
+    const hier::Index cihi = cdata->getGhostBox().upper();
 
-   const double* fdx = fgeom->getDx();
-   const double* cdx = cgeom->getDx();
+    const boost::shared_ptr<geom::CartesianPatchGeometry> fgeom(fine.getPatchGeometry(), boost::detail::dynamic_cast_tag());
+    const boost::shared_ptr<geom::CartesianPatchGeometry> cgeom(coarse.getPatchGeometry(), boost::detail::dynamic_cast_tag());
 
-   for (int d = 0; d < cdata->getDepth(); d++) {
+    const hier::Index ifirstc = coarse_box.lower();
+    const hier::Index ilastc = coarse_box.upper();
 
-       double* farray = fdata->getPointer(d);
-       double* carray = cdata->getPointer(d);
+    const double* fdx = fgeom->getDx();
+    const double* cdx = cgeom->getDx();
 
-      if ((dim == tbox::Dimension(2))) {
+    for (int d = 0; d < cdata->getDepth(); d++) {
 
-          /*
-           * cell volumes:
-           */
-          double Vf = fdx[0]*fdx[1];
-          double Vc = cdx[0]*cdx[1];
+        double* farray = fdata->getPointer(d);
+        double* carray = cdata->getPointer(d);
 
-          for(int k = ifirstc(1); k <= ilastc(1); k++) {
-              for(int j = ifirstc(0); j <= ilastc(0); j++) {
+        if ((dim == tbox::Dimension(2))) {
 
-                  /* Sigma pv */
-                  double spv = 0.0;
+            /*
+             * cell volumes:
+             */
+            double Vf = fdx[0]*fdx[1];
+            double Vc = cdx[0]*cdx[1];
 
-                  for(int ry = 0; ry < ratio[1]; ry++) {
-                      int kfine = k*ratio[1]+ry;
+            for(int k = ifirstc(1); k <= ilastc(1); k++) {
+                for(int j = ifirstc(0); j <= ilastc(0); j++) {
 
-                      for(int rx = 0; rx < ratio[0]; rx++) {
-                          int jfine = j*ratio[0]+rx;
+                    /* Sigma pv */
+                    double spv = 0.0;
 
- //                         std::cout << "jf,ky = " << jfine << "," << kfine << std::endl;
-                          spv += farray[POLY2(jfine,kfine,filo(0), filo(1), (fihi(0)-filo(0)+1))]*Vf;
-                      }
-                  }
+                    for(int ry = 0; ry < ratio[1]; ry++) {
+                        int kfine = k*ratio[1]+ry;
 
-                  carray[POLY2(j,k,cilo(0), cilo(1), (cihi(0)-cilo(0)+1))] = spv/Vc;
-//                  std::cout << "Updating coarse(" << j << "," << k << ") = " << carray[POLY2(j,k,cilo(0), cilo(1), (cihi(0)-cilo(0)+1))];
+                        for(int rx = 0; rx < ratio[0]; rx++) {
+                            int jfine = j*ratio[0]+rx;
 
-              }
-          }
+                            //                         std::cout << "jf,ky = " << jfine << "," << kfine << std::endl;
+                            spv += farray[POLY2(jfine,kfine,filo(0), filo(1), (fihi(0)-filo(0)+1))]*Vf;
+                        }
+                    }
 
-      } else {
-         TBOX_ERROR("CartesianCellDoubleVolumeWeightedAverage error...\n"
-            << "dim != 2 not supported." << std::endl);
-      }
-   }
+                    carray[POLY2(j,k,cilo(0), cilo(1), (cihi(0)-cilo(0)+1))] = spv/Vc;
+                    //                  std::cout << "Updating coarse(" << j << "," << k << ") = " << carray[POLY2(j,k,cilo(0), cilo(1), (cihi(0)-cilo(0)+1))];
+
+                }
+            }
+
+        } else {
+            TBOX_ERROR("CartesianCellDoubleVolumeWeightedAverage error...\n"
+                    << "dim != 2 not supported." << std::endl);
+        }
+    }
+
+    t_coarsen->stop();
+}
+
+void CartesianCellDoubleVolumeWeightedAverage::initializeCallback()
+{
+    t_coarsen = tbox::TimerManager::getManager()->
+        getTimer("CartesianCellDoubleVolumeWeightedAverage::t_coarsen");
+}
+
+void CartesianCellDoubleVolumeWeightedAverage::finalizeCallback()
+{
+    t_coarsen.reset();
 }
