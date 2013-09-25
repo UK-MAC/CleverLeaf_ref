@@ -348,6 +348,14 @@ class LagrangianEulerianLevelIntegrator:
         boost::shared_ptr<xfer::RefineAlgorithm> d_fill_new_level;
         boost::shared_ptr<xfer::CoarsenAlgorithm> d_coarsen_field_data;
 
+        std::vector<boost::shared_ptr<xfer::RefineSchedule> > d_half_step_schedules;
+        std::vector<boost::shared_ptr<xfer::RefineSchedule> > d_prime_halos_schedules;
+        std::vector<boost::shared_ptr<xfer::RefineSchedule> > d_pre_lagrange_schedules;
+        std::vector<boost::shared_ptr<xfer::RefineSchedule> > d_post_viscosity_schedules;
+        std::vector<boost::shared_ptr<xfer::RefineSchedule> > d_pre_sweep1_cell_schedules;
+        std::vector<boost::shared_ptr<xfer::RefineSchedule> > d_pre_sweep1_mom_schedules;
+        std::vector<boost::shared_ptr<xfer::RefineSchedule> > d_pre_sweep2_mom_schedules;
+
         /**
          * @}
          */
