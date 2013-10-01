@@ -1,4 +1,5 @@
 GIT_VERSION := $(shell git rev-parse --short HEAD)
+HOST_NAME := $(shell uname -n)
 
 HDF_DIR=/home/dab/opt/hdf5/1.8.11/intel-13.1.1.163/impi-4.1.0.24
 HDF_INC=-I$(HDF_DIR)/include
@@ -17,7 +18,7 @@ MATH_LIB=-L$(LAPACK_DIR)/lib -llapack -lblas
 CXX=mpiicpc
 F90=mpiifort
 
-CPPFLAGS=-g -O3 -fp-model source -fp-model strict -prec-div -prec-sqrt -lz -I/home/dab/opt/boost/1.52.0/intel-13.1.1.163/include $(HDF_INC) $(SAMRAI_INC) $(MATH_INC) -DVERSION=\"$(GIT_VERSION)\"
+CPPFLAGS=-g -O3 -fp-model source -fp-model strict -prec-div -prec-sqrt -lz -I/home/dab/opt/boost/1.52.0/intel-13.1.1.163/include $(HDF_INC) $(SAMRAI_INC) $(MATH_INC) -DVERSION=\"$(GIT_VERSION)\" -DHOST_NAME=\"$(HOST_NAME)\"
 FFLAGS=-openmp -g -warn all -O3 -fp-model strict -fp-model source -prec-div -prec-sqrt -module obj/
 LDFLAGS=-openmp -g -lz $(SAMRAI_LIB) $(HDF_LIB) $(MATH_LIB) -lstdc++ -nofor_main
 

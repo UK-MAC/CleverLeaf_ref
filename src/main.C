@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
             input_path = argv[1];
         }
 
-        tbox::pout << "CleverLeaf version: " << VERSION << std::endl;
+        tbox::pout << "CleverLeaf version #" << VERSION << " compiled on " << HOST_NAME << std::endl;
 
         tbox::plog << "Reading input from: " << input_path << endl;
 
