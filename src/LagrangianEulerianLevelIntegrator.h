@@ -393,11 +393,21 @@ class LagrangianEulerianLevelIntegrator:
 
         static boost::shared_ptr<tbox::Timer> t_tag_gradient_detector_cells;
 
+        static boost::shared_ptr<tbox::Timer> t_kernel_pdv;
+        static boost::shared_ptr<tbox::Timer> t_kernel_ideal_gas;
+        static boost::shared_ptr<tbox::Timer> t_kernel_revert;
+        static boost::shared_ptr<tbox::Timer> t_kernel_reset;
+        static boost::shared_ptr<tbox::Timer> t_kernel_accelerate;
+        static boost::shared_ptr<tbox::Timer> t_kernel_flux_calc;
+        static boost::shared_ptr<tbox::Timer> t_kernel_advec_cell;
+        static boost::shared_ptr<tbox::Timer> t_kernel_advec_mom;
+        static boost::shared_ptr<tbox::Timer> t_kernel_viscosity;
+        static boost::shared_ptr<tbox::Timer> t_kernel_calc_dt;
+        static boost::shared_ptr<tbox::Timer> t_kernel_initialize_data;
 
         static void initializeCallback();
         static void finalizeCallback();
 
         static tbox::StartupShutdownManager::Handler s_initialize_handler;
 };
-
 #endif
