@@ -1,19 +1,21 @@
-!Crown Copyright 2012 AWE.
-!
-! This file is part of CloverLeaf.
-!
-! CloverLeaf is free software: you can redistribute it and/or modify it under 
+! 
+! Crown Copyright 2012 AWE, Copyright 2013 David Beckingsale.
+! 
+! This file is part of CleverLeaf.
+! 
+! CleverLeaf is free software: you can redistribute it and/or modify it under 
 ! the terms of the GNU General Public License as published by the 
 ! Free Software Foundation, either version 3 of the License, or (at your option) 
 ! any later version.
-!
-! CloverLeaf is distributed in the hope that it will be useful, but 
+! 
+! CleverLeaf is distributed in the hope that it will be useful, but 
 ! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
 ! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
 ! details.
-!
+! 
 ! You should have received a copy of the GNU General Public License along with 
-! CloverLeaf. If not, see http://www.gnu.org/licenses/.
+! CleverLeaf. If not, see http://www.gnu.org/licenses/.
+!  
 
 !>  @brief Fortran cell advection kernel.
 !>  @author Wayne Gaudin
