@@ -1,5 +1,5 @@
 ! 
-! Copyright 2013 David Beckingsale.
+! Crown Copyright 2912 AWE, Copyright 2013 David Beckingsale.
 ! 
 ! This file is part of CleverLeaf.
 ! 
@@ -18,7 +18,7 @@
 !  
 
 !>  @brief Fortran kernel to update the external halo cells in a chunk.
-!>  @author Wayne Gaudin
+!>  @author Wayne Gaudin, David Beckingsale
 !>  @details Updates halo cells for the required fields at the required depth
 !>  for any halo cells that lie on an external boundary. The location and type
 !>  of data governs how this is carried out. External boundaries are always

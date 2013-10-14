@@ -1,5 +1,5 @@
 ! 
-! Copyright 2013 David Beckingsale.
+! Crown Copyright 2012 AWE, Copyright 2013 David Beckingsale.
 ! 
 ! This file is part of CleverLeaf.
 ! 
