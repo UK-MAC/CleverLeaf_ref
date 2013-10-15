@@ -829,16 +829,6 @@ void Cleverleaf::initializeDataOnPatch(
         }
     }
 
-    int level_number = patch.getPatchLevelNumber();
-
-    boost::shared_ptr<pdat::CellData<int> > level_indicator(patch.getPatchData(
-                d_level_indicator,
-                getCurrentDataContext()),
-            boost::detail::dynamic_cast_tag());
-
-    level_indicator->fillAll(level_number);
-
-
     ideal_gas_knl(patch, false);
 }
 

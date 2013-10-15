@@ -7,6 +7,7 @@
 #include "SAMRAI/xfer/RefineSchedule.h"
 #include "SAMRAI/xfer/PatchLevelFillPattern.h"
 #include "SAMRAI/xfer/PatchLevelBorderFillPattern.h"
+#include "SAMRAI/pdat/CellData.h"
 
 #include <string>
 
@@ -392,23 +393,44 @@ void LagrangianEulerianLevelIntegrator::resetHierarchyConfiguration (
     }
 
     boost::shared_ptr<xfer::CoarsenSchedule> coarsen_schedule;
+    hier::VariableDatabase* variable_db = hier::VariableDatabase::getDatabase();
 
-    for (int fine_ln = finest_level; fine_ln > 0; fine_ln--) {
-        const int coarse_ln = fine_ln - 1;
+    int level_indicator_id =
+        variable_db->mapVariableAndContextToIndex(
+                variable_db->getVariable("level_indicator"), 
+                variable_db->getContext("CURRENT"));
 
-        boost::shared_ptr<hier::PatchLevel> fine_level = hierarchy->getPatchLevel(fine_ln);
-        boost::shared_ptr<hier::PatchLevel> coarse_level = hierarchy->getPatchLevel(coarse_ln);
 
-        t_synchronize_levels_create->start();
-        coarsen_schedule = 
-            d_coarsen_level_indicator->createSchedule(
-                    coarse_level,
-                    fine_level);
-        t_synchronize_levels_create->stop();
+    for (int ln = finest_level_number; ln >= 0; ln--) {
+        boost::shared_ptr<hier::PatchLevel> level = hierarchy->getPatchLevel(ln);
 
-        t_synchronize_levels_fill->start();
-        coarsen_schedule->coarsenData();
-        t_synchronize_levels_fill->stop();
+        for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ++ip) {
+
+            boost::shared_ptr<hier::Patch> patch(*ip);
+
+            boost::shared_ptr<pdat::CellData<int> > level_indicator(
+                    patch->getPatchData(level_indicator_id),
+                    boost::detail::dynamic_cast_tag());
+
+            level_indicator->fillAll(ln);
+        }
+
+        if (ln < finest_level_number) {
+            const int fine_ln = ln + 1;
+
+            boost::shared_ptr<hier::PatchLevel> fine_level = hierarchy->getPatchLevel(fine_ln);
+
+            t_synchronize_levels_create->start();
+            coarsen_schedule = 
+                d_coarsen_level_indicator->createSchedule(
+                        level,
+                        fine_level);
+            t_synchronize_levels_create->stop();
+
+            t_synchronize_levels_fill->start();
+            coarsen_schedule->coarsenData();
+            t_synchronize_levels_fill->stop();
+        }
     }
 }
 

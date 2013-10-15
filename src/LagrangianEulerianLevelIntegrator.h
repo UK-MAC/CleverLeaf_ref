@@ -59,7 +59,7 @@ class LagrangianEulerianLevelIntegrator:
          * @{
          */
         /** Not exchanged */
-        const static int NO_EXCH = 0;
+        const static int NO_EXCH = 256;
         /** Exchanged at startup */
         const static int PRIME_CELLS_EXCH = 1;
         /** Exchanged before the Lagrangian step */
