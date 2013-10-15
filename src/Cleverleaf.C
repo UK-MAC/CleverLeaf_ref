@@ -1,6 +1,7 @@
 #include "Cleverleaf.h"
 #include "CartesianCellDoubleVolumeWeightedAverage.h"
 #include "CartesianCellDoubleMassWeightedAverage.h"
+#include "CartesianCellIntConstantCoarsen.h"
 
 #include "SAMRAI/hier/VariableDatabase.h"
 #include "SAMRAI/geom/CartesianPatchGeometry.h"
@@ -84,6 +85,10 @@ extern "C" {
 
     void F90_FUNC(debug_kernel, DEBUG_KERNEL)
         (int*, int*, int*, int*, double*, double*, double*, double*);
+
+    void F90_FUNC(field_summary_kernel, FIELD_SUMMARY_KERNEL)
+        (int*, int*, int*, int*, double*, double*, double*, double*, double*, double*, int*,
+         double*, double*, double*, double*, double*, int*);
 }
 
 
@@ -166,9 +171,9 @@ Cleverleaf::Cleverleaf(
     d_cellcoords(new pdat::CellVariable<double>(d_dim, "cellcoords", d_dim.getValue())),
     d_vertexdeltas(new pdat::NodeVariable<double>(d_dim, "vertexdeltas", d_dim.getValue())),
     d_vertexcoords(new pdat::NodeVariable<double>(d_dim, "vertexcoords", d_dim.getValue())),
+    d_level_indicator(new pdat::CellVariable<int>(d_dim, "level_indicator", d_dim.getValue())),
     d_exchange_fields(new int[15])
 {
-
     d_hierarchy = hierarchy;
     d_grid_geometry = grid_geometry;
 
@@ -179,6 +184,7 @@ Cleverleaf::Cleverleaf(
      */
     boost::shared_ptr<hier::CoarsenOperator> vol_weighted_avg(new CartesianCellDoubleVolumeWeightedAverage(dim));
     boost::shared_ptr<hier::CoarsenOperator> mass_weighted_avg(new CartesianCellDoubleMassWeightedAverage(dim));
+    boost::shared_ptr<hier::CoarsenOperator> constant_cell_coarsen(new CartesianCellIntConstantCoarsen(dim));
 
     boost::shared_ptr<hier::CoarsenOperator> ndi(new pdat::NodeDoubleInjection());
     boost::shared_ptr<hier::RefineOperator> cndlr(new geom::CartesianNodeDoubleLinearRefine());
@@ -187,6 +193,7 @@ Cleverleaf::Cleverleaf(
 
     d_grid_geometry->addCoarsenOperator(typeid(pdat::CellVariable<double>).name(), vol_weighted_avg);
     d_grid_geometry->addCoarsenOperator(typeid(pdat::CellVariable<double>).name(), mass_weighted_avg);
+    d_grid_geometry->addCoarsenOperator(typeid(pdat::CellVariable<int>).name(), constant_cell_coarsen);
     d_grid_geometry->addCoarsenOperator(typeid(pdat::NodeVariable<double>).name(), ndi);
     d_grid_geometry->addRefineOperator(typeid(pdat::NodeVariable<double>).name(), cndlr);
     d_grid_geometry->addRefineOperator(typeid(pdat::EdgeVariable<double>).name(), cedclr);
@@ -303,6 +310,13 @@ void Cleverleaf::registerModelVariables(
             d_nghosts,
             d_grid_geometry);
 
+    integrator->registerVariable(
+            d_level_indicator,
+            LagrangianEulerianLevelIntegrator::INDICATOR,
+            LagrangianEulerianLevelIntegrator::NO_EXCH,
+            d_nghosts,
+            d_grid_geometry);
+
     hier::VariableDatabase* vardb = hier::VariableDatabase::getDatabase();
 
     d_plot_context = integrator->getPlotContext();
@@ -340,6 +354,11 @@ void Cleverleaf::registerModelVariables(
                 "SCALAR",
                 vardb->mapVariableAndContextToIndex(
                     d_volume, d_plot_context));
+
+        d_visit_writer->registerPlotQuantity("Level Indicator",
+                "SCALAR",
+                vardb->mapVariableAndContextToIndex(
+                    d_level_indicator, d_plot_context));
 
         /*
          * Register vectors with the VisIt writer.
@@ -810,8 +829,17 @@ void Cleverleaf::initializeDataOnPatch(
         }
     }
 
-    ideal_gas_knl(patch, false);
+    int level_number = patch.getPatchLevelNumber();
 
+    boost::shared_ptr<pdat::CellData<int> > level_indicator(patch.getPatchData(
+                d_level_indicator,
+                getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    level_indicator->fillAll(level_number);
+
+
+    ideal_gas_knl(patch, false);
 }
 
 void Cleverleaf::accelerate(
@@ -1882,29 +1910,28 @@ void Cleverleaf::field_summary(
             patch.getPatchData(d_velocity, getCurrentDataContext()),
             boost::detail::dynamic_cast_tag());
 
+    boost::shared_ptr<pdat::CellData<int> > v_level_indicator(
+            patch.getPatchData(d_level_indicator, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
     const hier::Index ifirst = patch.getBox().lower();
     const hier::Index ilast = patch.getBox().upper();
 
-    hier::IntVector ghosts = v_density0->getGhostCellWidth();
+    int xmin = ifirst(0);
+    int xmax = ilast(0);
+    int ymin = ifirst(1);
+    int ymax = ilast(1);
 
-    int xmin = ifirst(0) - ghosts(0);
-    int xmax = ilast(0) + ghosts(0);
-    int ymin = ifirst(1) - ghosts(1);
-    int ymax = ilast(1) + ghosts(1);
-
-    int nx = xmax - xmin + 1;
-    int ny = ymax - ymin + 1;
-
-    double* volume = v_volume->getPointer();
     double* density0 = v_density0->getPointer();
     double* energy0 = v_energy0->getPointer();
     double* pressure = v_pressure->getPointer();
+    double* volume = v_volume->getPointer();
     double* xvel0 = v_vel0->getPointer(0);
     double* yvel0 = v_vel0->getPointer(1);
 
-    double vsqrd;
-    double cell_vol;
-    double cell_mass;
+    int* level_indicator = v_level_indicator->getPointer();
+
+    int level_number = patch.getPatchLevelNumber();
 
     *vol=0.0;
     *mass=0.0;
@@ -1912,25 +1939,23 @@ void Cleverleaf::field_summary(
     *ke=0.0;
     *press=0.0;
 
-    for(int k = ifirst(1); k <= ilast(1); k++) {
-        for(int j = ifirst(0); j <= ilast(0); j++) {
-            vsqrd=0.0;
+    F90_FUNC(field_summary_kernel, FIELD_SUMMARY_KERNEL)
+        (&xmin, &xmax, &ymin, &ymax,
+         volume,
+         density0,
+         energy0,
+         pressure,
+         xvel0,
+         yvel0,
+         level_indicator,
+         vol,
+         mass,
+         ie,
+         ke,
+         press,
+         &level_number);
 
-            vsqrd=vsqrd+0.25*(pow(xvel0(j,k),2)+pow(yvel0(j,k),2));
-            vsqrd=vsqrd+0.25*(pow(xvel0(j+1,k),2)+pow(yvel0(j+1,k),2));
-            vsqrd=vsqrd+0.25*(pow(xvel0(j,k+1),2)+pow(yvel0(j,k+1),2));
-            vsqrd=vsqrd+0.25*(pow(xvel0(j+1,k+1),2)+pow(yvel0(j+1,k+1),2));
-
-            cell_vol=volume(j,k);
-            cell_mass=cell_vol*density0(j,k);
-
-            *vol=*vol+cell_vol;
-            *mass=*mass+cell_mass;
-            *ie=*ie+cell_mass*energy0(j,k);
-            *ke=*ke+cell_mass*0.5*vsqrd;
-            *press=*press+cell_vol*pressure(j,k);
-        }
-    }
+    std::cout << "values: " << *vol << ", " << *mass << std::endl;
 }
 
 void Cleverleaf::tagGradientDetectorCells(

@@ -87,6 +87,7 @@ LagrangianEulerianLevelIntegrator::LagrangianEulerianLevelIntegrator(
 
     d_fill_new_level.reset(new xfer::RefineAlgorithm());
     d_coarsen_field_data.reset(new xfer::CoarsenAlgorithm(d_dim));
+    d_coarsen_level_indicator.reset(new xfer::CoarsenAlgorithm(d_dim));
 
     /*
      * Variable contexts
@@ -174,6 +175,27 @@ void LagrangianEulerianLevelIntegrator::synchronizeNewLevels(
         const double sync_time,
         const bool initial_time)
 {
+    if(initial_time) {
+        boost::shared_ptr<xfer::CoarsenSchedule> coarsen_schedule;
+
+        for (int fine_ln = finest_level; fine_ln > coarsest_level; fine_ln--) {
+            const int coarse_ln = fine_ln - 1;
+
+            boost::shared_ptr<hier::PatchLevel> fine_level = hierarchy->getPatchLevel(fine_ln);
+            boost::shared_ptr<hier::PatchLevel> coarse_level = hierarchy->getPatchLevel(coarse_ln);
+
+            t_synchronize_levels_create->start();
+            coarsen_schedule = 
+                d_coarsen_level_indicator->createSchedule(
+                        coarse_level,
+                        fine_level);
+            t_synchronize_levels_create->stop();
+
+            t_synchronize_levels_fill->start();
+            coarsen_schedule->coarsenData();
+            t_synchronize_levels_fill->stop();
+        }
+    }
 
     d_current_hierarchy = hierarchy;
 }
@@ -369,6 +391,25 @@ void LagrangianEulerianLevelIntegrator::resetHierarchyConfiguration (
         t_pre_sweep2_mom_exchange_create->stop();
     }
 
+    boost::shared_ptr<xfer::CoarsenSchedule> coarsen_schedule;
+
+    for (int fine_ln = finest_level; fine_ln > 0; fine_ln--) {
+        const int coarse_ln = fine_ln - 1;
+
+        boost::shared_ptr<hier::PatchLevel> fine_level = hierarchy->getPatchLevel(fine_ln);
+        boost::shared_ptr<hier::PatchLevel> coarse_level = hierarchy->getPatchLevel(coarse_ln);
+
+        t_synchronize_levels_create->start();
+        coarsen_schedule = 
+            d_coarsen_level_indicator->createSchedule(
+                    coarse_level,
+                    fine_level);
+        t_synchronize_levels_create->stop();
+
+        t_synchronize_levels_fill->start();
+        coarsen_schedule->coarsenData();
+        t_synchronize_levels_fill->stop();
+    }
 }
 
 void LagrangianEulerianLevelIntegrator::applyGradientDetector (
@@ -439,7 +480,6 @@ void LagrangianEulerianLevelIntegrator::registerVariable(
     boost::shared_ptr<hier::CoarsenOperator> coarsen_op;
 
 
-
     //    if (var->getName() == "massflux") {
     //        //tbox::pout << "Using CONSERVATIVE_LINEAR_REFINE..." << std::endl;
     //        refine_op = transfer_geom->lookupRefineOperator(var, "CONSERVATIVE_LINEAR_REFINE");
@@ -451,12 +491,14 @@ void LagrangianEulerianLevelIntegrator::registerVariable(
     //        refine_op = transfer_geom->lookupRefineOperator(var, "LINEAR_REFINE");
     //    }
 
-    if(var->getName() == "velocity" || var->getName()=="vertexdeltas" || var->getName()=="vertexcoords") {
-        refine_op = transfer_geom->lookupRefineOperator(var, "LINEAR_REFINE");
-        coarsen_op = transfer_geom->lookupCoarsenOperator(var, "CONSTANT_COARSEN");
+    if((var_exchanges & NO_EXCH) != NO_EXCH) {
+        if(var->getName() == "velocity" || var->getName()=="vertexdeltas" || var->getName()=="vertexcoords") {
+            refine_op = transfer_geom->lookupRefineOperator(var, "LINEAR_REFINE");
+            coarsen_op = transfer_geom->lookupCoarsenOperator(var, "CONSTANT_COARSEN");
 
-    } else {
-        refine_op = transfer_geom->lookupRefineOperator(var, "CONSERVATIVE_LINEAR_REFINE");
+        } else {
+            refine_op = transfer_geom->lookupRefineOperator(var, "CONSERVATIVE_LINEAR_REFINE");
+        }
     }
 
     if((var_type & FIELD) == FIELD) {
@@ -483,6 +525,13 @@ void LagrangianEulerianLevelIntegrator::registerVariable(
                     cur_id,
                     transfer_geom->lookupCoarsenOperator(var, "MASS_WEIGHTED_COARSEN"));
         }
+    }
+
+    if((var_type & INDICATOR) == INDICATOR) {
+        d_coarsen_level_indicator->registerCoarsen(
+                cur_id,
+                cur_id,
+                transfer_geom->lookupCoarsenOperator(var, "CONSTANT_INDICATOR_COARSEN"));
     }
 
     if((var_exchanges & PRIME_CELLS_EXCH) == PRIME_CELLS_EXCH) {
@@ -668,52 +717,50 @@ void LagrangianEulerianLevelIntegrator::revert(
     t_kernel_revert->stop();
 }
 
-void LagrangianEulerianLevelIntegrator::printFieldSummary(
-        double time,
-        int step)
+void LagrangianEulerianLevelIntegrator::getFieldSummary(
+        const boost::shared_ptr<hier::PatchLevel>& level,
+        double* level_volume,
+        double* level_mass,
+        double* level_pressure,
+        double* level_internal_energy,
+        double* level_kinetic_energy)
 {
-    boost::shared_ptr<hier::PatchLevel> level = d_current_hierarchy->getPatchLevel(0);
     const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
 
-    double vol;
-    double mass;
-    double press;
-    double ie;
-    double ke;
+    double volume = 0.0;
+    double mass = 0.0;
+    double pressure = 0.0;
+    double internal_energy = 0.0;
+    double kinetic_energy = 0.0;
 
-    double global_vol;
-    double global_mass;
-    double global_press;
-    double global_ie;
-    double global_ke;
+    *level_volume = 0.0;
+    *level_mass = 0.0;
+    *level_pressure = 0.0;
+    *level_internal_energy = 0.0;
+    *level_kinetic_energy = 0.0;
 
     for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
 
-        boost::shared_ptr<hier::Patch>patch=*p;
+        boost::shared_ptr<hier::Patch> patch = *p;
 
         d_patch_strategy->ideal_gas_knl(*patch, false);
 
-        d_patch_strategy->field_summary(*patch, &vol, &mass, &press, &ie, &ke);
-    }
+        d_patch_strategy->field_summary(*patch,
+                &volume, &mass, &pressure, &internal_energy, &kinetic_energy);
 
-    global_vol = vol;
-    global_mass = mass;
-    global_press = press;
-    global_ie = ie;
-    global_ke = ke;
+        *level_volume += volume;
+        *level_mass += mass;
+        *level_pressure += pressure;
+        *level_internal_energy += internal_energy;
+        *level_kinetic_energy += kinetic_energy;
+    }
 
     if (mpi.getSize() > 1) {
-        mpi.AllReduce(&global_vol, 1, MPI_SUM);
-        mpi.AllReduce(&global_mass, 1, MPI_SUM);
-        mpi.AllReduce(&global_press, 1, MPI_SUM);
-        mpi.AllReduce(&global_ie, 1, MPI_SUM);
-        mpi.AllReduce(&global_ke, 1, MPI_SUM);
-    }
-
-    if (mpi.getRank() == 0) {
-        printf("%13s%16s %16s %16s %16s %16s %16s %16s\n", " ", "Volume", "Mass", "Density", "Pressure", "Internal Energy", "Kinetic Energy", "Total Energy");
-        printf("%6s %7d %16.4E %16.4E %16.4E %16.4E %16.4E %16.4E %16.4E\n", "step:", step, global_vol, global_mass, global_mass/global_vol, global_press/global_vol, global_ie, global_ke, global_ie+global_ke);
-
+        mpi.AllReduce(level_volume, 1, MPI_SUM);
+        mpi.AllReduce(level_mass, 1, MPI_SUM);
+        mpi.AllReduce(level_pressure, 1, MPI_SUM);
+        mpi.AllReduce(level_internal_energy, 1, MPI_SUM);
+        mpi.AllReduce(level_kinetic_energy, 1, MPI_SUM);
     }
 }
 

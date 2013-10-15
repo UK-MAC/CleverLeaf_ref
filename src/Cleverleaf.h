@@ -151,6 +151,8 @@ class Cleverleaf:
         boost::shared_ptr<pdat::NodeVariable<double> > d_vertexdeltas;
         boost::shared_ptr<pdat::NodeVariable<double> > d_vertexcoords;
 
+        boost::shared_ptr<pdat::CellVariable<int> > d_level_indicator;
+
         /*
          * Variable contexts
          */
