@@ -1944,8 +1944,6 @@ void Cleverleaf::field_summary(
          ke,
          press,
          &level_number);
-
-    std::cout << "values: " << *vol << ", " << *mass << std::endl;
 }
 
 void Cleverleaf::tagGradientDetectorCells(
