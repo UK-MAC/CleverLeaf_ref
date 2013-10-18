@@ -17,8 +17,10 @@
  * CleverLeaf. If not, see http://www.gnu.org/licenses/.
  */ 
 
-#ifndef included_CartesianCellDoubleVolumeWeightedAverage
-#define included_CartesianCellDoubleVolumeWeightedAverage
+#ifndef CLEVERLEAF_CARTESIANCELLDOUBLEVOLUMEWEIGHTEDAVERAGE_H_
+#define CLEVERLEAF_CARTESIANCELLDOUBLEVOLUMEWEIGHTEDAVERAGE_H_
+
+#include <string>
 
 #include "SAMRAI/hier/CoarsenOperator.h"
 #include "SAMRAI/hier/Box.h"
@@ -27,8 +29,6 @@
 #include "SAMRAI/tbox/StartupShutdownManager.h"
 #include "SAMRAI/tbox/Timer.h"
 #include "SAMRAI/tbox/TimerManager.h"
-
-#include <string>
 
 using namespace SAMRAI;
 
@@ -41,19 +41,15 @@ class CartesianCellDoubleVolumeWeightedAverage:
 
         virtual ~CartesianCellDoubleVolumeWeightedAverage();
 
-        bool
-            findCoarsenOperator(
+        bool findCoarsenOperator(
                     const boost::shared_ptr<hier::Variable>& var,
                     const std::string& op_name) const;
 
-        int
-            getOperatorPriority() const;
+        int getOperatorPriority() const;
 
-        hier::IntVector
-            getStencilWidth( const tbox::Dimension &dim ) const;
+        hier::IntVector getStencilWidth(const tbox::Dimension &dim) const;
 
-        void
-            coarsen(
+        void coarsen(
                     hier::Patch& coarse,
                     const hier::Patch& fine,
                     const int dst_component,
@@ -68,5 +64,4 @@ class CartesianCellDoubleVolumeWeightedAverage:
 
         static tbox::StartupShutdownManager::Handler s_initialize_handler;
 };
-
 #endif
