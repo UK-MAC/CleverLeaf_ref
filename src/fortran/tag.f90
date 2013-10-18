@@ -17,8 +17,9 @@
 ! CleverLeaf. If not, see http://www.gnu.org/licenses/.
 !  
 
+!>  @brief Fortran viscosity tagging kernel
 !>  @author David Beckingsale
-
+!>  @details Tags cells for refinement based on the absolute viscosity value.
 SUBROUTINE tag_q_kernel(x_min,x_max,y_min,y_max,&
                             viscosity,           &
                             tags)
@@ -53,6 +54,9 @@ SUBROUTINE tag_q_kernel(x_min,x_max,y_min,y_max,&
 
 END SUBROUTINE tag_q_kernel
 
+!>  @brief Fortran density tagging kernel
+!>  @author David Beckingsale
+!>  @details Tags cells for refinement based on the density gradient.
 SUBROUTINE tag_density_kernel(x_min,x_max,y_min,y_max,&
                             density,           &
                             tags)
@@ -96,6 +100,9 @@ SUBROUTINE tag_density_kernel(x_min,x_max,y_min,y_max,&
 
 END SUBROUTINE tag_density_kernel
 
+!>  @brief Fortran energy tagging kernel
+!>  @author David Beckingsale
+!>  @details Tags cells for refinement based on the energy gradient.
 SUBROUTINE tag_energy_kernel(x_min,x_max,y_min,y_max,&
                             energy,           &
                             tags)
@@ -140,6 +147,9 @@ SUBROUTINE tag_energy_kernel(x_min,x_max,y_min,y_max,&
 
 END SUBROUTINE tag_energy_kernel
 
+!>  @brief Fortran "tag all" kernel
+!>  @author David Beckingsale
+!>  @details Tags all cells for refinement - useful for debugging.
 SUBROUTINE tag_all_kernel(x_min,x_max,y_min,y_max,&
                             tags)
 

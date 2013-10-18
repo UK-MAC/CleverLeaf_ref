@@ -1,23 +1,24 @@
-!Crown Copyright 2012 AWE.
 !
-! This file is part of CloverLeaf.
+! Crown Copyright 2012 AWE, Copyright 2013 David Beckingsale.
 !
-! CloverLeaf is free software: you can redistribute it and/or modify it under 
+! This file is part of CleverLeaf.
+!
+! CleverLeaf is free software: you can redistribute it and/or modify it under 
 ! the terms of the GNU General Public License as published by the 
 ! Free Software Foundation, either version 3 of the License, or (at your option) 
 ! any later version.
 !
-! CloverLeaf is distributed in the hope that it will be useful, but 
+! CleverLeaf is distributed in the hope that it will be useful, but 
 ! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
 ! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
 ! details.
 !
 ! You should have received a copy of the GNU General Public License along with 
-! CloverLeaf. If not, see http://www.gnu.org/licenses/.
+! CleverLeaf. If not, see http://www.gnu.org/licenses/.
 
 !>  @brief Fortran mesh chunk generator
-!>  @author Wayne Gaudin
-!>  @details Generates the field data on a mesh chunk based on the user specified
+!>  @author Wayne Gaudin, David Beckingsale.
+!>  @details Generates the field data on a patch based on the user specified
 !>  input for the states.
 !>
 !>  Note that state one is always used as the background state, which is then

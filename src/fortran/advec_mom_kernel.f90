@@ -23,7 +23,6 @@
 !>  using van-Leer limiting and directional splitting.
 !>  Note that although pre_vol is only set and not used in the update, please
 !>  leave it in the method.
-
 SUBROUTINE advec_mom_kernel(x_min,x_max,y_min,y_max,   &
                             xvel1,             &
                             yvel1,             &

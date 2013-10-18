@@ -1,5 +1,5 @@
 ! 
-! Crown Copyright 2912 AWE, Copyright 2013 David Beckingsale.
+! Crown Copyright 2012 AWE, Copyright 2013 David Beckingsale.
 ! 
 ! This file is part of CleverLeaf.
 ! 
@@ -17,13 +17,12 @@
 ! CleverLeaf. If not, see http://www.gnu.org/licenses/.
 !  
 
-!>  @brief Fortran kernel to update the external halo cells in a chunk.
+!>  @brief Fortran kernel to update the external halo cells at the top of a patch.
 !>  @author Wayne Gaudin, David Beckingsale
 !>  @details Updates halo cells for the required fields at the required depth
 !>  for any halo cells that lie on an external boundary. The location and type
 !>  of data governs how this is carried out. External boundaries are always
 !>  reflective.
-
 SUBROUTINE update_halo_kernel_top(x_min,x_max,y_min,y_max,                        &
                         density0,                                                   &
                         energy0,                                                    &
@@ -227,6 +226,12 @@ SUBROUTINE update_halo_kernel_top(x_min,x_max,y_min,y_max,                      
 
 END SUBROUTINE update_halo_kernel_top
 
+!>  @brief Fortran kernel to update the external halo cells at the bottom of a patch.
+!>  @author Wayne Gaudin, David Beckingsale
+!>  @details Updates halo cells for the required fields at the required depth
+!>  for any halo cells that lie on an external boundary. The location and type
+!>  of data governs how this is carried out. External boundaries are always
+!>  reflective.
 SUBROUTINE update_halo_kernel_bottom(x_min,x_max,y_min,y_max,                       &
                         density0,                                                   &
                         energy0,                                                    &
@@ -430,6 +435,12 @@ SUBROUTINE update_halo_kernel_bottom(x_min,x_max,y_min,y_max,                   
 
 END SUBROUTINE update_halo_kernel_bottom
 
+!>  @brief Fortran kernel to update the external halo cells at the left of a patch.
+!>  @author Wayne Gaudin, David Beckingsale
+!>  @details Updates halo cells for the required fields at the required depth
+!>  for any halo cells that lie on an external boundary. The location and type
+!>  of data governs how this is carried out. External boundaries are always
+!>  reflective.
 SUBROUTINE update_halo_kernel_left(x_min,x_max,y_min,y_max,                        &
                         density0,                                                   &
                         energy0,                                                    &
@@ -633,6 +644,12 @@ SUBROUTINE update_halo_kernel_left(x_min,x_max,y_min,y_max,                     
 
 END SUBROUTINE update_halo_kernel_left
 
+!>  @brief Fortran kernel to update the external halo cells at the right of a patch.
+!>  @author Wayne Gaudin, David Beckingsale
+!>  @details Updates halo cells for the required fields at the required depth
+!>  for any halo cells that lie on an external boundary. The location and type
+!>  of data governs how this is carried out. External boundaries are always
+!>  reflective.
 SUBROUTINE update_halo_kernel_right(x_min,x_max,y_min,y_max,                        &
                         density0,                                                   &
                         energy0,                                                    &

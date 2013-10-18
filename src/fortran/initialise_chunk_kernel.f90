@@ -1,4 +1,5 @@
-! Crown Copyright 2012 AWE, Copyright 2013 David Beckingsale
+!
+! Crown Copyright 2012 AWE, Copyright 2013 David Beckingsale.
 !
 ! This file is part of CleverLeaf.
 !
@@ -15,10 +16,9 @@
 ! You should have received a copy of the GNU General Public License along with 
 ! CleverLeaf. If not, see http://www.gnu.org/licenses/.
 
-!>  @brief Fortran chunk initialisation kernel.
+!>  @brief Fortran patch initialisation kernel.
 !>  @author Wayne Gaudin, David Beckingsale.
-!>  @details Calculates mesh geometry for the mesh chunk based on the mesh size.
-
+!>  @details Calculates mesh geometry for the patch based on the physical coordinates.
 SUBROUTINE initialise_chunk_kernel(x_min,x_max,y_min,y_max,       &
                                    xmin,ymin,dx,dy,               &
                                    vertexx,                       &

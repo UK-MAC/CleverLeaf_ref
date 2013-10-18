@@ -21,7 +21,6 @@
 !>  @author Wayne Gaudin
 !>  @details The pressure and viscosity gradients are used to update the 
 !>  velocity field.
-
 SUBROUTINE accelerate_kernel(x_min,x_max,y_min,y_max,dt,     &
                              xarea,yarea,                    &
                              volume,                         &

@@ -21,7 +21,6 @@
 !>  @author Wayne Gaudin
 !>  @details Performs a second order advective remap using van-Leer limiting
 !>  with directional splitting.
-
 SUBROUTINE advec_cell_kernel(x_min,       &
                              x_max,       &
                              y_min,       &

@@ -16,30 +16,12 @@
 ! You should have received a copy of the GNU General Public License along with 
 ! CleverLeaf. If not, see http://www.gnu.org/licenses/.
 !  
-
-!Crown Copyright 2012 AWE.
-!
-! This file is part of CloverLeaf.
-!
-! CloverLeaf is free software: you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the 
-! Free Software Foundation, either version 3 of the License, or (at your option) 
-! any later version.
-!
-! CloverLeaf is distributed in the hope that it will be useful, but 
-! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
-! details.
-!
-! You should have received a copy of the GNU General Public License along with 
-! CloverLeaf. If not, see http://www.gnu.org/licenses/.
-
-!>  @brief Fortran ideal gas kernel.
-!>  @author Wayne Gaudin
-!>  @details Calculates the pressure and sound speed for the mesh chunk using
-!>  the ideal gas equation of state, with a fixed gamma of 1.4.
-
+!>  @brief Fortran debug kernel.
+!>  @author David Beckingsale
+!>  @details This kernel is used for debugging, providing a convenient
+!>           breakpoint for inspecting patch variables.
 SUBROUTINE debug_kernel(x_min,x_max,y_min,y_max,                &
+
                             xvel0,                                &
                             yvel0,                                 &
                             xvel1,                               &

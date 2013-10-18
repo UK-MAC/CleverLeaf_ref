@@ -23,7 +23,6 @@
 !>  change on cell volume due to the velocity gradients in a cell. The time
 !>  level of the velocity data depends on whether it is invoked as the
 !>  predictor or corrector.
-
 SUBROUTINE PdV_kernel(prdct,                                          &
                       x_min,x_max,y_min,y_max,dt,                       &
                       xarea,yarea,volume,                               &

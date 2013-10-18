@@ -1,3 +1,4 @@
+!
 ! Crown Copyright 2012 AWE, Copyright 2013 David Beckingsale.
 !
 ! This file is part of CleverLeaf.
@@ -16,10 +17,9 @@
 ! CleverLeaf. If not, see http://www.gnu.org/licenses/.
 
 !>  @brief Fortran field summary kernel
-!>  @author Wayne Gaudin, David Beckingsale
+!>  @author Wayne Gaudin
 !>  @details The total mass, internal energy, kinetic energy and volume weighted
 !>  pressure for the chunk is calculated.
-
 SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max, &
                                 volume,                  &
                                 density0,                &

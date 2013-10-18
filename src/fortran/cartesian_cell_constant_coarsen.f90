@@ -1,3 +1,4 @@
+!
 ! Copyright 2013 David Beckingsale.
 !
 ! This file is part of CleverLeaf.
@@ -15,8 +16,11 @@
 ! You should have received a copy of the GNU General Public License along with 
 ! CleverLeaf. If not, see http://www.gnu.org/licenses/.
 
+!>  @brief Fortran kernel to coarsen level indicator.
 !>  @author David Beckingsale
-
+!>  @details Directly coarsens fine level indicator value to cell on coarse
+!>           patch, ensuring that for all cells covered by the finer patch
+!>           level_indicator(j,k) != level.
 SUBROUTINE cartesian_cell_constant_int_coarsen(ifirstc0,ifirstc1,ilastc0,ilastc1, &
                                                filo0,filo1,fihi0,fihi1, &
                                                cilo0,cilo1,cihi0,cihi1, &

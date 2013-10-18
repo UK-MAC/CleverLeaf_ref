@@ -22,7 +22,6 @@
 !>  @details Calculates an artificial viscosity using the Wilkin's method to
 !>  smooth out shock front and prevent oscillations around discontinuities.
 !>  Only cells in compression will have a non-zero value.
-
 SUBROUTINE viscosity_kernel(x_min,x_max,y_min,y_max,    &
                             celldx,celldy,              &
                             density0,                   &

@@ -20,7 +20,6 @@
 !>  @brief Fortran flux kernel.
 !>  @author Wayne Gaudin
 !>  @details The edge volume fluxes are calculated based on the velocity fields.
-
 SUBROUTINE flux_calc_kernel(x_min,x_max,y_min,y_max,dt,              &
                             xarea,                           &
                             yarea,                           &

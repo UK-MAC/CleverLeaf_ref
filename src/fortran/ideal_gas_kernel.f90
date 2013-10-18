@@ -21,7 +21,6 @@
 !>  @author Wayne Gaudin
 !>  @details Calculates the pressure and sound speed for the mesh chunk using
 !>  the ideal gas equation of state, with a fixed gamma of 1.4.
-
 SUBROUTINE ideal_gas_kernel(x_min,x_max,y_min,y_max,                &
                             density,                                &
                             energy,                                 &
