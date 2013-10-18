@@ -163,12 +163,12 @@ class LagrangianEulerianPatchStrategy:
                 ADVEC_DIR which_vel) = 0;
 
         virtual void field_summary(
-                hier::Patch& patch,
-                double* vol,
-                double* mass,
-                double* press,
-                double* ie,
-                double* ke) = 0;
+            hier::Patch& patch,
+            double* total_volume,
+            double* total_mass,
+            double* total_pressure,
+            double* total_internal_energy,
+            double* total_kinetic_energy) = 0;
 
         virtual void tagGradientDetectorCells(
                 hier::Patch& patch,
