@@ -35,6 +35,9 @@ class Cleverleaf:
     public LagrangianEulerianPatchStrategy
 {
     public:
+        const static int g_rectangle = 1;
+        const static int g_circle = 2;
+        const static int g_point = 4;
 
         /**
          * Constructor for Cleverleaf class.

@@ -99,6 +99,10 @@ extern "C" {
 
 #define POLY2(i, j, imin, jmin, nx) ((i - imin) + (j-jmin) * nx)
 
+const int Cleverleaf::g_rectangle;
+const int Cleverleaf::g_circle;
+const int Cleverleaf::g_point;
+
 Cleverleaf::Cleverleaf(
         boost::shared_ptr<tbox::Database> input_database,
         boost::shared_ptr<hier::PatchHierarchy> hierarchy,
@@ -350,30 +354,28 @@ void Cleverleaf::initializeDataOnPatch(
         double init_data_time,
         bool initial_time)
 {
-    boost::shared_ptr<pdat::CellData<double> > celldeltas(
+    boost::shared_ptr<pdat::CellData<double> > cell_deltas(
             patch.getPatchData(d_celldeltas,getCurrentDataContext()),
             boost::detail::dynamic_cast_tag());
 
-    boost::shared_ptr<pdat::CellData<double> > cellcoords(
+    boost::shared_ptr<pdat::CellData<double> > cell_coordinates(
             patch.getPatchData(d_cellcoords, getCurrentDataContext()),
             boost::detail::dynamic_cast_tag());
 
-    boost::shared_ptr<pdat::NodeData<double> > vertexdeltas(
+    boost::shared_ptr<pdat::NodeData<double> > vertex_deltas(
             patch.getPatchData(d_vertexdeltas, getCurrentDataContext()),
             boost::detail::dynamic_cast_tag());
 
-    boost::shared_ptr<pdat::NodeData<double> > vertexcoords(
+    boost::shared_ptr<pdat::NodeData<double> > vertex_coordinates(
             patch.getPatchData( d_vertexcoords, getCurrentDataContext()),
             boost::detail::dynamic_cast_tag());
 
-    boost::shared_ptr<pdat::CellData<double> > v_volume(
+    boost::shared_ptr<pdat::CellData<double> > volume(
             patch.getPatchData(d_volume, getCurrentDataContext()),
             boost::detail::dynamic_cast_tag());
 
     const hier::Index ifirst = patch.getBox().lower();
     const hier::Index ilast = patch.getBox().upper();
-
-    hier::IntVector ghosts = celldeltas->getGhostCellWidth();
 
     int x_min = ifirst(0);
     int x_max = ilast(0);
@@ -399,93 +401,64 @@ void Cleverleaf::initializeDataOnPatch(
     double dx = dxs[0];
     double dy = dxs[1];
 
-    double* vertexx = vertexcoords->getPointer(0);
-    double* vertexy = vertexcoords->getPointer(1);
-
-    double* vertexdx = vertexdeltas->getPointer(0);
-    double* vertexdy = vertexdeltas->getPointer(1);
-
-    double* cellx = cellcoords->getPointer(0);
-    double* celly = cellcoords->getPointer(1);
-
-    double* celldx = celldeltas->getPointer(0);
-    double* celldy = celldeltas->getPointer(1);
-
-    double* volume = v_volume->getPointer();
-
     F90_FUNC(initialise_chunk_kernel,INITIALISE_CHUNK_KERNEL)
         (&x_min,&x_max,&y_min,&y_max,
          &physical_xmin,&physical_ymin,
          &dx,&dy,
-         vertexx,
-         vertexdx,
-         vertexy,
-         vertexdy,
-         cellx,
-         celldx,
-         celly,
-         celldy,
-         volume);
+         vertex_coordinates->getPointer(0),
+         vertex_deltas->getPointer(0),
+         vertex_coordinates->getPointer(1),
+         vertex_deltas->getPointer(1),
+         cell_coordinates->getPointer(0),
+         cell_deltas->getPointer(0),
+         cell_coordinates->getPointer(1),
+         cell_deltas->getPointer(1),
+         volume->getPointer());
 
     if (initial_time) {
         boost::shared_ptr<pdat::NodeData<double> > velocity(
                 patch.getPatchData(d_velocity, getCurrentDataContext()),
                 boost::detail::dynamic_cast_tag());
 
-        boost::shared_ptr<pdat::EdgeData<double> > massflux(
+        boost::shared_ptr<pdat::EdgeData<double> > mass_flux(
                 patch.getPatchData(d_massflux, getCurrentDataContext()),
                 boost::detail::dynamic_cast_tag());
 
-        boost::shared_ptr<pdat::EdgeData<double> > volflux(
+        boost::shared_ptr<pdat::EdgeData<double> > volume_flux(
                 patch.getPatchData(d_volflux, getCurrentDataContext()),
                 boost::detail::dynamic_cast_tag());
 
-        boost::shared_ptr<pdat::CellData<double> > v_pressure(
+        boost::shared_ptr<pdat::CellData<double> > pressure(
                 patch.getPatchData(d_pressure, getCurrentDataContext()),
                 boost::detail::dynamic_cast_tag());
 
-        boost::shared_ptr<pdat::CellData<double> > v_viscosity(
+        boost::shared_ptr<pdat::CellData<double> > viscosity(
                 patch.getPatchData(d_viscosity, getCurrentDataContext()),
                 boost::detail::dynamic_cast_tag());
 
-        boost::shared_ptr<pdat::CellData<double> > v_soundspeed(
+        boost::shared_ptr<pdat::CellData<double> > soundspeed(
                 patch.getPatchData(d_soundspeed, getCurrentDataContext()),
                 boost::detail::dynamic_cast_tag());
 
-        boost::shared_ptr<pdat::CellData<double> > v_density(
+        boost::shared_ptr<pdat::CellData<double> > density(
                 patch.getPatchData(d_density, getCurrentDataContext()),
                 boost::detail::dynamic_cast_tag());
 
-        boost::shared_ptr<pdat::CellData<double> > v_energy(
+        boost::shared_ptr<pdat::CellData<double> > energy(
                 patch.getPatchData(d_energy, getCurrentDataContext()),
                 boost::detail::dynamic_cast_tag());
-
-        const hier::Index ifirst = patch.getBox().lower();
-        const hier::Index ilast = patch.getBox().upper();
-
-        hier::IntVector density_ghosts = v_density->getGhostCellWidth();
-
-        int x_min = ifirst(0);
-        int x_max = ilast(0);
-        int y_min = ifirst(1);
-        int y_max = ilast(1);
 
         /*
          * Use the fillAll() methods to initialise other variables for now...
          */
         velocity->fillAll(0.0);
-        massflux->fillAll(0.0);
-        volflux->fillAll(0.0);
-        v_viscosity->fillAll(0.0);
-        v_soundspeed->fillAll(0.0);
-        v_pressure->fillAll(0.0);
-        v_energy->fillAll(0.0);
-        v_density->fillAll(0.0);
-
-        double* density0 = v_density->getPointer();
-        double* energy0 = v_energy->getPointer();
-        double* xvel0 = velocity->getPointer(0);
-        double* yvel0 = velocity->getPointer(1);
+        mass_flux->fillAll(0.0);
+        volume_flux->fillAll(0.0);
+        viscosity->fillAll(0.0);
+        soundspeed->fillAll(0.0);
+        pressure->fillAll(0.0);
+        energy->fillAll(0.0);
+        density->fillAll(0.0);
 
         boost::shared_ptr<tbox::Database> states_db = input_db->getDatabase("states");
         int number_of_states = states_db->getInteger("num_states");
@@ -512,15 +485,15 @@ void Cleverleaf::initializeDataOnPatch(
 
 
             if (state_geometry_string.compare("RECTANGLE") == 0) {
-                state_geometry[state] = 2;
+                state_geometry[state] = g_rectangle;
             } else if (state_geometry_string.compare("CIRCLE") == 0) {
-                state_geometry[state] = 1;
+                state_geometry[state] = g_circle;
             } else if (state_geometry_string.compare("POINT") == 0) {
-                state_geometry[state] = 4;
+                state_geometry[state] = g_point;
             }
 
-            if(state_geometry[state] == CIRCLE ||
-                    state_geometry[state] == POINT) {
+            if(state_geometry[state] == g_circle ||
+                    state_geometry[state] == g_point) {
                 double* center = new double[2];
                 current_state->getDoubleArray("center", center, 2);
 
@@ -558,20 +531,16 @@ void Cleverleaf::initializeDataOnPatch(
             state_radius[state] = current_state->getDoubleWithDefault("radius", -1);
         }
 
-        int circle = 1;
-        int rect = 2;
-        int poin = 4;
-
         F90_FUNC(generate_chunk_kernel,GENERATE_CHUNK_KERNEL)
             (&x_min,&x_max,&y_min,&y_max,
-             vertexx,
-             vertexy,
-             cellx,
-             celly,
-             density0,
-             energy0,
-             xvel0,
-             yvel0,
+             vertex_coordinates->getPointer(0),
+             vertex_coordinates->getPointer(1),
+             cell_coordinates->getPointer(0),
+             cell_coordinates->getPointer(1),
+             density->getPointer(),
+             energy->getPointer(),
+             velocity->getPointer(0),
+             velocity->getPointer(1),
              &number_of_states,
              state_density,
              state_energy,
@@ -583,9 +552,20 @@ void Cleverleaf::initializeDataOnPatch(
              state_ymax,
              state_radius,
              state_geometry,
-             &rect,
-             &circle,
-             &poin);
+             &g_rectangle,
+             &g_circle,
+             &g_point);
+
+        delete[] state_density;
+        delete[] state_energy;
+        delete[] state_xvel;
+        delete[] state_yvel;
+        delete[] state_xmin;
+        delete[] state_ymin;
+        delete[] state_xmax;
+        delete[] state_ymax;
+        delete[] state_radius;
+        delete[] state_geometry;
     }
 
     ideal_gas_knl(patch, false);

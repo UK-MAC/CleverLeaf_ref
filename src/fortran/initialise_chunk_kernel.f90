@@ -35,64 +35,80 @@ SUBROUTINE initialise_chunk_kernel(x_min,x_max,y_min,y_max,       &
 
   INTEGER      :: x_min,x_max,y_min,y_max
   REAL(KIND=8) :: xmin,ymin,dx,dy
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+3) :: vertexx
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+3) :: vertexdx
-  REAL(KIND=8), DIMENSION(y_min-2:y_max+3) :: vertexy
-  REAL(KIND=8), DIMENSION(y_min-2:y_max+3) :: vertexdy
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2) :: cellx
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2) :: celldx
-  REAL(KIND=8), DIMENSION(y_min-2:y_max+2) :: celly
-  REAL(KIND=8), DIMENSION(y_min-2:y_max+2) :: celldy
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3, y_min-2:y_max+3) :: vertexx
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3, y_min-2:y_max+3) :: vertexdx
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3, y_min-2:y_max+3) :: vertexy
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3, y_min-2:y_max+3) :: vertexdy
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2, y_min-2:y_max+2) :: cellx
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2, y_min-2:y_max+2) :: celldx
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2, y_min-2:y_max+2) :: celly
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2, y_min-2:y_max+2) :: celldy
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2 ,y_min-2:y_max+2) :: volume
 
   INTEGER      :: j,k
 
 !$OMP PARALLEL
 !$OMP DO
-  DO j=x_min-2,x_max+3
-     vertexx(j)=xmin+dx*float(j-x_min)
-  ENDDO
-!$OMP END DO
-
-!$OMP DO
-  DO j=x_min-2,x_max+3
-    vertexdx(j)=dx
+  DO k=y_min-2,y_max+3
+    DO j=x_min-2,x_max+3
+      vertexx(j,k)=xmin+(dx*real(j-x_min,8))
+    ENDDO
   ENDDO
 !$OMP END DO
 
 !$OMP DO
   DO k=y_min-2,y_max+3
-     vertexy(k)=ymin+dy*float(k-y_min)
+    DO j=x_min-2,x_max+3
+      vertexdx(j,k)=dx
+    ENDDO
   ENDDO
 !$OMP END DO
 
 !$OMP DO
   DO k=y_min-2,y_max+3
-    vertexdy(k)=dy
+    DO j=x_min-2,x_max+3
+      vertexy(j,k)=ymin+(dy*real(k-y_min,8))
+    ENDDO
   ENDDO
 !$OMP END DO
 
 !$OMP DO
-  DO j=x_min-2,x_max+2
-     cellx(j)=0.5*(vertexx(j)+vertexx(j+1))
-  ENDDO
-!$OMP END DO
-
-!$OMP DO
-  DO j=x_min-2,x_max+2
-     celldx(j)=dx
-  ENDDO
-!$OMP END DO
-
-!$OMP DO
-  DO k=y_min-2,y_max+2
-     celly(k)=0.5*(vertexy(k)+vertexy(k+1))
+  DO k=y_min-2,y_max+3
+    DO j=x_min-2,x_max+3
+      vertexdy(j,k)=dy
+    ENDDO
   ENDDO
 !$OMP END DO
 
 !$OMP DO
   DO k=y_min-2,y_max+2
-     celldy(k)=dy
+    DO j=x_min-2,x_max+2
+      cellx(j,k)=0.5_8*(vertexx(j,k)+vertexx(j+1,k))
+    ENDDO
+  ENDDO
+!$OMP END DO
+
+!$OMP DO
+  DO k=y_min-2,y_max+2
+    DO j=x_min-2,x_max+2
+     celldx(j,k)=dx
+    ENDDO
+  ENDDO
+!$OMP END DO
+
+!$OMP DO
+  DO k=y_min-2,y_max+2
+    DO j=x_min-2,x_max+2
+      celly(j,k)=0.5_8*(vertexy(j,k)+vertexy(j,k+1))
+    ENDDO
+  ENDDO
+!$OMP END DO
+
+!$OMP DO
+  DO k=y_min-2,y_max+2
+    DO j=x_min-2,x_max+2
+      celldy(j,k)=dy
+    ENDDO
   ENDDO
 !$OMP END DO
 
