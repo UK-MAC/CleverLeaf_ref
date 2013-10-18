@@ -65,6 +65,8 @@ class LagrangianEulerianLevelIntegrator:
         const static int FIELD = 2;
         /** Revert variable, copied back to tl0 at half-step. */
         const static int REVERT = 4;
+        /** Level indicator **/
+        const static int INDICATOR = 8;
         /**
          * @}
          */
@@ -76,7 +78,7 @@ class LagrangianEulerianLevelIntegrator:
          * @{
          */
         /** Not exchanged */
-        const static int NO_EXCH = 0;
+        const static int NO_EXCH = 256;
         /** Exchanged at startup */
         const static int PRIME_CELLS_EXCH = 1;
         /** Exchanged before the Lagrangian step */
@@ -300,9 +302,13 @@ class LagrangianEulerianLevelIntegrator:
         /*
          * Print out the field summary
          */
-        void printFieldSummary(
-                double time,
-                int step);
+        void getFieldSummary(
+                const boost::shared_ptr<hier::PatchLevel>& level,
+                double* level_volume,
+                double* level_mass,
+                double* level_pressure,
+                double* level_internal_energy,
+                double* level_kinetic_energy);
 
     protected:
         /**
@@ -366,6 +372,8 @@ class LagrangianEulerianLevelIntegrator:
 
         boost::shared_ptr<xfer::RefineAlgorithm> d_fill_new_level;
         boost::shared_ptr<xfer::CoarsenAlgorithm> d_coarsen_field_data;
+
+        boost::shared_ptr<xfer::CoarsenAlgorithm> d_coarsen_level_indicator;
 
         std::vector<boost::shared_ptr<xfer::RefineSchedule> > d_half_step_schedules;
         std::vector<boost::shared_ptr<xfer::RefineSchedule> > d_prime_halos_schedules;

@@ -82,6 +82,8 @@ class LagrangianEulerianIntegrator {
         {
             return d_gridding_algorithm;
         }
+
+        void printFieldSummary();
     private:
         void initializeLevelData(const int level_number);
 

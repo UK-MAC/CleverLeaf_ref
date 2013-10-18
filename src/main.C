@@ -205,6 +205,11 @@ int main(int argc, char* argv[]) {
             loop_time += dt_now;
             dt_now = dt_new;
 
+            if ((field_summary_interval > 0)
+                    && (iteration_num % field_summary_interval) == 0) {
+                lagrangian_eulerian_integrator->printFieldSummary();
+            }
+
             tbox::pout << "At end of timestep # " << iteration_num - 1 << endl;
             tbox::pout << "Simulation time is " << loop_time << endl;
             tbox::pout << "++++++++++++++++++++++++++++++++++++++++++++" << endl;
@@ -214,10 +219,6 @@ int main(int argc, char* argv[]) {
                 visit_data_writer->writePlotData(patch_hierarchy,
                         iteration_num,
                         loop_time);
-            }
-
-            if ((field_summary_interval > 0)
-                    && (iteration_num % field_summary_interval) == 0) {
             }
         }
 

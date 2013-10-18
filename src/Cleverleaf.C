@@ -20,17 +20,15 @@
 #include "Cleverleaf.h"
 #include "CartesianCellDoubleVolumeWeightedAverage.h"
 #include "CartesianCellDoubleMassWeightedAverage.h"
+#include "CartesianCellIntConstantCoarsen.h"
 
 #include "SAMRAI/hier/VariableDatabase.h"
 #include "SAMRAI/geom/CartesianPatchGeometry.h"
-
 #include "SAMRAI/pdat/CellData.h"
 #include "SAMRAI/pdat/NodeData.h"
 #include "SAMRAI/pdat/EdgeData.h"
-
 #include "SAMRAI/appu/CartesianBoundaryUtilities2.h"
 #include "SAMRAI/appu/CartesianBoundaryDefines.h"
-
 #include "SAMRAI/pdat/NodeDoubleInjection.h"
 #include "SAMRAI/geom/CartesianNodeDoubleLinearRefine.h"
 #include "SAMRAI/geom/CartesianEdgeDoubleConservativeLinearRefine.h"
@@ -103,64 +101,26 @@ extern "C" {
 
     void F90_FUNC(debug_kernel, DEBUG_KERNEL)
         (int*, int*, int*, int*, double*, double*, double*, double*);
-}
 
+    void F90_FUNC(field_summary_kernel, FIELD_SUMMARY_KERNEL)
+        (int*, int*, int*, int*, double*, double*, double*, double*, double*, double*, int*,
+         double*, double*, double*, double*, double*, int*);
+
+    void F90_FUNC(initialise_chunk_kernel, INITIALISE_CHUNK_KERNEL)
+        (int*, int*, int*, int*, double*, double*, double*, double*, double*,
+         double*, double*, double*, double*, double*, double*, double*, double*);
+
+    void F90_FUNC(generate_chunk_kernel, GENERATE_CHUNK_KERNEL)
+        (int*, int*, int*, int*, double*, double*, double*, double*, double*, double*,
+         double*, double*, int*, double*, double*, double*, double*, double*, double*, 
+         double*, double*, double*, int*, const int*, const int*, const int*);
+}
 
 #define POLY2(i, j, imin, jmin, nx) ((i - imin) + (j-jmin) * nx)
 
-// Arrays are defined up here so we can access them with fortran notation
-#define density(i,j) density[((i-xmin)) + (j-ymin)*nx]
-#define energy(i,j) energy[((i-xmin)) + (j-ymin)*nx]
-
-#define xarea(i,j) xarea[((i-xmin)) + (j-ymin)*nx]
-#define yarea(i,j) yarea[((i-xmin)) + (j-ymin)*nx]
-#define volume(i,j) volume[((i-xmin)) + (j-ymin)*nx]
-#define density0(i,j) density0[((i)-xmin) + ((j)-ymin)*nx]
-#define density1(i,j) density1[((i-xmin)) + (j-ymin)*nx]
-#define energy0(i,j) energy0[((i-xmin)) + (j-ymin)*nx]
-#define energy1(i,j) energy1[((i-xmin)) + (j-ymin)*nx]
-#define pressure(i,j) pressure[((i-xmin)) + (j-ymin)*nx]
-#define viscosity(i,j) viscosity[((i-xmin)) + (j-ymin)*nx]
-#define celldx(i,j) celldx[((i-xmin)) + (j-ymin)*nx]
-#define celldy(i,j) celldy[((i-xmin)) + (j-ymin)*nx]
-#define soundspeed(i,j) soundspeed[((i-xmin)) + (j-ymin)*nx]
-#define cellx(i,j) cellx[((i-xmin)) + (j-ymin)*nx]
-#define celly(i,j) celly[((i-xmin)) + (j-ymin)*nx]
-
-#define xvel0(j,k) xvel0[((j-xmin)) + (k-ymin)*(nx+1)]
-#define yvel0(j,k) yvel0[((j-xmin)) + (k-ymin)*(nx+1)]
-#define xvel1(j,k) xvel1[((j-xmin)) + (k-ymin)*(nx+1)]
-#define yvel1(j,k) yvel1[((j-xmin)) + (k-ymin)*(nx+1)]
-#define stepbymass(j,k) stepbymass[((j-ifirst(0))) + (k-ifirst(1))*(sbmnx+1)]
-
-#define vertexdx(j) vertexdx[((j-xmin)) + (k-ymin)*(nx+1)]
-#define vertexdy(k) vertexdy[((j-xmin)) + (k-ymin)*(nx+1)]
-
-#define vol_flux_x(j,k) vol_flux_x[((j-xmin)) + (k-ymin)*(nx+1)]
-#define vol_flux_y(j,k) vol_flux_y[((j-xmin)) + (k-ymin)*(nx)]
-
-#define mass_flux_x(j,k) mass_flux_x[((j-xmin)) + (k-ymin)*(nx+1)]
-#define mass_flux_y(j,k) mass_flux_y[((j-xmin)) + (k-ymin)*(nx)]
-
-#define volume_change(i,j) volume_change[((i)-ifirst(0)) + (j-ifirst(1))*vnx]
-
-#define pre_vol(j,k) pre_vol[(j - xmin) + (k - ymin)*(nx)]
-#define post_vol(j,k) post_vol[(j - xmin) + (k - ymin)*(nx)]
-#define pre_mass(j,k) pre_mass[(j - xmin) + (k - ymin)*(nx)]
-#define post_mass(j,k) post_mass[(j - xmin) + (k - ymin)*(nx)]
-#define advec_vol(j,k) advec_vol[(j - xmin) + (k - ymin)*(nx)]
-#define post_ener(j,k) post_ener[(j - xmin) + (k - ymin)*(nx)]
-#define ener_flux(j,k) ener_flux[(j - xmin) + (k - ymin)*(nx)]
-
-#define node_flux(j,k) node_flux[(j-xmin) + (k - ymin)*(nx+1)]
-#define node_mass_post(j,k) node_mass_post[(j-xmin) + (k - ymin)*(nx+1)]
-#define node_mass_pre(j,k) node_mass_pre[(j-xmin) + (k - ymin)*(nx+1)]
-#define advec_vel(j,k) advec_vel[(j-xmin) + (k - ymin)*(nx+1)]
-#define mom_flux(j,k) mom_flux[(j-xmin) + (k - ymin)*(nx+1)]
-
-#define vel1(j,k) vel1[((j-xmin)) + (k-ymin)*(nx+1)]
-
-#define data(i,j) data[(((i)-xmin)) + (((j)-ymin)*nx)]
+const int Cleverleaf::g_rectangle;
+const int Cleverleaf::g_circle;
+const int Cleverleaf::g_point;
 
 Cleverleaf::Cleverleaf(
         boost::shared_ptr<tbox::Database> input_database,
@@ -185,9 +145,9 @@ Cleverleaf::Cleverleaf(
     d_cellcoords(new pdat::CellVariable<double>(d_dim, "cellcoords", d_dim.getValue())),
     d_vertexdeltas(new pdat::NodeVariable<double>(d_dim, "vertexdeltas", d_dim.getValue())),
     d_vertexcoords(new pdat::NodeVariable<double>(d_dim, "vertexcoords", d_dim.getValue())),
+    d_level_indicator(new pdat::CellVariable<int>(d_dim, "level_indicator", d_dim.getValue())),
     d_exchange_fields(new int[15])
 {
-
     d_hierarchy = hierarchy;
     d_grid_geometry = grid_geometry;
 
@@ -198,6 +158,7 @@ Cleverleaf::Cleverleaf(
      */
     boost::shared_ptr<hier::CoarsenOperator> vol_weighted_avg(new CartesianCellDoubleVolumeWeightedAverage(dim));
     boost::shared_ptr<hier::CoarsenOperator> mass_weighted_avg(new CartesianCellDoubleMassWeightedAverage(dim));
+    boost::shared_ptr<hier::CoarsenOperator> constant_cell_coarsen(new CartesianCellIntConstantCoarsen(dim));
 
     boost::shared_ptr<hier::CoarsenOperator> ndi(new pdat::NodeDoubleInjection());
     boost::shared_ptr<hier::RefineOperator> cndlr(new geom::CartesianNodeDoubleLinearRefine());
@@ -206,6 +167,7 @@ Cleverleaf::Cleverleaf(
 
     d_grid_geometry->addCoarsenOperator(typeid(pdat::CellVariable<double>).name(), vol_weighted_avg);
     d_grid_geometry->addCoarsenOperator(typeid(pdat::CellVariable<double>).name(), mass_weighted_avg);
+    d_grid_geometry->addCoarsenOperator(typeid(pdat::CellVariable<int>).name(), constant_cell_coarsen);
     d_grid_geometry->addCoarsenOperator(typeid(pdat::NodeVariable<double>).name(), ndi);
     d_grid_geometry->addRefineOperator(typeid(pdat::NodeVariable<double>).name(), cndlr);
     d_grid_geometry->addRefineOperator(typeid(pdat::EdgeVariable<double>).name(), cedclr);
@@ -322,6 +284,13 @@ void Cleverleaf::registerModelVariables(
             d_nghosts,
             d_grid_geometry);
 
+    integrator->registerVariable(
+            d_level_indicator,
+            LagrangianEulerianLevelIntegrator::INDICATOR,
+            LagrangianEulerianLevelIntegrator::NO_EXCH,
+            d_nghosts,
+            d_grid_geometry);
+
     hier::VariableDatabase* vardb = hier::VariableDatabase::getDatabase();
 
     d_plot_context = integrator->getPlotContext();
@@ -359,6 +328,11 @@ void Cleverleaf::registerModelVariables(
                 "SCALAR",
                 vardb->mapVariableAndContextToIndex(
                     d_volume, d_plot_context));
+
+        d_visit_writer->registerPlotQuantity("Level Indicator",
+                "SCALAR",
+                vardb->mapVariableAndContextToIndex(
+                    d_level_indicator, d_plot_context));
 
         /*
          * Register vectors with the VisIt writer.
@@ -399,438 +373,221 @@ void Cleverleaf::initializeDataOnPatch(
         double init_data_time,
         bool initial_time)
 {
+    boost::shared_ptr<pdat::CellData<double> > cell_deltas(
+            patch.getPatchData(d_celldeltas,getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::CellData<double> > cell_coordinates(
+            patch.getPatchData(d_cellcoords, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::NodeData<double> > vertex_deltas(
+            patch.getPatchData(d_vertexdeltas, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::NodeData<double> > vertex_coordinates(
+            patch.getPatchData( d_vertexcoords, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    boost::shared_ptr<pdat::CellData<double> > volume(
+            patch.getPatchData(d_volume, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
+    const hier::Index ifirst = patch.getBox().lower();
+    const hier::Index ilast = patch.getBox().upper();
+
+    int x_min = ifirst(0);
+    int x_max = ilast(0);
+    int y_min = ifirst(1);
+    int y_max = ilast(1);
+
+    /*
+     * Get the patch geometry - this stores the coordinates of the patch corner
+     * in our Cartesian geometry, and the as well as the cell sizes.
+     */
+    const boost::shared_ptr<geom::CartesianPatchGeometry> pgeom(
+            patch.getPatchGeometry(),
+            boost::detail::dynamic_cast_tag());
+
+    /* Array containing dx and dy */
+    const double* dxs = pgeom->getDx();
+    /* Lower left coordinate of the patch */
+    const double* coords = pgeom->getXLower();
+
+    double physical_xmin = coords[0];
+    double physical_ymin = coords[1];
+
+    double dx = dxs[0];
+    double dy = dxs[1];
+
+    F90_FUNC(initialise_chunk_kernel,INITIALISE_CHUNK_KERNEL)
+        (&x_min,&x_max,&y_min,&y_max,
+         &physical_xmin,&physical_ymin,
+         &dx,&dy,
+         vertex_coordinates->getPointer(0),
+         vertex_deltas->getPointer(0),
+         vertex_coordinates->getPointer(1),
+         vertex_deltas->getPointer(1),
+         cell_coordinates->getPointer(0),
+         cell_deltas->getPointer(0),
+         cell_coordinates->getPointer(1),
+         cell_deltas->getPointer(1),
+         volume->getPointer());
+
     if (initial_time) {
         boost::shared_ptr<pdat::NodeData<double> > velocity(
                 patch.getPatchData(d_velocity, getCurrentDataContext()),
                 boost::detail::dynamic_cast_tag());
 
-        boost::shared_ptr<pdat::EdgeData<double> > massflux(
+        boost::shared_ptr<pdat::EdgeData<double> > mass_flux(
                 patch.getPatchData(d_massflux, getCurrentDataContext()),
                 boost::detail::dynamic_cast_tag());
 
-        boost::shared_ptr<pdat::EdgeData<double> > volflux(
+        boost::shared_ptr<pdat::EdgeData<double> > volume_flux(
                 patch.getPatchData(d_volflux, getCurrentDataContext()),
                 boost::detail::dynamic_cast_tag());
 
-        boost::shared_ptr<pdat::CellData<double> > v_pressure(
+        boost::shared_ptr<pdat::CellData<double> > pressure(
                 patch.getPatchData(d_pressure, getCurrentDataContext()),
                 boost::detail::dynamic_cast_tag());
 
-        boost::shared_ptr<pdat::CellData<double> > v_viscosity(
+        boost::shared_ptr<pdat::CellData<double> > viscosity(
                 patch.getPatchData(d_viscosity, getCurrentDataContext()),
                 boost::detail::dynamic_cast_tag());
 
-        boost::shared_ptr<pdat::CellData<double> > v_soundspeed(
+        boost::shared_ptr<pdat::CellData<double> > soundspeed(
                 patch.getPatchData(d_soundspeed, getCurrentDataContext()),
                 boost::detail::dynamic_cast_tag());
 
-        boost::shared_ptr<pdat::CellData<double> > v_density(
+        boost::shared_ptr<pdat::CellData<double> > density(
                 patch.getPatchData(d_density, getCurrentDataContext()),
                 boost::detail::dynamic_cast_tag());
 
-        boost::shared_ptr<pdat::CellData<double> > v_energy(
+        boost::shared_ptr<pdat::CellData<double> > energy(
                 patch.getPatchData(d_energy, getCurrentDataContext()),
                 boost::detail::dynamic_cast_tag());
-
-        boost::shared_ptr<pdat::CellData<double> > v_volume(
-                patch.getPatchData(d_volume, getCurrentDataContext()),
-                boost::detail::dynamic_cast_tag());
-
-        boost::shared_ptr<pdat::CellData<double> > celldeltas(
-                patch.getPatchData(d_celldeltas,getCurrentDataContext()),
-                boost::detail::dynamic_cast_tag());
-
-        boost::shared_ptr<pdat::CellData<double> > cellcoords(
-                patch.getPatchData(d_cellcoords, getCurrentDataContext()),
-                boost::detail::dynamic_cast_tag());
-
-        boost::shared_ptr<pdat::NodeData<double> > vertexdeltas(
-                patch.getPatchData(d_vertexdeltas, getCurrentDataContext()),
-                boost::detail::dynamic_cast_tag());
-
-        boost::shared_ptr<pdat::NodeData<double> > vertexcoords(
-                patch.getPatchData( d_vertexcoords, getCurrentDataContext()),
-                boost::detail::dynamic_cast_tag());
-
-        /*
-         * Fill in the volume array...
-         */
-        const hier::Index ifirst = patch.getBox().lower();
-        const hier::Index ilast = patch.getBox().upper();
-
-        hier::IntVector density_ghosts = v_density->getGhostCellWidth();
-
-        int xmin = ifirst(0) - density_ghosts(0);
-        int xmax = ilast(0) + density_ghosts(0);
-        int ymin = ifirst(1) - density_ghosts(1);
-        int ymax = ilast(1) + density_ghosts(1);
-
-        int xminng = ifirst(0);
-        int xmaxng = ilast(0);
-        int yminng = ifirst(1);
-        int ymaxng = ilast(1);
-
-        int nx = xmax - xmin + 1;
-        int ny = ymax - ymin + 1;
-
-        const boost::shared_ptr<geom::CartesianPatchGeometry> pgeom(patch.getPatchGeometry(), boost::detail::dynamic_cast_tag());
-
-        const double* dxs = pgeom->getDx();
-        const double* coords = pgeom->getXLower();
-        const double* ucoords = pgeom->getXUpper();
-
-        double rxmin = coords[0];
-        double rymin = coords[1];
-        double rxmax = ucoords[0];
-        double rymax = ucoords[1];
-
-        double dx = dxs[0];
-        double dy = dxs[1];
-        double vol = dx*dy;
-
-        //std::cout << "density (pre-fill) ==" << v_density->getPointer()[POLY2(1, 1, -2, -2, nx)] << std::endl;
-
 
         /*
          * Use the fillAll() methods to initialise other variables for now...
          */
         velocity->fillAll(0.0);
-        massflux->fillAll(0.0);
-        volflux->fillAll(0.0);
-        v_viscosity->fillAll(0.0);
-        v_soundspeed->fillAll(0.0);
-        v_volume->fillAll(vol);
-        v_pressure->fillAll(0.0);
-
-        /*
-         * Fill in arrays of dx/dy
-         */
-        celldeltas->fill(dx, 0);
-        celldeltas->fill(dy, 1);
-
-        vertexdeltas->fill(dx, 0);
-        vertexdeltas->fill(dy, 1);
-
-        double* vertexx = vertexcoords->getPointer(0);
-        double* vertexy = vertexcoords->getPointer(1);
-
-        int xcount = 0;
-        int ycount = 0;
-
-        hier::IntVector vertex_ghosts = vertexcoords->getGhostCellWidth();
-
-        int vimin = ifirst(0) - vertex_ghosts(0);
-        int vimax = ilast(0) + vertex_ghosts(0);
-        int vjmin = ifirst(1) - vertex_ghosts(1);
-        int vjmax = ilast(1) + vertex_ghosts(1);
-
-        vimax+=1;
-        vjmax+=1;
-
-        int vnx = vimax - vimin + 1;
-
-        for(int j = vjmin; j <= vjmax; j++) {
-
-            xcount = 0;
-
-            for(int i = vimin; i <= vimax; i++) {
-                int ind = POLY2(i,j,vimin,vjmin,vnx);
-
-                /*
-                 * Start at rxmin-2dx because we have 2 ghost cells!
-                 */
-                vertexx[ind] = (rxmin-2.0*dx) + dx*(xcount);
-                vertexy[ind] = (rymin-2.0*dy) + dy*(ycount);
-
-                xcount++;
-            }
-
-            ycount++;
-        }
-
-        double* cellx = cellcoords->getPointer(0);
-        double* celly = cellcoords->getPointer(1);
-
-        for(int j = ymin; j <= ymax; j++) {
-            for(int i = xmin; i <= xmax; i++) {
-                int vind = POLY2(i,j,vimin,vjmin,vnx);
-                int vind2 = POLY2(i+1,j,vimin,vjmin,vnx);
-                int vind3 = POLY2(i,j+1,vimin,vjmin,vnx);
-
-                int ind = POLY2(i,j,xmin,ymin,nx);
-
-                cellx[ind] = 0.5*(vertexx[vind]+vertexx[vind2]);
-                celly[ind] = 0.5*(vertexy[vind]+vertexy[vind3]);
-
-            }
-        }
-
-        /*
-         * Fill density and energy with some data, these are our initial conditions.
-         */
-        v_energy->fillAll(0.0);
-        v_density->fillAll(0.0);
-        double* density = v_density->getPointer();
-        double* energy = v_energy->getPointer();
-        double* xvel0 = velocity->getPointer(0);
-        double* yvel0 = velocity->getPointer(1);
+        mass_flux->fillAll(0.0);
+        volume_flux->fillAll(0.0);
+        viscosity->fillAll(0.0);
+        soundspeed->fillAll(0.0);
+        pressure->fillAll(0.0);
+        energy->fillAll(0.0);
+        density->fillAll(0.0);
 
         boost::shared_ptr<tbox::Database> states_db = input_db->getDatabase("states");
-        int nstates = states_db->getInteger("num_states");
+        int number_of_states = states_db->getInteger("num_states");
 
-        for(int state = 0; state < nstates; state++) {
+        double* state_density = new double[number_of_states];
+        double* state_energy = new double[number_of_states];
+        double* state_xvel = new double[number_of_states];
+        double* state_yvel = new double[number_of_states];
+        double* state_xmin = new double[number_of_states];
+        double* state_ymin = new double[number_of_states];
+        double* state_xmax = new double[number_of_states];
+        double* state_ymax = new double[number_of_states];
+        double* state_radius = new double[number_of_states];
+        int* state_geometry = new int[number_of_states];
+
+        for(int state = 0; state < number_of_states; state++) {
             std::ostringstream state_stream;
             state_stream << state_prefix << state;
 
             boost::shared_ptr<tbox::Database> current_state = states_db->getDatabase(state_stream.str());
 
-            double state_xmin = rxmin;
-            double state_xmax = rxmax;
-            double state_ymin = rymin;
-            double state_ymax = rymax;
-            std::string state_geometry;
+            std::string state_geometry_string;
+            state_geometry_string = current_state->getStringWithDefault("geometry", "RECTANGLE");
 
-            state_geometry = current_state->getStringWithDefault("geometry", "RECTANGLE");
 
-            double state_density = current_state->getDouble("density");
-            double state_energy = current_state->getDouble("energy");
-            double state_xvel = current_state->getDoubleWithDefault("xvel", 0.0);
-            double state_yvel = current_state->getDoubleWithDefault("yvel", 0.0);
+            if (state_geometry_string.compare("RECTANGLE") == 0) {
+                state_geometry[state] = g_rectangle;
+            } else if (state_geometry_string.compare("CIRCLE") == 0) {
+                state_geometry[state] = g_circle;
+            } else if (state_geometry_string.compare("POINT") == 0) {
+                state_geometry[state] = g_point;
+            }
 
-            if (state_geometry.compare("RECTANGLE") == 0) {
+            if(state_geometry[state] == g_circle ||
+                    state_geometry[state] == g_point) {
+                double* center = new double[2];
+                current_state->getDoubleArray("center", center, 2);
 
-                if (state != 0) {
+                state_xmin[state] = center[0];
+                state_ymin[state] = center[1];
+
+                state_xmax[state] = -1;
+                state_ymax[state] = -1;
+            } else {
+
+                if(state == 0) {
+                    state_xmin[state] = -1;
+                    state_ymin[state] = -1;
+
+                    state_xmax[state] = -1;
+                    state_ymax[state] = -1;
+                } else {
                     double* state_min = new double[2];
                     double* state_max = new double[2];
-
                     current_state->getDoubleArray("min", state_min, 2);
                     current_state->getDoubleArray("max", state_max, 2);
 
-                    state_xmin = state_min[0];
-                    state_ymin = state_min[1];
+                    state_xmin[state] = state_min[0];
+                    state_ymin[state] = state_min[1];
 
-                    state_xmax = state_max[0];
-                    state_ymax = state_max[1];
-                }
-
-                for(int j = ymin; j <= ymax; j++) {
-                    for(int i = xmin; i <= xmax; i++) {
-                        int n1 = POLY2(i,j,xmin,ymin,nx);
-                        int v1 = POLY2(i,j,vimin,vjmin,vnx);
-
-                        if (((float)vertexx[v1] >= (float)state_xmin && (float)vertexx[v1] < (float)state_xmax)) { 
-                            if ((float)vertexy[v1] >= (float)state_ymin && (float)vertexy[v1] < (float)state_ymax) {
-                                density(i,j) = state_density;
-                                energy(i,j) = state_energy;
-
-                                xvel0(i,j) = state_xvel;
-                                xvel0(i,j+1) = state_xvel;
-                                xvel0(i+1,j) = state_xvel;
-                                xvel0(i+1,j+1) = state_xvel;
-
-                                yvel0(i,j) = state_yvel;
-                                yvel0(i,j+1) = state_yvel;
-                                yvel0(i+1,j) = state_yvel;
-                                yvel0(i+1,j+1) = state_yvel;
-                            }
-                        }
-                    }
-                }
-            } else if (state_geometry.compare("CIRCLE") == 0) {
-                double* center = new double[2];
-                current_state->getDoubleArray("center", center, 2);
-
-                double x_center = center[0];
-                double y_center = center[1];
-
-                double state_radius = current_state->getDouble("radius");
-
-                for(int j = ymin; j <= ymax; j++) {
-                    for(int i = xmin; i <= xmax; i++) {
-                        int n1 = POLY2(i,j,xmin,ymin,nx);
-                        int v1 = POLY2(i,j,vimin,vjmin,vnx);
-
-                        double cell_radius =
-                            sqrt((cellx[n1]-x_center)*(cellx[n1]-x_center)
-                                    +(celly[n1]-y_center)*(celly[n1]-y_center));
-
-                        if((float)cell_radius <= (float)state_radius) {
-
-
-                            density(i,j) = state_density;
-                            energy(i,j) = state_energy;
-
-                            xvel0(i,j) = state_xvel;
-                            xvel0(i,j+1) = state_xvel;
-                            xvel0(i+1,j) = state_xvel;
-                            xvel0(i+1,j+1) = state_xvel;
-
-                            yvel0(i,j) = state_yvel;
-                            yvel0(i,j+1) = state_yvel;
-                            yvel0(i+1,j) = state_yvel;
-                            yvel0(i+1,j+1) = state_yvel;
-                        }
-                    }
-                }
-            } else if (state_geometry.compare("POINT") == 0) {
-                double* center = new double[2];
-                current_state->getDoubleArray("center", center, 2);
-
-                double x_center = center[0];
-                double y_center = center[1];
-
-                for(int j = ymin; j <= ymax; j++) {
-                    for(int i = xmin; i <= xmax; i++) {
-                        int n1 = POLY2(i,j,xmin,ymin,nx);
-                        int v1 = POLY2(i,j,vimin,vjmin,vnx);
-
-                        if ((float)vertexx[v1] == (float)x_center) { 
-                            if ((float)vertexy[v1] == (float)y_center) {
-                                density(i,j) = state_density;
-                                energy(i,j) = state_energy;
-                            }
-                        }
-                    }
+                    state_xmax[state] = state_max[0];
+                    state_ymax[state] = state_max[1];
                 }
             }
-        }
-    } else {
-        boost::shared_ptr<pdat::CellData<double> > celldeltas(patch.getPatchData(
-                    d_celldeltas,
-                    getCurrentDataContext()),
-                boost::detail::dynamic_cast_tag());
 
-        boost::shared_ptr<pdat::CellData<double> > cellcoords(
-                patch.getPatchData(d_cellcoords, getCurrentDataContext()),
-                boost::detail::dynamic_cast_tag());
-
-        boost::shared_ptr<pdat::NodeData<double> > vertexdeltas(
-                patch.getPatchData(d_vertexdeltas, getCurrentDataContext()),
-                boost::detail::dynamic_cast_tag());
-
-        boost::shared_ptr<pdat::NodeData<double> > vertexcoords(
-                patch.getPatchData(d_vertexcoords, getCurrentDataContext()),
-                boost::detail::dynamic_cast_tag());
-
-        boost::shared_ptr<pdat::CellData<double> > v_volume(
-                patch.getPatchData(d_volume, getCurrentDataContext()),
-                boost::detail::dynamic_cast_tag());
-
-        boost::shared_ptr<pdat::EdgeData<double> > v_volflux(
-                patch.getPatchData(d_volflux, getCurrentDataContext()),
-                boost::detail::dynamic_cast_tag());
-
-        // Fill volflux with 0.0 for now
-        v_volflux->fillAll(0.0);
-
-
-        /*
-         * Fill in the volume array...
-         */
-        const hier::Index ifirst = patch.getBox().lower();
-        const hier::Index ilast = patch.getBox().upper();
-
-        hier::IntVector ghosts = celldeltas->getGhostCellWidth();
-
-        int xmin = ifirst(0) - ghosts(0);
-        int xmax = ilast(0) + ghosts(0);
-        int ymin = ifirst(1) - ghosts(1);
-        int ymax = ilast(1) + ghosts(1);
-
-        int xminng = ifirst(0);
-        int xmaxng = ilast(0);
-        int yminng = ifirst(1);
-        int ymaxng = ilast(1);
-
-        int nx = xmax - xmin + 1;
-        int ny = ymax - ymin + 1;
-
-        const boost::shared_ptr<geom::CartesianPatchGeometry> pgeom(
-                patch.getPatchGeometry(),
-                boost::detail::dynamic_cast_tag());
-
-        const double* dxs = pgeom->getDx();
-        const double* coords = pgeom->getXLower();
-
-        double rxmin = coords[0];
-        double rymin = coords[1];
-
-        double dx = dxs[0];
-        double dy = dxs[1];
-
-        double vol = dx*dy;
-
-        /*
-         * Use the fillAll() methods to initialise other variables for now...
-         */
-        v_volume->fillAll(vol);
-
-        /*
-         * Fill in arrays of dx/dy
-         */
-        celldeltas->fill(dx, 0);
-        celldeltas->fill(dy, 1);
-
-        vertexdeltas->fill(dx, 0);
-        vertexdeltas->fill(dy, 1);
-        
-        double* vertexx = vertexcoords->getPointer(0);
-        double* vertexy = vertexcoords->getPointer(1);
-
-        int xcount = 0;
-        int ycount = 0;
-
-        hier::IntVector vertex_ghosts = vertexcoords->getGhostCellWidth();
-
-        int vimin = ifirst(0) - vertex_ghosts(0);
-        int vimax = ilast(0) + vertex_ghosts(0);
-        int vjmin = ifirst(1) - vertex_ghosts(1);
-        int vjmax = ilast(1) + vertex_ghosts(1);
-
-        vimax+=1;
-        vjmax+=1;
-
-        int vnx = vimax - vimin + 1;
-
-        for(int j = vjmin; j <= vjmax; j++) {
-
-            xcount = 0;
-
-            for(int i = vimin; i <= vimax; i++) {
-                int ind = POLY2(i,j,vimin,vjmin,vnx);
-
-                /*
-                 * Start at rxmin-2dx because we have 2 ghost cells!
-                 */
-                vertexx[ind] = (rxmin-2*dx) + dx*(xcount);
-                vertexy[ind] = (rymin-2*dy) + dy*(ycount);
-
-                xcount++;
-            }
-
-            ycount++;
+            state_density[state] = current_state->getDouble("density");
+            state_energy[state] = current_state->getDouble("energy");
+            state_xvel[state] = current_state->getDoubleWithDefault("xvel", 0.0);
+            state_yvel[state] = current_state->getDoubleWithDefault("yvel", 0.0);
+            state_radius[state] = current_state->getDoubleWithDefault("radius", -1);
         }
 
-        double* cellx = cellcoords->getPointer(0);
-        double* celly = cellcoords->getPointer(1);
+        F90_FUNC(generate_chunk_kernel,GENERATE_CHUNK_KERNEL)
+            (&x_min,&x_max,&y_min,&y_max,
+             vertex_coordinates->getPointer(0),
+             vertex_coordinates->getPointer(1),
+             cell_coordinates->getPointer(0),
+             cell_coordinates->getPointer(1),
+             density->getPointer(),
+             energy->getPointer(),
+             velocity->getPointer(0),
+             velocity->getPointer(1),
+             &number_of_states,
+             state_density,
+             state_energy,
+             state_xvel,
+             state_yvel,
+             state_xmin,
+             state_xmax,
+             state_ymin,
+             state_ymax,
+             state_radius,
+             state_geometry,
+             &g_rectangle,
+             &g_circle,
+             &g_point);
 
-        for(int j = ymin; j <= ymax; j++) {
-            for(int i = xmin; i <= xmax; i++) {
-                int vind = POLY2(i,j,vimin,vjmin,vnx);
-                int vind2 = POLY2(i+1,j,vimin,vjmin,vnx);
-                int vind3 = POLY2(i,j+1,vimin,vjmin,vnx);
-
-                int ind = POLY2(i,j,xmin,ymin,nx);
-
-                cellx[ind] = 0.5*(vertexx[vind]+vertexx[vind2]);
-                celly[ind] = 0.5*(vertexy[vind]+vertexy[vind3]);
-
-            }
-        }
+        delete[] state_density;
+        delete[] state_energy;
+        delete[] state_xvel;
+        delete[] state_yvel;
+        delete[] state_xmin;
+        delete[] state_ymin;
+        delete[] state_xmax;
+        delete[] state_ymax;
+        delete[] state_radius;
+        delete[] state_geometry;
     }
 
     ideal_gas_knl(patch, false);
-
 }
 
 void Cleverleaf::accelerate(
@@ -1014,7 +771,6 @@ void Cleverleaf::viscosity_knl(
   boost::shared_ptr<pdat::CellData<double> > v_celldeltas(
           patch.getPatchData(d_celldeltas, getCurrentDataContext()),
           boost::detail::dynamic_cast_tag());
-
 
     hier::IntVector ghosts = v_pressure->getGhostCellWidth();
 
@@ -1901,29 +1657,28 @@ void Cleverleaf::field_summary(
             patch.getPatchData(d_velocity, getCurrentDataContext()),
             boost::detail::dynamic_cast_tag());
 
+    boost::shared_ptr<pdat::CellData<int> > v_level_indicator(
+            patch.getPatchData(d_level_indicator, getCurrentDataContext()),
+            boost::detail::dynamic_cast_tag());
+
     const hier::Index ifirst = patch.getBox().lower();
     const hier::Index ilast = patch.getBox().upper();
 
-    hier::IntVector ghosts = v_density0->getGhostCellWidth();
+    int xmin = ifirst(0);
+    int xmax = ilast(0);
+    int ymin = ifirst(1);
+    int ymax = ilast(1);
 
-    int xmin = ifirst(0) - ghosts(0);
-    int xmax = ilast(0) + ghosts(0);
-    int ymin = ifirst(1) - ghosts(1);
-    int ymax = ilast(1) + ghosts(1);
-
-    int nx = xmax - xmin + 1;
-    int ny = ymax - ymin + 1;
-
-    double* volume = v_volume->getPointer();
     double* density0 = v_density0->getPointer();
     double* energy0 = v_energy0->getPointer();
     double* pressure = v_pressure->getPointer();
+    double* volume = v_volume->getPointer();
     double* xvel0 = v_vel0->getPointer(0);
     double* yvel0 = v_vel0->getPointer(1);
 
-    double vsqrd;
-    double cell_vol;
-    double cell_mass;
+    int* level_indicator = v_level_indicator->getPointer();
+
+    int level_number = patch.getPatchLevelNumber();
 
     *vol=0.0;
     *mass=0.0;
@@ -1931,25 +1686,21 @@ void Cleverleaf::field_summary(
     *ke=0.0;
     *press=0.0;
 
-    for(int k = ifirst(1); k <= ilast(1); k++) {
-        for(int j = ifirst(0); j <= ilast(0); j++) {
-            vsqrd=0.0;
-
-            vsqrd=vsqrd+0.25*(pow(xvel0(j,k),2)+pow(yvel0(j,k),2));
-            vsqrd=vsqrd+0.25*(pow(xvel0(j+1,k),2)+pow(yvel0(j+1,k),2));
-            vsqrd=vsqrd+0.25*(pow(xvel0(j,k+1),2)+pow(yvel0(j,k+1),2));
-            vsqrd=vsqrd+0.25*(pow(xvel0(j+1,k+1),2)+pow(yvel0(j+1,k+1),2));
-
-            cell_vol=volume(j,k);
-            cell_mass=cell_vol*density0(j,k);
-
-            *vol=*vol+cell_vol;
-            *mass=*mass+cell_mass;
-            *ie=*ie+cell_mass*energy0(j,k);
-            *ke=*ke+cell_mass*0.5*vsqrd;
-            *press=*press+cell_vol*pressure(j,k);
-        }
-    }
+    F90_FUNC(field_summary_kernel, FIELD_SUMMARY_KERNEL)
+        (&xmin, &xmax, &ymin, &ymax,
+         volume,
+         density0,
+         energy0,
+         pressure,
+         xvel0,
+         yvel0,
+         level_indicator,
+         vol,
+         mass,
+         ie,
+         ke,
+         press,
+         &level_number);
 }
 
 void Cleverleaf::tagGradientDetectorCells(

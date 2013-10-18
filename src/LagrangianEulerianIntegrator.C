@@ -351,3 +351,58 @@ void LagrangianEulerianIntegrator::finalizeCallback()
     t_initialize_hierarchy.reset();
     t_advance_hierarchy.reset();
 }
+
+void LagrangianEulerianIntegrator::printFieldSummary()
+{
+    double volume = 0.0;
+    double mass = 0.0;
+    double pressure = 0.0;
+    double internal_energy = 0.0;
+    double kinetic_energy = 0.0;
+
+    double global_volume = 0.0;
+    double global_mass = 0.0;
+    double global_pressure = 0.0;
+    double global_internal_energy = 0.0;
+    double global_kinetic_energy = 0.0;
+    double global_total_energy = 0.0;
+
+   int finest_level_number = d_patch_hierarchy->getFinestLevelNumber();
+
+   for(int level_number = 0; level_number <= finest_level_number; level_number++) {
+
+       boost::shared_ptr<hier::PatchLevel> patch_level(d_patch_hierarchy->getPatchLevel(level_number));
+
+       d_level_integrator->getFieldSummary(patch_level,
+               &volume,
+               &mass,
+               &pressure,
+               &internal_energy,
+               &kinetic_energy);
+
+       global_volume += volume;
+       global_mass += mass;
+       global_pressure += pressure;
+       global_internal_energy += internal_energy;
+       global_kinetic_energy += kinetic_energy;
+   }
+
+   global_total_energy = global_internal_energy + global_kinetic_energy;
+    
+   tbox::plog << std::setw(17) << " Volume"
+       << std::setw(17) << " Mass"
+       << std::setw(17) << " Density"
+       << std::setw(17) << " Pressure"
+       << std::setw(17) << " Internal Energy"
+       << std::setw(17) << " Kinetic Energy"
+       << std::setw(17) << " Total Energy" << std::endl;
+
+   tbox::plog << std::scientific << std::setprecision(4)
+       <<  std::setw(17) << global_volume
+       <<  std::setw(17) << global_mass
+       <<  std::setw(17) << global_mass/global_volume
+       <<  std::setw(17) << global_pressure/global_volume
+       <<  std::setw(17) << global_internal_energy
+       <<  std::setw(17) << global_kinetic_energy
+       <<  std::setw(17) << global_total_energy << std::endl;
+}
