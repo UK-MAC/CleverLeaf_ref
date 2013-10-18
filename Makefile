@@ -18,15 +18,20 @@ MATH_LIB=-L$(LAPACK_DIR)/lib -llapack -lblas
 CXX=mpiicpc
 F90=mpiifort
 
-CPPFLAGS=-g -O3 -fp-model source -fp-model strict -prec-div -prec-sqrt -lz -I/home/dab/opt/boost/1.52.0/intel-13.1.1.163/include $(HDF_INC) $(SAMRAI_INC) $(MATH_INC) -DVERSION=\"$(GIT_VERSION)\" -DHOST_NAME=\"$(HOST_NAME)\"
-FFLAGS=-openmp -g -warn all -O3 -fp-model strict -fp-model source -prec-div -prec-sqrt -module obj/
-LDFLAGS=-openmp -g -lz $(SAMRAI_LIB) $(HDF_LIB) $(MATH_LIB) -lstdc++ -nofor_main
+CPPFLAGS=-O3 -fp-model source -fp-model strict -prec-div -prec-sqrt -lz -I/home/dab/opt/boost/1.52.0/intel-13.1.1.163/include $(HDF_INC) $(SAMRAI_INC) $(MATH_INC) -DVERSION=\"$(GIT_VERSION)\" -DHOST_NAME=\"$(HOST_NAME)\"
+FFLAGS=-O3 -warn all -fp-model strict -fp-model source -prec-div -prec-sqrt -module obj/
+LDFLAGS=-lz $(SAMRAI_LIB) $(HDF_LIB) $(MATH_LIB) -lstdc++ -nofor_main
 
 CPP_FILES := $(wildcard src/*.C)
 F90_FILES := $(wildcard src/fortran/*.f90)
 OBJ_FILES := $(addprefix obj/,$(notdir $(F90_FILES:.f90=.o) $(CPP_FILES:.C=.o)))
 
-all: obj cleverleaf
+ref: cleverleaf
+
+openmp: CPPFLAGS+=-openmp
+openmp: LDFLAGS+=-openmp
+openmp: FFLAGS+=-openmp
+openmp: ref
 
 cleverleaf: $(OBJ_FILES)
 	$(F90) $^ $(LDFLAGS) -o $@
