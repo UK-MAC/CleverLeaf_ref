@@ -41,13 +41,10 @@ obj:
 	mkdir -p obj
 
 clean:
-	rm -f obj/*.o obj/*.mod cleverleaf
+	rm -rf obj/*.o obj/*.mod cleverleaf doc/dox
 
-docs:
+doc:
 	doxygen doc/Doxyfile
 	rsync doc/dox/html/* /shared/general/docs/Cleverleaf/ -r
-
-cleandoc:
-	rm -rf doc/dox
 
 .PHONY: clean, doc
