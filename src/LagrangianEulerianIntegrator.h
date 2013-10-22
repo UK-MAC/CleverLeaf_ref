@@ -35,76 +35,78 @@
 using namespace SAMRAI;
 
 class LagrangianEulerianIntegrator {
-    public:
-        LagrangianEulerianIntegrator(
-                const boost::shared_ptr<tbox::Database>& input_db,
-                const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
-                const boost::shared_ptr<LagrangianEulerianLevelIntegrator>& level_integrator,
-                const boost::shared_ptr<mesh::GriddingAlgorithmStrategy>& gridding_algorithm);
+  public:
+    LagrangianEulerianIntegrator(
+        const boost::shared_ptr<tbox::Database>& input_db,
+        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+        const boost::shared_ptr<LagrangianEulerianLevelIntegrator>&
+          level_integrator,
+        const boost::shared_ptr<mesh::GriddingAlgorithmStrategy>& 
+          gridding_algorithm);
 
-        double initializeHierarchy();
+    double initializeHierarchy();
 
-        double advanceHierarchy(const double dt);
+    double advanceHierarchy(const double dt);
 
-        double getIntegratorTime() const { return d_integrator_time; }
+    double getIntegratorTime() const { return d_integrator_time; }
 
-        double getStartTime() const { return d_start_time; }
+    double getStartTime() const { return d_start_time; }
 
-        double getEndTime() const { return d_end_time; }
+    double getEndTime() const { return d_end_time; }
 
-        int getIntegratorStep() const { return d_integrator_step; }
+    int getIntegratorStep() const { return d_integrator_step; }
 
-        bool stepsRemaining() const;
+    bool stepsRemaining() const;
 
-        const boost::shared_ptr<hier::PatchHierarchy> getPatchHierarchy() const
-        {
-            return d_patch_hierarchy;
-        }
+    const boost::shared_ptr<hier::PatchHierarchy> getPatchHierarchy() const
+    {
+      return d_patch_hierarchy;
+    }
 
-        boost::shared_ptr<LagrangianEulerianLevelIntegrator>
-          getLevelIntegrator() const
-          {
-            return d_level_integrator;
-          }
+    boost::shared_ptr<LagrangianEulerianLevelIntegrator>
+    getLevelIntegrator() const
+    {
+      return d_level_integrator;
+    }
 
-        boost::shared_ptr<mesh::GriddingAlgorithmStrategy> 
-          getGriddingAlgorithm() const
-          {
-            return d_gridding_algorithm;
-          }
+    boost::shared_ptr<mesh::GriddingAlgorithmStrategy> 
+    getGriddingAlgorithm() const
+    {
+      return d_gridding_algorithm;
+    }
 
-        void printFieldSummary();
-    private:
-        void initializeLevelData(const int level_number);
+    void printFieldSummary();
+  private:
+    void initializeLevelData(const int level_number);
 
-        void getMinHeirarchyDt(const bool initial_time);
+    void getMinHeirarchyDt(const bool initial_time);
 
-        double d_dt;
-        double d_grow_dt;
-        double d_max_dt;
-        bool d_fix_dt;
+    boost::shared_ptr<hier::PatchHierarchy> d_patch_hierarchy;
+    boost::shared_ptr<LagrangianEulerianLevelIntegrator> d_level_integrator;
+    boost::shared_ptr<mesh::GriddingAlgorithmStrategy> d_gridding_algorithm;
 
-        double d_start_time;
-        double d_end_time;
+    double d_dt;
+    double d_grow_dt;
+    double d_max_dt;
 
-        double d_integrator_time;
+    bool d_fix_dt;
 
-        int d_integrator_step;
-        int d_end_step;
+    double d_start_time;
+    double d_end_time;
+    int d_end_step;
 
-        int d_regrid_interval;
-        std::vector<int> d_tag_buffer;
+    double d_integrator_time;
+    int d_integrator_step;
 
-        boost::shared_ptr<hier::PatchHierarchy> d_patch_hierarchy;
-        boost::shared_ptr<LagrangianEulerianLevelIntegrator> d_level_integrator;
-        boost::shared_ptr<mesh::GriddingAlgorithmStrategy> d_gridding_algorithm;
+    int d_regrid_interval;
+    std::vector<int> d_tag_buffer;
 
-        static boost::shared_ptr<tbox::Timer> t_initialize_hierarchy;
-        static boost::shared_ptr<tbox::Timer> t_advance_hierarchy;
+    static boost::shared_ptr<tbox::Timer> t_initialize_hierarchy;
+    static boost::shared_ptr<tbox::Timer> t_advance_hierarchy;
 
-        static void initializeCallback();
-        static void finalizeCallback();
+    static void initializeCallback();
+    static void finalizeCallback();
 
-        static tbox::StartupShutdownManager::Handler s_initialize_handler;
+    static tbox::StartupShutdownManager::Handler s_initialize_handler;
 };
 #endif
