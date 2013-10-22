@@ -1372,7 +1372,8 @@ void Cleverleaf::setPhysicalBoundaryConditions(
         mass_flux_x = v_massflux->getPointer(1);
         mass_flux_y = v_massflux->getPointer(0);
       } break;
-    default : tbox::perr << "[ERROR] Unknown exchange id in setPhysicalBoundaryConditions... " << std::endl;
+    default : tbox::perr << "[ERROR] Unknown exchange id in setPhysicalBoundaryConditions... " 
+              << std::endl;
               exit(-1);
   }
 
@@ -1462,7 +1463,8 @@ void Cleverleaf::setPhysicalBoundaryConditions(
          d_exchange_fields,
          &depth);
         break;
-      default : tbox::perr << "[ERROR] Unknown edge location in setPhysicalBoundaryConditions... " << std::endl;
+      default : tbox::perr << "[ERROR] Unknown edge location in setPhysicalBoundaryConditions... "
+                << std::endl;
                 exit(-1);
     }
   }
