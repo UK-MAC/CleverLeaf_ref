@@ -268,7 +268,7 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
     d_tag_buffer.resize(max_levels);
 
     for (int i = 0; i < d_tag_buffer.size(); i++) {
-      d_tag_buffer[i] = 2;
+      d_tag_buffer[i] = d_regrid_interval;
     }
 
     d_gridding_algorithm->regridAllFinerLevels(
