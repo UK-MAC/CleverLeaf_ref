@@ -113,7 +113,6 @@ class LagrangianEulerianLevelIntegrator:
      * @param patch_strategy Patch strategy object to use.
      */
     LagrangianEulerianLevelIntegrator(
-        const std::string& object_name,
         const boost::shared_ptr<tbox::Database>& input_db,
         LagrangianEulerianPatchStrategy* patch_strategy);
 
@@ -306,11 +305,6 @@ class LagrangianEulerianLevelIntegrator:
      * operating on a patch in the AMR hierarchy.
      */
     LagrangianEulerianPatchStrategy* d_patch_strategy;
-
-    /**
-     * The name of this object.
-     */
-    std::string d_object_name;
 
     /**
      * The dimension of the problem.

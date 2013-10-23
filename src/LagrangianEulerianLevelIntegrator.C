@@ -110,12 +110,10 @@ boost::shared_ptr<tbox::Timer>
 LagrangianEulerianLevelIntegrator::t_kernel_initialize_data;
 
 LagrangianEulerianLevelIntegrator::LagrangianEulerianLevelIntegrator(
-    const std::string& object_name,
     const boost::shared_ptr<tbox::Database>& input_db,
     LagrangianEulerianPatchStrategy* patch_strategy):
   d_dim(patch_strategy->getDim())
 {
-  d_object_name = object_name;
   d_patch_strategy = patch_strategy;
 
   /*
