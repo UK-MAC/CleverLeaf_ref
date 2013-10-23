@@ -51,14 +51,13 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
   d_end_step = input_db->getIntegerWithDefault(
       "max_integrator_steps", 100000000);
 
+  d_dt = input_db->getDoubleWithDefault("initial_dt", 0.04);
   d_grow_dt = input_db->getDoubleWithDefault("grow_dt", 1.5);
   d_max_dt = input_db->getDoubleWithDefault(
       "max_dt", tbox::MathUtilities<double>::getMax());
   d_fix_dt = input_db->getBoolWithDefault("fix_dt", false);
 
   d_integrator_time = d_start_time;
-
-  d_dt = 0.04;
 }
 
 double LagrangianEulerianIntegrator::initializeHierarchy()
