@@ -97,13 +97,13 @@ extern "C" {
      int*,int*);
 
   void F90_FUNC(tag_q_kernel,TAG_Q_KERNEL)
-    (int*,int*,int*,int*,double*,int*);
+    (int*,int*,int*,int*,double*,double*,int*);
 
   void F90_FUNC(tag_energy_kernel,TAG_ENERGY_KERNEL)
-    (int*,int*,int*,int*,double*,int*);
+    (int*,int*,int*,int*,double*,double*,int*);
 
   void F90_FUNC(tag_density_kernel,TAG_DENSITY_KERNEL)
-    (int*,int*,int*,int*,double*,int*);
+    (int*,int*,int*,int*,double*,double*,int*);
 
   void F90_FUNC(tag_all_kernel,TAG_ALL_KERNEL)
     (int*,int*,int*,int*,int*);
@@ -206,6 +206,11 @@ Cleverleaf::Cleverleaf(
       typeid(pdat::CellVariable<double>).name(), ccdclr);
 
   d_tag_all = input_database->getBoolWithDefault("tag_all", false);
+  d_tag_q_threshold = input_database->getDoubleWithDefault("tag_q", 0.001);
+  d_tag_density_gradient = input_database->getDoubleWithDefault(
+      "tag_density", 0.1);
+  d_tag_energy_gradient = input_database->getDoubleWithDefault(
+      "tag_energy", 0.1);
 }
 
 void Cleverleaf::registerModelVariables(
@@ -1576,6 +1581,7 @@ void Cleverleaf::tagGradientDetectorCells(
      &xmax,
      &ymin,
      &ymax,
+     &d_tag_q_threshold,
      viscosity->getPointer(),
      temporary_tags->getPointer());
 
@@ -1584,6 +1590,7 @@ void Cleverleaf::tagGradientDetectorCells(
      &xmax,
      &ymin,
      &ymax,
+     &d_tag_density_gradient,
      density0->getPointer(),
      temporary_tags->getPointer());
 
@@ -1592,6 +1599,7 @@ void Cleverleaf::tagGradientDetectorCells(
      &xmax,
      &ymin,
      &ymax,
+     &d_tag_energy_gradient,
      energy0->getPointer(),
      temporary_tags->getPointer());
 

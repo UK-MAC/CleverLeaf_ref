@@ -21,7 +21,8 @@
 !>  @author David Beckingsale
 !>  @details Tags cells for refinement based on the absolute viscosity value.
 SUBROUTINE tag_q_kernel(x_min,x_max,y_min,y_max,&
-                            viscosity,           &
+                            q_threshold,        &
+                            viscosity,          &
                             tags)
 
   IMPLICIT NONE
@@ -29,6 +30,7 @@ SUBROUTINE tag_q_kernel(x_min,x_max,y_min,y_max,&
   INTEGER :: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: viscosity
   INTEGER, DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: tags
+  REAL(KIND=8) :: q_threshold
 
   INTEGER :: j,k
 
@@ -36,7 +38,7 @@ SUBROUTINE tag_q_kernel(x_min,x_max,y_min,y_max,&
 !$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
-      IF (viscosity(j,k) .GT. 0.001) THEN
+      IF (viscosity(j,k) .GT. q_threshold) THEN
         tags(j,k) = 1
         tags(j+1,k) = 1
         tags(j,k+1) = 1
@@ -58,6 +60,7 @@ END SUBROUTINE tag_q_kernel
 !>  @author David Beckingsale
 !>  @details Tags cells for refinement based on the density gradient.
 SUBROUTINE tag_density_kernel(x_min,x_max,y_min,y_max,&
+                            density_gradient_threshold,&
                             density,           &
                             tags)
 
@@ -66,6 +69,7 @@ SUBROUTINE tag_density_kernel(x_min,x_max,y_min,y_max,&
   INTEGER :: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density
   INTEGER, DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: tags
+  REAL(KIND=8) :: density_gradient_threshold
 
   INTEGER :: j,k
   REAL(KIND=8) :: d2x,d2y,dxy,dyx,dd
@@ -82,7 +86,7 @@ SUBROUTINE tag_density_kernel(x_min,x_max,y_min,y_max,&
 
       dd = max(d2x,max(d2y,max(dxy,dyx)));
 
-      IF (dd .GT. 0.1) THEN
+      IF (dd .GT. density_gradient_threshold) THEN
         tags(j,k) = 1
         tags(j+1,k) = 1
         tags(j,k+1) = 1
@@ -104,6 +108,7 @@ END SUBROUTINE tag_density_kernel
 !>  @author David Beckingsale
 !>  @details Tags cells for refinement based on the energy gradient.
 SUBROUTINE tag_energy_kernel(x_min,x_max,y_min,y_max,&
+                            energy_gradient_threshold,&
                             energy,           &
                             tags)
 
@@ -112,6 +117,7 @@ SUBROUTINE tag_energy_kernel(x_min,x_max,y_min,y_max,&
   INTEGER :: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: energy
   INTEGER, DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: tags
+  REAL(KIND=8) :: energy_gradient_threshold
 
   INTEGER :: j,k
   REAL(KIND=8) :: d2x,d2y,dxy,dyx,dd
@@ -129,7 +135,7 @@ SUBROUTINE tag_energy_kernel(x_min,x_max,y_min,y_max,&
 
       dd = max(d2x,max(d2y,max(dxy,dyx)));
 
-      IF (dd .GT. 0.1) THEN
+      IF (dd .GT. energy_gradient_threshold) THEN
         tags(j,k) = 1
         tags(j+1,k) = 1
         tags(j,k+1) = 1

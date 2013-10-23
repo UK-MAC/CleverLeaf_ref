@@ -148,6 +148,9 @@ class Cleverleaf:
     const std::string state_prefix;
 
     bool d_tag_all;
+    double d_tag_q_threshold;
+    double d_tag_density_gradient;
+    double d_tag_energy_gradient;
 
     boost::shared_ptr<pdat::NodeVariable<double> > d_velocity;
     boost::shared_ptr<pdat::EdgeVariable<double> > d_massflux;
