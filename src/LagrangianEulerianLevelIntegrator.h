@@ -299,7 +299,7 @@ class LagrangianEulerianLevelIntegrator:
         double* level_pressure,
         double* level_internal_energy,
         double* level_kinetic_energy);
-  protected:
+  private:
     /**
      * PatchStrategy contains user-specified methods needed for
      * operating on a patch in the AMR hierarchy.
