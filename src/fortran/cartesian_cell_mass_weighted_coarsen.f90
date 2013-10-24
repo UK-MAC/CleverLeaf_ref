@@ -51,7 +51,6 @@ SUBROUTINE cartesian_cell_double_mass_weighted_coarsen(ifirstc0,ifirstc1,&
         if1=k*ratio(1)+ir1
         DO ir0=0,ratio(0)-1
           if0=j*ratio(0)+ir0
-          arrayc(j,k) = arrayf(if0,if1)
           seM = seM + arrayf(if0,if1)*massf(if0,if1)*volf
         ENDDO
       ENDDO
