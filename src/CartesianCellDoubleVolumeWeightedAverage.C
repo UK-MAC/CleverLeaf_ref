@@ -24,7 +24,15 @@
 #include "SAMRAI/pdat/CellVariable.h"
 #include "SAMRAI/tbox/Utilities.h"
 
-#define POLY2(i, j, imin, jmin, nx) ((i - imin) + (j - jmin) * (nx))
+#define F90_FUNC(name,NAME) name ## _
+
+extern "C" {
+  void F90_FUNC(cartesian_cell_double_volume_weighted_coarsen,
+      CARTESIAN_CELL_DOUBLE_VOLUME_WEIGHTED_COARSEN)
+    (const int&, const int&, const int&, const int&, const int&, const int&,
+     const int&, const int&, const int&, const int&, const int&, const int&,
+     const int*, const double*, double*, const double*, const double*);
+}
 
 tbox::StartupShutdownManager::Handler 
 CartesianCellDoubleVolumeWeightedAverage::s_initialize_handler(
@@ -106,42 +114,37 @@ void CartesianCellDoubleVolumeWeightedAverage::coarsen(
   const double* cdx = cgeom->getDx();
 
   for (int d = 0; d < cdata->getDepth(); d++) {
-
     double* farray = fdata->getPointer(d);
     double* carray = cdata->getPointer(d);
 
     if ((dim == tbox::Dimension(2))) {
-
       double Vf = fdx[0]*fdx[1];
       double Vc = cdx[0]*cdx[1];
 
-      for(int k = ifirstc(1); k <= ilastc(1); k++) {
-        for(int j = ifirstc(0); j <= ilastc(0); j++) {
-
-          double spv = 0.0;
-
-          for(int ry = 0; ry < ratio[1]; ry++) {
-            int kfine = k*ratio[1]+ry;
-
-            for(int rx = 0; rx < ratio[0]; rx++) {
-              int jfine = j*ratio[0]+rx;
-
-              int fine_index = POLY2(jfine,kfine,filo(0), filo(1), (fihi(0)-filo(0)+1));
-
-              spv += farray[fine_index]*Vf;
-            }
-          }
-
-          int coarse_index = POLY2(j,k,cilo(0), cilo(1), (cihi(0)-cilo(0)+1));
-          carray[coarse_index] = spv/Vc;
-        }
-      }
+      F90_FUNC(cartesian_cell_double_volume_weighted_coarsen,
+          CARTESIAN_CELL_DOUBLE_VOLUME_WEIGHTED_COARSEN)
+        (ifirstc(0),
+         ifirstc(1),
+         ilastc(0),
+         ilastc(1),
+         filo(0),
+         filo(1),
+         fihi(0),
+         fihi(1),
+         cilo(0),
+         cilo(1),
+         cihi(0),
+         cihi(1),
+         &ratio[0],
+         fdata->getPointer(d),
+         cdata->getPointer(d),
+         &Vf,
+         &Vc);
     } else {
       TBOX_ERROR("CartesianCellDoubleVolumeWeightedAverage error...\n"
           << "dim != 2 not supported." << std::endl);
     }
   }
-
   t_coarsen->stop();
 }
 
