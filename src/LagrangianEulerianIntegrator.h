@@ -75,7 +75,10 @@ class LagrangianEulerianIntegrator {
       return d_gridding_algorithm;
     }
 
-    void printFieldSummary();
+    /**
+     * Returns kinetic energy for test check purposes.
+     */
+    double printFieldSummary();
   private:
     void initializeLevelData(const int level_number);
 

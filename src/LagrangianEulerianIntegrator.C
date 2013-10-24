@@ -364,7 +364,7 @@ void LagrangianEulerianIntegrator::getMinHeirarchyDt(const bool initial_time)
   }
 }
 
-void LagrangianEulerianIntegrator::printFieldSummary()
+double LagrangianEulerianIntegrator::printFieldSummary()
 {
   double volume = 0.0;
   double mass = 0.0;
@@ -418,6 +418,8 @@ void LagrangianEulerianIntegrator::printFieldSummary()
     <<  std::setw(17) << global_internal_energy
     <<  std::setw(17) << global_kinetic_energy
     <<  std::setw(17) << global_total_energy << std::endl;
+
+  return global_kinetic_energy;
 }
 
 void LagrangianEulerianIntegrator::initializeCallback()

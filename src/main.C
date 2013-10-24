@@ -236,13 +236,39 @@ int main(int argc, char* argv[]) {
     }
 
     if ((vis_dump_interval > 0) && 
-        (lagrangian_eulerian_integrator->getIntegratorStep()+1 
+        (lagrangian_eulerian_integrator->getIntegratorStep()
          % vis_dump_interval) != 0)
     {
       visit_data_writer->writePlotData(
           patch_hierarchy,
-          lagrangian_eulerian_integrator->getIntegratorStep() + 1,
+          lagrangian_eulerian_integrator->getIntegratorStep(),
           loop_time);
+    }
+
+    if ((field_summary_interval > 0)
+        && (lagrangian_eulerian_integrator->getIntegratorStep()
+          % field_summary_interval) != 0) 
+    {
+      lagrangian_eulerian_integrator->printFieldSummary();
+    }
+
+    if (main_db->getBoolWithDefault("DEV_check_result", false)) {
+      double final_ke = lagrangian_eulerian_integrator->printFieldSummary();
+      const double expected_ke = 2.07982664378;
+      double ke_difference = fabs((100.0*(final_ke/expected_ke))-100.0);
+
+      tbox::pout << "++++++++++++++++++++++++++++++++++++++++++++" << endl;
+      tbox::pout << "Testing kinetic energy..." << std::endl;
+      tbox::pout << std::setprecision(12)
+        << "    expected: " << expected_ke << std::endl
+        << "    actual:   " << final_ke << std::endl;
+
+      if(ke_difference < 0.001) {
+        tbox::pout << "Test PASSED." << std::endl;
+      } else {
+        tbox::pout << "Test FAILED." << std::endl;
+      }
+      tbox::pout << "++++++++++++++++++++++++++++++++++++++++++++" << endl;
     }
 
     tbox::TimerManager::getManager()->print(tbox::plog);

@@ -52,4 +52,7 @@ doc:
 	doxygen doc/Doxyfile
 	rsync doc/dox/html/* /shared/general/docs/Cleverleaf/ -r
 
+test: cleverleaf
+	mpirun -n 1 ./cleverleaf test/cleverleaf_test.in
+
 .PHONY: clean, doc
