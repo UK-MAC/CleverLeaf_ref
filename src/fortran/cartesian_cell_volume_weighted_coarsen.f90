@@ -42,6 +42,8 @@ SUBROUTINE cartesian_cell_double_volume_weighted_coarsen(ifirstc0,ifirstc1,&
   INTEGER :: j,k,ir0,ir1,if0,if1
   REAL(KIND=8) :: spv
 
+!$OMP PARALLEL
+!$OMP DO PRIVATE(if1,if0,spv)
   DO k=ifirstc1, ilastc1
     DO j=ifirstc0, ilastc0
       spv = 0.0_8
@@ -55,5 +57,7 @@ SUBROUTINE cartesian_cell_double_volume_weighted_coarsen(ifirstc0,ifirstc1,&
       arrayc(j,k) = spv/volc
     ENDDO
   ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
 END SUBROUTINE cartesian_cell_double_volume_weighted_coarsen
