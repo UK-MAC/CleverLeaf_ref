@@ -22,6 +22,10 @@
 #include <string>
 #include <fstream>
 
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
+
 #include "Cleverleaf.h"
 #include "LagrangianEulerianLevelIntegrator.h"
 #include "LagrangianEulerianIntegrator.h"
@@ -64,6 +68,15 @@ int main(int argc, char* argv[]) {
 
     tbox::pout << "CleverLeaf version #" << VERSION 
       << " compiled on " << HOST_NAME << std::endl;
+    tbox::pout << "Running with " << mpi.getSize() << " tasks";
+#if defined(_OPENMP)
+#pragma omp parallel
+    {
+#pragma omp master
+      { tbox::pout << " and " << omp_get_num_threads() << " threads"; }
+    }
+#endif
+    tbox::pout << std::endl;
 
     tbox::plog << "Reading input from: " << input_path << endl;
 
