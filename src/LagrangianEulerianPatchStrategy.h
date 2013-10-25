@@ -35,9 +35,9 @@ class LagrangianEulerianLevelIntegrator;
  * LagrangianEulerianLevelIntegrator.
  *
  * The abstract methods here provide all the operations needed to integrate a
- * hierarchy of patches through the Lagrangian-Eulerian scheme seen in
- * Cloverleaf. This includes the Lagrangian step methods and the advection
- * methods for remapping the grid.
+ * patch through the Lagrangian-Eulerian scheme seen in Cloverleaf. This
+ * includes the Lagrangian-step methods to advance the solution, and the
+ * advection methods for remapping the grid.
  */
 class LagrangianEulerianPatchStrategy: public xfer::RefinePatchStrategy
 {
@@ -53,7 +53,7 @@ class LagrangianEulerianPatchStrategy: public xfer::RefinePatchStrategy
     /**
      * Simple constructor to set the dimension of the problem.
      *
-     * @param dim The dimension of the problem
+     * @param dim The dimension of the problem.
      */
     LagrangianEulerianPatchStrategy(const tbox::Dimension& dim);
 
@@ -70,7 +70,7 @@ class LagrangianEulerianPatchStrategy: public xfer::RefinePatchStrategy
      *
      * @param patch The patch to initialize data on.
      * @param init_data_time The initial data time.
-     * @param initial_time True if it is the initial problem time.
+     * @param initial_time True, if it is the initial problem time.
      */
     virtual void initializeDataOnPatch(
         hier::Patch& patch,
@@ -81,57 +81,58 @@ class LagrangianEulerianPatchStrategy: public xfer::RefinePatchStrategy
      * Calculate acceleration due to density and pressure. 
      *
      * @param patch The patch to work on.
-     * @param dt Current dt value.
+     * @param dt The current dt value.
      */
     virtual void accelerate(hier::Patch& patch, double dt) = 0;
 
     /**
      * Calculate the safe timestep for the given patch.
      *
-     * @param patch Patch to calculate timestep for.
+     * @param patch The patch to work on.
      *
      * @returns The safe dt value.
      */
     virtual double calc_dt_knl(hier::Patch& patch) = 0;
 
     /**
-     * Calculate equation of state to compute pressure and soundspeed.
+     * Apply the equation of state to compute pressure and soundspeed.
      *
-     * @param patch Patch to work on.
-     * @param predict If true, update using tl 1 copies of the density and energy arrays.
+     * @param patch The patch to work on.
+     * @param predict If true, update new copies of the density and energy
+     *                arrays.
      */
     virtual void ideal_gas_knl(hier::Patch& patch, bool predict) = 0;
 
     /**
-     * Calculate viscosity on the give patch.
+     * Calculate viscosity on the given patch.
      *
-     * @param patch Patch to work on.
+     * @param patch The patch to work on.
      */
     virtual void viscosity_knl(hier::Patch& patch) = 0;
 
     /**
      * Calculate the updated energy and density values.
      *
-     * @param patch Patch to work on.
-     * @param dt Current dt value.
-     * @param predict If true, update timelevel 1 copies of density and energy.
+     * @param patch The patch to work on.
+     * @param dt The current dt value.
+     * @param predict If true, update new copies of density and energy.
      */
     virtual void pdv_knl(hier::Patch& patch, double dt, bool predict) = 0;
 
     /**
      * Calculate the volume flux in the X and Y directions.
      *
-     * @param patch Patch to work on.
-     * @param dt Current dt value.
+     * @param patch The patch to work on.
+     * @param dt The current dt value.
      */
     virtual void flux_calc_knl(hier::Patch& patch, double dt) = 0;
 
     /**
      * Compute the cell-centered advection.
      *
-     * @param patch Patch to work on.
-     * @param sweep_number Which sweep.
-     * @param direction Which direction to advect in.
+     * @param patch The patch to work on.
+     * @param sweep_number The number of the sweep (1 or 2).
+     * @param direction The direction to advect in.
      */
     virtual void advec_cell(
         hier::Patch& patch,
@@ -141,10 +142,10 @@ class LagrangianEulerianPatchStrategy: public xfer::RefinePatchStrategy
     /**
      * Calculate the momentum advection.
      *
-     * @param patch Patch to work on.
-     * @param sweep_number Which sweep.
-     * @param direction Which direction to advect in.
-     * @param which_vel Which velocity to advect (X or Y).
+     * @param patch The patch to work on.
+     * @param sweep_number The number of the sweep (1 or 2).
+     * @param direction The direction to advect in.
+     * @param which_vel The velocity to advect (X or Y).
      */
     virtual void advec_mom(
         hier::Patch& patch,
@@ -152,6 +153,19 @@ class LagrangianEulerianPatchStrategy: public xfer::RefinePatchStrategy
         ADVEC_DIR direction,
         ADVEC_DIR which_vel) = 0;
 
+    /**
+     * Calculate field summary values for a patch.
+     *
+     * This method calculates the values for each of the summary quantities on
+     * the patch.
+     *
+     * @param patch The patch to work on.
+     * @param total_volume The total volume of the patch.
+     * @param total_mass The total mass of the patch.
+     * @param total_pressure The total pressure of the patch.
+     * @param total_internal_energy The total internal energy of the patch.
+     * @param total_kinetic_energy The total kinetic energy of the patch.
+     */
     virtual void field_summary(
         hier::Patch& patch,
         double* total_volume,
@@ -160,12 +174,15 @@ class LagrangianEulerianPatchStrategy: public xfer::RefinePatchStrategy
         double* total_internal_energy,
         double* total_kinetic_energy) = 0;
 
-    virtual void tagGradientDetectorCells(
-        hier::Patch& patch,
-        const double regrid_time,
-        const bool initial_error,
-        const int tag_index) = 0;
-
+    /**
+     * Method to call the debug method on a patch.
+     *
+     * This method can be called at an arbitrary point in the hydrodynamcis
+     * cycle and then used to inspect the contect of the variables on the given
+     * patch.
+     *
+     * @param patch The patch to work on.
+     */
     virtual void debug_knl(hier::Patch& patch) = 0;
 
     /**
@@ -194,7 +211,7 @@ class LagrangianEulerianPatchStrategy: public xfer::RefinePatchStrategy
     /**
      * Set the data context for the current time.
      *
-     * This context contains the timelevel 0 data.
+     * This context contains the current data.
      *
      * @param context Context for current time.
      */
@@ -204,7 +221,7 @@ class LagrangianEulerianPatchStrategy: public xfer::RefinePatchStrategy
     /**
      * Set the data context for the new time.
      *
-     * This context contains the timelevel 1 data.
+     * This context contains the advanced data.
      *
      * @param context Context for new time.
      */
@@ -214,87 +231,68 @@ class LagrangianEulerianPatchStrategy: public xfer::RefinePatchStrategy
     /**
      * Set the data context for the scratch space.
      *
+     * This context contains scratch data for current timelevel variables.
+     *
      * @param context Context for scratch space.
      */
     void setScratchDataContext(
         boost::shared_ptr<hier::VariableContext> context);
 
+    /**
+     * Set the data context for the scratch new space.
+     *
+     * This context contains scratch data for new timelevel variables.
+     *
+     * @param context Context for the new scratch space.
+     */
     void setScratchNewDataContext(
         boost::shared_ptr<hier::VariableContext> context);
+
+    /**
+     * Set the exchange flag variable.
+     *
+     * The exchange flag variable is used to control which of the variables
+     * will have boundary conditions applied when the
+     * setPhysicalBoundaryConditions method is called.
+     *
+     * @param exchange The exchange flag value.
+     */
+    void setExchangeFlag(const int exchange);
+
     /**
      * Get the dimension of the problem.
      *
-     * This is ALWAYS 2 at the moment.
+     * For CleverLeaf, this is always 2.
      *
      * @returns The dimension of the problem.
      */
     const tbox::Dimension& getDim() const;
 
-    /*
-     * RefinePatchStrategy methods.
-     */
+    virtual void tagGradientDetectorCells(
+        hier::Patch& patch,
+        const double regrid_time,
+        const bool initial_error,
+        const int tag_index) = 0;
 
-    /**
-     * Set user-defined boundary conditions at the physical domain boundary.
-     */
     virtual void setPhysicalBoundaryConditions(
           hier::Patch& patch,
           const double fill_time,
           const hier::IntVector& ghost_width_to_fill) = 0;
 
-    /**
-     * Return maximum stencil width needed for user-defined
-     * data interpolation operations.  Default is to return
-     * zero, assuming no user-defined operations provided.
-     *
-     * Note that this function is not pure virtual. It is given a
-     * dummy implementation here so that users may ignore it when
-     * inheriting from this class.
-     */
     virtual hier::IntVector getRefineOpStencilWidth(
         const tbox::Dimension &dim ) const;
 
-    /**
-     * Pre- and post-processing routines for implementing user-defined
-     * spatial interpolation routines applied to variables.  The
-     * interpolation routines are used in the hyperbolic AMR algorithm
-     * for filling patch ghost cells before advancing data on a level
-     * and after regridding a level to fill portions of the new level
-     * from some coarser level.  These routines are called automatically
-     * from within patch boundary filling schedules; thus, some concrete
-     * function matching these signatures must be provided in the user's
-     * patch routines.  However, the routines only need to perform some
-     * operations when "USER_DEFINED_REFINE" is given as the interpolation
-     * method for some variable when the patch routines register variables
-     * with the hyperbolic level integration algorithm, typically.  If the
-     * user does not provide operations that refine such variables in either
-     * of these routines, then they will not be refined.
-     *
-     * The order in which these operations are used in each patch
-     * boundary filling schedule is:
-     *
-     * - \b (1) {Call user's preprocessRefine() routine.}
-     * - \b (2) {Refine all variables with standard interpolation operators.}
-     * - \b (3) {Call user's postprocessRefine() routine.}
-     *
-     * Note that these functions are not pure virtual. They are given
-     * dummy implementations here so that users may ignore them when
-     * inheriting from this class.
-     */
     virtual void preprocessRefine(
           hier::Patch& fine,
           const hier::Patch& coarse,
           const hier::Box& fine_box,
           const hier::IntVector& ratio);
 
-    ///
     virtual void postprocessRefine(
           hier::Patch& fine,
           const hier::Patch& coarse,
           const hier::Box& fine_box,
           const hier::IntVector& ratio);
-
-    void setExchangeFlag(const int exchange);
   protected:
     int d_which_exchange;
   private:
