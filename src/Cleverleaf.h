@@ -53,11 +53,12 @@ class Cleverleaf:
 {
   public:
     /**
-     * Constructor for Cleverleaf class.
+     * Create a new CleverLeaf object
      *
-     * @param hierarchy Pointer to the PatchHierarchy we are using.
+     * @param input_database The InputDatabase containing setup parameters.
+     * @param hierarchy The PatchHierarchy to use.
      * @param dim The dimension of the problem.
-     * @param grid_geometry The geometry of the problem.
+     * @param grid_geometry The GridGeometry to use.
      */
     Cleverleaf(
         boost::shared_ptr<tbox::Database> input_database,
@@ -67,6 +68,9 @@ class Cleverleaf:
 
     /**
      * Register a VisitDataWriter with the class.
+     *
+     * Variables are then added to the VisitDataWriter in order to be output
+     * during visulisation dumps.
      *
      * @param writer The VisitDataWriter to register.
      */
@@ -132,9 +136,7 @@ class Cleverleaf:
         const int tag_index);
 
     void debug_knl(hier::Patch& patch);
-
   private:
-
     boost::shared_ptr<hier::PatchHierarchy> d_hierarchy;
     boost::shared_ptr<appu::VisItDataWriter> d_visit_writer;
 
