@@ -5,6 +5,9 @@ HDF_DIR=/home/dab/opt/hdf5/1.8.11/intel-13.1.1.163/impi-4.1.0.24
 HDF_INC=-I$(HDF_DIR)/include
 HDF_LIB=-L$(HDF_DIR)/lib -lhdf5
 
+BOOST_DIR=/home/dab/opt/boost/1.52.0/intel-13.1.1.163
+BOOST_INC=-I$(BOOST_DIR)/include
+
 SAMRAI_DIR=/home/dab/opt/SAMRAI/3.6.3/intel-13.1.1.163/impi-4.1.0.24/opt
 SAMRAI_INC=-I$(SAMRAI_DIR)/include
 SAMRAI_LDIR=$(SAMRAI_DIR)/lib
@@ -18,7 +21,7 @@ MATH_LIB=-L$(LAPACK_DIR)/lib -llapack -lblas
 CXX=mpiicpc
 F90=mpiifort
 
-CPPFLAGS=-O3 -fp-model source -fp-model strict -prec-div -prec-sqrt -lz -I/home/dab/opt/boost/1.52.0/intel-13.1.1.163/include $(HDF_INC) $(SAMRAI_INC) $(MATH_INC) -DVERSION=\"$(GIT_VERSION)\" -DHOST_NAME=\"$(HOST_NAME)\"
+CPPFLAGS=-O3 -fp-model source -fp-model strict -prec-div -prec-sqrt -lz $(BOOST_INC) $(HDF_INC) $(SAMRAI_INC) $(MATH_INC) -DVERSION=\"$(GIT_VERSION)\" -DHOST_NAME=\"$(HOST_NAME)\"
 FFLAGS=-O3 -warn all -fp-model strict -fp-model source -prec-div -prec-sqrt -module obj/
 LDFLAGS=-lz $(SAMRAI_LIB) $(HDF_LIB) $(MATH_LIB) -lstdc++ -nofor_main
 
@@ -33,7 +36,7 @@ openmp: LDFLAGS+=-openmp
 openmp: FFLAGS+=-openmp
 openmp: ref
 
-cleverleaf: $(OBJ_FILES)
+cleverleaf: obj $(OBJ_FILES)
 	$(F90) $^ $(LDFLAGS) -o $@
 
 obj/%.o: src/%.C
@@ -49,7 +52,7 @@ clean:
 	rm -rf obj/*.o obj/*.mod cleverleaf doc/dox
 
 doc:
-	doxygen doc/Doxyfile
+	( cat doc/Doxyfile ; echo "PROJECT_NUMBER=$(GIT_VERSION)") | doxygen -
 	rsync doc/dox/html/* /shared/general/docs/Cleverleaf/ -r
 
 test: cleverleaf
