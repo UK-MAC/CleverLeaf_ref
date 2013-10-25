@@ -42,24 +42,18 @@ using namespace SAMRAI;
 /**
  * @class LagrangianEulerianLevelIntegrator
  *
- * Controls the steps necessary to advance the solution across the geometry.
- *
- * These methods are largely defined in
- * SAMRAI::algs::TimeRefinementLevelStrategy, and provide a mechanism for
- * SAMRAI to use the LagrangianEulerianLevelIntegrator to perform a complete
- * timestep on the given solution state.
+ * Controls the steps necessary to advance the solution across one level of the
+ * patch hierarchy.
  */
 class LagrangianEulerianLevelIntegrator:
   public mesh::StandardTagAndInitStrategy
 {
   public:
-
     /**
      * @name Types 
      * Constants representing the type of a given variable.
      * @{
      */
-
     /** Normal variable. */
     const static int NORMAL = 1;
     /** Field variable, copied back to tl0 at end of timestep. */
@@ -76,7 +70,6 @@ class LagrangianEulerianLevelIntegrator:
      * @name Exchanges 
      * Constants for the various exchange points, used when registering
      * variables.
-     *
      * @{
      */
     /** Not exchanged */
@@ -106,10 +99,9 @@ class LagrangianEulerianLevelIntegrator:
      *
      * The patch_strategy object is the key parameter, as here we provide the
      * class implementing the LagrangianEulerianPatchStrategy methods in such a
-     * way as to perform the desired physics on a give patch.
+     * way as to perform the desired physics on a given patch.
      *
-     * @param object_name Name for this object, currently unused.
-     * @param input_db Input database containing necessary setup info.
+     * @param input_db Input database containing setup parameters.
      * @param patch_strategy Patch strategy object to use.
      */
     LagrangianEulerianLevelIntegrator(
@@ -123,13 +115,13 @@ class LagrangianEulerianLevelIntegrator:
 
     /**
      * Register a variable with the integrator, allowing it to be correctly
-     * transferred at halo exchanges as well as coarsen/refine times
+     * transferred at halo exchanges as well as coarsen/refine times.
      *
-     * @param var The variable to register
-     * @param var_type The type of variable
-     * @param var_exchanges The exchanges this variable is involved in
-     * @param ghosts The number of ghosts this variable has
-     * @param transfer_geom
+     * @param var The variable to register.
+     * @param var_type The type of variable.
+     * @param var_exchanges The exchanges this variable is involved in.
+     * @param ghosts The number of ghosts this variable has.
+     * @param transfer_geom The type of geometry being used.
      */
     void registerVariable(
         const boost::shared_ptr<hier::Variable>& var,
@@ -145,14 +137,10 @@ class LagrangianEulerianLevelIntegrator:
      */
     boost::shared_ptr<hier::VariableContext> getPlotContext();
 
-    /*
-     * TimeRefinementLevelStrategy methods
-     */
-
     /**
      * Initialize the levelIntegrator.
      *
-     * Sets up the model variables.
+     * Sets up the variables being used for the simulation.
      *
      * @param gridding_alg
      */
@@ -180,9 +168,6 @@ class LagrangianEulerianLevelIntegrator:
 
     bool usingRefinedTimestepping() const;
 
-    /*
-     * StandardTagAndInitialize methods
-     */
     void initializeLevelData(
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const int level_number,
@@ -206,91 +191,206 @@ class LagrangianEulerianLevelIntegrator:
         const bool initial_time,
         const bool uses_richardson_extrapolation_too);
 
+    /**
+     * Run the Lagrangian predictor step on a given level.
+     *
+     * @param level The level to work on.
+     * @param dt The dt to advance by.
+     */
     void lagrangianPredictor(
         const boost::shared_ptr<hier::PatchLevel>& level,
         const double dt);
 
+    /**
+     * Perform the half-step halo exchange.
+     *
+     * @param level The level to work on.
+     * @param hierarchy The current PatchHierarchy.
+     * @param current_time The current simulation time.
+     */
     void halfStepHaloExchange(
         const boost::shared_ptr<hier::PatchLevel>& level,
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time);
 
+    /**
+     * Run the Lagrangian corrector step on a given level.
+     *
+     * @param level The level to work on.
+     * @param dt The dt to advance by.
+     */
     void lagrangianCorrector(
         const boost::shared_ptr<hier::PatchLevel>& level,
         const double dt);
 
+    /**
+     * Perform the pre-cell advection halo exchange.
+     *
+     * @param level The level to work on.
+     * @param hierarchy The current PatchHierarchy.
+     * @param current_time The current simulation time.
+     */
     void preCellHaloExchange(
         const boost::shared_ptr<hier::PatchLevel>& level,
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time);
 
+    /**
+     * Run the first cell advection sweep on a given level.
+     *
+     * @param level The level to work on.
+     */
     void advecCellSweep1(const boost::shared_ptr<hier::PatchLevel>& level);
 
+    /**
+     * Perform the pre-momentum advection halo exchange.
+     *
+     * @param level The level to work on.
+     * @param hierarchy The current PatchHierarchy.
+     * @param current_time The current simulation time.
+     */
     void preMomSweep1HaloExchange(
         const boost::shared_ptr<hier::PatchLevel>& level,
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time);
 
+    /**
+     * Run the first momentum advection sweep on a given level.
+     *
+     * @param level The level to work on.
+     */
     void advecMomSweep1(const boost::shared_ptr<hier::PatchLevel>& level);
 
+    /**
+     * Perform the second pre-momentum halo exchange.
+     *
+     * @param level The level to work on.
+     * @param hierarchy The current PatchHierarchy.
+     * @param current_time The current simulation time.
+     */
     void preMomSweep2HaloExchange(
         const boost::shared_ptr<hier::PatchLevel>& level,
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time);
 
+    /**
+     * Run the second cell advection sweep on a given level.
+     *
+     * @param level The level to work on.
+     */
     void advecCellSweep2(const boost::shared_ptr<hier::PatchLevel>& level);
 
+    /**
+     * Run the second momentum advection sweep on a given level.
+     *
+     * @param level The level to work on.
+     */
     void advecMomSweep2(const boost::shared_ptr<hier::PatchLevel>& level);
 
+    /**
+     * Run the timestep equation of state on a given level.
+     *
+     * @param level The level to work on.
+     */
     void timestepEoS(const boost::shared_ptr<hier::PatchLevel>& level);
 
+    /**
+     * Perform the pre-Lagrange halo exchange.
+     *
+     * @param level The level to work on.
+     * @param hierarchy The current PatchHierarchy.
+     * @param current_time The current simulation time.
+     */
     void preLagrangeHaloExchange(
         const boost::shared_ptr<hier::PatchLevel>& level,
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time);
 
+    /**
+     * Perform the prime boundary halo exchange.
+     *
+     * @param level The level to work on.
+     * @param hierarchy The current PatchHierarchy.
+     * @param current_time The current simulation time.
+     */
     void primeBoundaryHaloExchange(
         const boost::shared_ptr<hier::PatchLevel>& level,
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time);
 
+    /**
+     * Run the viscosity step on a given level.
+     *
+     * @param level The level to work on.
+     */
     void viscosity(const boost::shared_ptr<hier::PatchLevel>& level);
 
+    /**
+     * Perform the post-viscosity halo exchange.
+     *
+     * @param level The level to work on.
+     * @param hierarchy The current PatchHierarchy.
+     * @param current_time The current simulation time.
+     */
     void postViscosityHaloExchange(
         const boost::shared_ptr<hier::PatchLevel>& level,
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time);
 
+    /**
+     * Calculate the dt for a given level.
+     *
+     * @param level The level to work on.
+     *
+     * @returns The safe dt for the level.
+     */
     double calcDt(const boost::shared_ptr<hier::PatchLevel>& level);
 
+    /**
+     * Set the data time for a given level.
+     *
+     * @param level The level to work on.
+     * @param current_time The time to stamp the data to.
+     */
     void stampDataTime(
         const boost::shared_ptr<hier::PatchLevel>& level,
         const double current_time);
 
+    /**
+     * Run the debug kernel on a given level.
+     *
+     * @param level The level to work on.
+     */
     void debugLevel(const boost::shared_ptr<hier::PatchLevel>& level);
 
+    /**
+     * Swap the direction of the advection sweeps.
+     */
     void swapAdvecDir();
 
     /**
-     * Copy new field variable values back to timelevel 0.
+     * Copy new field variable values back to the current time level.
      *
-     * @param level The level we are working on.
+     * @param level The level to work on..
      */
     void resetField(const boost::shared_ptr<hier::PatchLevel>& level);
 
     /**
-     * Copy variables in revert_vars back to timelevel 0.
+     * Copy variables in revert_vars back to the current time level.
      *
-     * @param level The level we are working on.
-     * @param hierarchy The patch hierarchy we are working on.
-     * @param current_time The current simulation time.
+     * @param level The level to work on.
      */
     void revert(const boost::shared_ptr<hier::PatchLevel>& level);
 
-    void fillBoundaries();
-
-    /*
-     * Print out the field summary
+    /**
+     * Calculate the field summary quantities for a given level.
+     *
+     * @param level The level to work on.
+     * @param level_volume The total volume of the level.
+     * @param level_mass The total mass of the level.
+     * @param level_pressure The total pressure of the level.
+     * @param level_internal_energy The total internal energy of the level.
+     * @param level_kinetic_energy The total kinetic eneryg of the level.
      */
     void getFieldSummary(
         const boost::shared_ptr<hier::PatchLevel>& level,
@@ -300,15 +400,8 @@ class LagrangianEulerianLevelIntegrator:
         double* level_internal_energy,
         double* level_kinetic_energy);
   private:
-    /**
-     * PatchStrategy contains user-specified methods needed for
-     * operating on a patch in the AMR hierarchy.
-     */
     LagrangianEulerianPatchStrategy* d_patch_strategy;
 
-    /**
-     * The dimension of the problem.
-     */
     const tbox::Dimension d_dim;
 
     /**
@@ -359,14 +452,20 @@ class LagrangianEulerianLevelIntegrator:
 
     boost::shared_ptr<xfer::CoarsenAlgorithm> d_coarsen_level_indicator;
 
-    std::vector<boost::shared_ptr<xfer::RefineSchedule> > d_half_step_schedules;
-    std::vector<boost::shared_ptr<xfer::RefineSchedule> > d_prime_halos_schedules;
-    std::vector<boost::shared_ptr<xfer::RefineSchedule> > d_pre_lagrange_schedules;
-    std::vector<boost::shared_ptr<xfer::RefineSchedule> > d_post_viscosity_schedules;
-    std::vector<boost::shared_ptr<xfer::RefineSchedule> > d_pre_sweep1_cell_schedules;
-    std::vector<boost::shared_ptr<xfer::RefineSchedule> > d_pre_sweep1_mom_schedules;
-    std::vector<boost::shared_ptr<xfer::RefineSchedule> > d_pre_sweep2_mom_schedules;
-
+    std::vector<boost::shared_ptr<xfer::RefineSchedule> >
+      d_half_step_schedules;
+    std::vector<boost::shared_ptr<xfer::RefineSchedule> >
+      d_prime_halos_schedules;
+    std::vector<boost::shared_ptr<xfer::RefineSchedule> >
+      d_pre_lagrange_schedules;
+    std::vector<boost::shared_ptr<xfer::RefineSchedule> >
+      d_post_viscosity_schedules;
+    std::vector<boost::shared_ptr<xfer::RefineSchedule> >
+      d_pre_sweep1_cell_schedules;
+    std::vector<boost::shared_ptr<xfer::RefineSchedule> >
+      d_pre_sweep1_mom_schedules;
+    std::vector<boost::shared_ptr<xfer::RefineSchedule> >
+      d_pre_sweep2_mom_schedules;
     /**
      * @}
      */
