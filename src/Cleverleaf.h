@@ -47,6 +47,219 @@ using namespace std;
  * Cleverleaf implements the abstract methods in the
  * LagrangianEulerianPatchStrategy class with the concrete versions of the
  * methods needed to run the required physics on a patch.
+ *
+ * <b> Input Parameters </b>
+ *
+ * <b> Definitions: </b>
+ *    - \b    dim
+ *       the dimension of the problem.
+ *
+ *    - \b    vis_dump_interval
+ *       the frequency at which visualisation dumps are written.
+ *
+ *    - \b    field_summary_interval
+ *       the frequency at which the field summary is calculated.
+ *
+ *    - \b    basename
+ *       the basename to use for output files.
+ *
+ *    - \b    log_filename
+ *       the filename for logging output.
+ *
+ *    - \b    log_all_nodes
+ *       whether or not to log output from all nodes.
+ *
+ *    - \b    tag_all
+ *       whether or not to tag all cells (used for debugging).
+ *
+ *    - \b    tag_q
+ *       threshold for viscosity tagging.
+ *
+ *    - \b    tag_density
+ *       gradient threshold for density tagging.
+ *
+ *    - \b    tag_energy
+ *       gradient threshold for energy tagging.
+ *
+ *    - \b    states
+ *       set of states.
+ *
+ *        - \b    num_states
+ *           the number of states in the input deck.
+ *
+ *        - \b    state_n
+ *           set of parameters describing state n.
+ *
+ *            - \b    geometry
+ *               the geometry of the state. Can be either "RECTANGLE",
+ *               "CIRCLE", or "POINT"
+ *
+ *            - \b    min
+ *               lower-left coordinate of the state.
+ *
+ *            - \b    max
+ *               upper-right coordinate of the state.
+ *
+ *            - \b    center
+ *               center coordinate of the state (only for "CIRCLE" or "POINT").
+ *
+ *            - \b    radius
+ *               radius of the state (only for "CIRCLE").
+ *
+ *            - \b    density
+ *               initial density of the state.
+ *
+ *            - \b    energy
+ *               initial energy of the state.
+ *
+ *            - \b    xvel
+ *               initial x-velocity of the state.
+ *
+ *            - \b    yvel
+ *               initial y-velocity of the state.
+ *
+ * <b> Details: </b> <br>
+ * <table>
+ *   <tr>
+ *     <th>parameter</th>
+ *     <th>type</th>
+ *     <th>default</th>
+ *   </tr>
+ *   <tr>
+ *     <td>dim</td>
+ *     <td>int</td>
+ *     <td>2</td>
+ *   </tr>
+ *   <tr>
+ *     <td>vis_dump_interval</td>
+ *     <td>int</td>
+ *     <td>1</td>
+ *   </tr>
+ *   <tr>
+ *     <td>field_summary_interval</td>
+ *     <td>int</td>
+ *     <td>10</td>
+ *   </tr>
+ *   <tr>
+ *     <td>basename</td>
+ *     <td>string</td>
+ *     <td>input filename</td>
+ *   </tr>
+ *   <tr>
+ *     <td>log_filename</td>
+ *     <td>string</td>
+ *     <td>basename</td>
+ *   </tr>
+ *   <tr>
+ *     <td>log_all_nodes</td>
+ *     <td>bool</td>
+ *     <td>FALSE</td>
+ *   </tr>
+ *   <tr>
+ *     <td>tag_all</td>
+ *     <td>bool</td>
+ *     <td>FALSE</td>
+ *   </tr>
+ *   <tr>
+ *     <td>tag_q</td>
+ *     <td>double</td>
+ *     <td>0.001</td>
+ *   </tr>
+ *   <tr>
+ *     <td>tag_density</td>
+ *     <td>double</td>
+ *     <td>0.1</td>
+ *   </tr>
+ *   <tr>
+ *     <td>tag_energy</td>
+ *     <td>double</td>
+ *     <td>0.1</td>
+ *   </tr>
+ *   <tr>
+ *     <td colspan=3><b>states</b></td>
+ *   </tr>
+ *   <tr>
+ *     <td>num_states</td>
+ *     <td>int</td>
+ *     <td>N/A</td>
+ *   </tr>
+ *   <tr>
+ *     <td colspan=3><b>state_n</b></td>
+ *   </tr>
+ *   <tr>
+ *     <td>geometry</td>
+ *     <td>string</td>
+ *     <td>"RECTANGLE"</td>
+ *   </tr>
+ *   <tr>
+ *     <td>min</td>
+ *     <td>pair</td>
+ *     <td>N/A</td>
+ *   </tr>
+ *   <tr>
+ *     <td>max</td>
+ *     <td>pair</td>
+ *     <td>N/A</td>
+ *   </tr>
+ *   <tr>
+ *     <td>center</td>
+ *     <td>pair</td>
+ *     <td>N/A</td>
+ *   </tr>
+ *   <tr>
+ *     <td>radius</td>
+ *     <td>double</td>
+ *     <td>-1</td>
+ *   </tr>
+ *   <tr>
+ *     <td>density</td>
+ *     <td>double</td>
+ *     <td>N/A</td>
+ *   </tr>
+ *   <tr>
+ *     <td>energy</td>
+ *     <td>double</td>
+ *     <td>N/A</td>
+ *   </tr>
+ *   <tr>
+ *     <td>xvel</td>
+ *     <td>double</td>
+ *     <td>0.0</td>
+ *   </tr>
+ *   <tr>
+ *     <td>yvel</td>
+ *     <td>double</td>
+ *     <td>0.0</td>
+ *   </tr>
+ * </table>
+ *
+ * A sample input file entry might look like this:
+ *
+ * @code
+ *    Cleverleaf {
+ *        dim = 2
+ *        vis_dump_interval = 1
+ *        field_summary_interval = 5
+ *
+ *        states {
+ *            num_states = 2
+ *
+ *            state0 {
+ *                density = 0.2e0
+ *                energy = 1.e0
+ *            }
+ *
+ *            state1 {
+ *                geometry = "RECTANGLE"
+ *                min = 0.e0, 0.e0
+ *                max = 5.e0, 2.e0
+ *
+ *                density = 1.e0
+ *                energy = 2.5e0
+ *            }
+ *        }
+ *    }
+ * @endcode
  */
 class Cleverleaf:
   public LagrangianEulerianPatchStrategy

@@ -34,6 +34,98 @@
 
 using namespace SAMRAI;
 
+/**
+ * @class LagrangianEulerianIntegrator
+ *
+ * Controls the steps necessary to advance the solution across the entire adaptive mesh.
+ *
+ * <b> Input Parameters </b>
+ *
+ * <b> Definitions: </b>
+ *    - \b    start_time
+ *       the start time of the simulation.
+ *
+ *    - \b    end_time
+ *       the end time of the simulation.
+ *
+ *    - \b    end_step
+ *       the end step of the simulation.
+ *
+ *    - \b    initial_dt
+ *       the initial dt value.
+ *
+ *    - \b    max_dt
+ *       the maximum dt value.
+ *
+ *    - \b    grow_dt
+ *       the maximum factor to increase the dt by each time step.
+ *
+ *    - \b    fix_dt
+ *       whether or not to use a fixed dt. If true, the max_dt value is used
+ *       for every timestep.
+ *
+ *    - \b    regrid_interval
+ *       how often to regrid the mesh.
+ *
+ * <b> Details: </b> <br>
+ * <table>
+ *   <tr>
+ *     <th>parameter</th>
+ *     <th>type</th>
+ *     <th>default</th>
+ *   </tr>
+ *   <tr>
+ *     <td>start_time</td>
+ *     <td>double</td>
+ *     <td>0.0</td>
+ *   </tr>
+ *   <tr>
+ *     <td>end_time</td>
+ *     <td>double</td>
+ *     <td>1.0</td>
+ *   </tr>
+ *   <tr>
+ *     <td>end_step</td>
+ *     <td>int</td>
+ *     <td>100000000</td>
+ *   </tr>
+ *   <tr>
+ *     <td>initial_dt</td>
+ *     <td>double</td>
+ *     <td>0.04</td>
+ *   </tr>
+ *   <tr>
+ *     <td>max_dt</td>
+ *     <td>double</td>
+ *     <td>tbox::MathUtilities<double>::getMax()</td>
+ *   </tr>
+ *   <tr>
+ *     <td>grow_dt</td>
+ *     <td>double</td>
+ *     <td>1.5</td>
+ *   </tr>
+ *   <tr>
+ *     <td>fix_dt</td>
+ *     <td>bool</td>
+ *     <td>FALSE</td>
+ *   </tr>
+ *   <tr>
+ *     <td>regrid_interval</td>
+ *     <td>int</td>
+ *     <td>1</td>
+ *   </tr>
+ * </table>
+ *
+ * A sample input file entry might look like this:
+ *
+ * @code
+ *   start_time = 0.e0
+ *   end_time = 10e0
+ *   grow_dt = 1.5e0
+ *   max_integrator_steps=87
+ *   regrid_interval=5
+ * @endcode
+ */
 class LagrangianEulerianIntegrator {
   public:
     /**
