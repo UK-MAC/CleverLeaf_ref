@@ -36,6 +36,18 @@ using namespace SAMRAI;
 
 class LagrangianEulerianIntegrator {
   public:
+    /**
+     * Create a new LagriangianEulerianIntegrator.
+     *
+     * This object is responsible for advancing the simulation over the
+     * adaptive mesh, as well as controlling regridding.
+     *
+     * @param input_db Input database containing setup parameters.
+     * @param hierarchy The PatchHierarchy to use.
+     * @param level_integrator The LagrangianEulerianLevelIntegrator object to
+     *                         use.
+     * @param gridding_algorithm The GriddingAlgorithm object to use.
+     */
     LagrangianEulerianIntegrator(
         const boost::shared_ptr<tbox::Database>& input_db,
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
@@ -44,18 +56,55 @@ class LagrangianEulerianIntegrator {
         const boost::shared_ptr<mesh::GriddingAlgorithmStrategy>& 
           gridding_algorithm);
 
+    /**
+     * Initialise the PatchHierarchy.
+     *
+     * @returns The initial dt.
+     */
     double initializeHierarchy();
 
+    /**
+     * Advance the PatchHierarchy by the given dt.
+     *
+     * @param dt The dt to advance by.
+     *
+     * @returns The next safe dt.
+     */
     double advanceHierarchy(const double dt);
 
+    /**
+     * Return the current simulation time.
+     *
+     * @returns The simulation time.
+     */
     double getIntegratorTime() const { return d_integrator_time; }
 
+    /**
+     * Return the start time of the simulation.
+     *
+     * @returns The simulation start time.
+     */
     double getStartTime() const { return d_start_time; }
 
+    /**
+     * Return the end time fo the simulation.
+     *
+     * @returns The simulation end time.
+     */
     double getEndTime() const { return d_end_time; }
 
+    /**
+     * Return the current step.
+     *
+     * @returns The current step
+     */
     int getIntegratorStep() const { return d_integrator_step; }
 
+    /**
+     * Check whether there are integration steps remaining.
+     *
+     * @returns True, if steps remaining.
+     */
     bool stepsRemaining() const;
 
     const boost::shared_ptr<hier::PatchHierarchy> getPatchHierarchy() const
@@ -76,7 +125,9 @@ class LagrangianEulerianIntegrator {
     }
 
     /**
-     * Returns kinetic energy for test check purposes.
+     * Print out the field summary for the hierarchy.
+     *
+     * @returns The total kinetic energy, for testing.
      */
     double printFieldSummary();
   private:
