@@ -29,14 +29,14 @@ CPP_FILES := $(wildcard src/*.C)
 F90_FILES := $(wildcard src/fortran/*.f90)
 OBJ_FILES := $(addprefix obj/,$(notdir $(F90_FILES:.f90=.o) $(CPP_FILES:.C=.o)))
 
-ref: cleverleaf
+ref: obj cleverleaf
 
 openmp: CPPFLAGS+=-openmp
 openmp: LDFLAGS+=-openmp
 openmp: FFLAGS+=-openmp
 openmp: ref
 
-cleverleaf: obj $(OBJ_FILES)
+cleverleaf: $(OBJ_FILES)
 	$(F90) $^ $(LDFLAGS) -o $@
 
 obj/%.o: src/%.C
