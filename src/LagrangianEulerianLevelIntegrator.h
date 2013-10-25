@@ -147,11 +147,6 @@ class LagrangianEulerianLevelIntegrator:
     void initializeLevelIntegrator(
         const boost::shared_ptr<mesh::GriddingAlgorithmStrategy>& gridding_alg);
 
-    double getMaxFinerLevelDt(
-        const int finer_level_number,
-        const double coarse_dt,
-        const hier::IntVector& ratio);
-
     void standardLevelSynchronization(
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const int coarsest_level,
@@ -165,8 +160,6 @@ class LagrangianEulerianLevelIntegrator:
         const int finest_level,
         const double sync_time,
         const bool initial_time);
-
-    bool usingRefinedTimestepping() const;
 
     void initializeLevelData(
         const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,

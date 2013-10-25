@@ -169,14 +169,6 @@ void LagrangianEulerianLevelIntegrator::initializeLevelIntegrator(
   d_patch_strategy->registerModelVariables(this);
 }
 
-double LagrangianEulerianLevelIntegrator::getMaxFinerLevelDt(
-    const int finer_level_number,
-    const double coarse_dt,
-    const hier::IntVector& ratio)
-{
-  return coarse_dt / double(ratio.max());
-}
-
 void LagrangianEulerianLevelIntegrator::standardLevelSynchronization(
     const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
     const int coarsest_level,
