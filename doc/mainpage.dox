@@ -1,10 +1,10 @@
 /** @mainpage CleverLeaf Source Code Documentation
  *
- * CleverLeaf is a work-in-progress code to test the possibilities and
- * performance of the SAMRAI toolkit from Livermore. The current version 0.1a
- * implements a simple Lagrangian-Eulerian hydro scheme taken from <a
- * href="http://warwick-pcav.github.io/CloverLeaf/">CloverLeaf</a>, a
- * mini-app developed at AWE and the University of Warwick. 
+ * CleverLeaf is a hydrodynamics mini-app that extends <a
+ * href="http://warwick-pcav.github.io/CloverLeaf/">CloverLeaf</a> with
+ * Adaptive Mesh Refinement using the <a
+ * href="http://computation.llnl.gov/casc/SAMRAI/index.html">SAMRAI</a> toolkit
+ * from Lawrence Livermore National Laboratory.
  *
  * \section About
  *

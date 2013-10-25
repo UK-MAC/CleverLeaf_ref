@@ -2,8 +2,11 @@
 
 CleverLeaf is a hydrodynamics mini-app that extends
 [CloverLeaf](http://warwick-pcav.github.io/CloverLeaf/) with Adaptive Mesh
-Refinement using the [SAMRAI]() toolkit from Lawrence Livermore National
-Laboratory.
+Refinement using the
+[SAMRAI](http://computation.llnl.gov/casc/SAMRAI/index.html) toolkit from
+Lawrence Livermore National Laboratory. The primary goal of CleverLeaf is to
+evaluate the application of AMR to the Lagriangian-Eulerian hydrodynamics scheme
+used by CloverLeaf.
 
 ## Quick Start
 
@@ -15,6 +18,32 @@ To build the reference version, type: `make ref`
 To run the test problem, type: `make test`  
 **N.B.** Running the test assumes that the command `mpirun` can be used to
 launch an executable.
+
+## Detailed Build Instructions
+
+CleverLeaf's only explicit dependency is:
+
+- SAMRAI (v. 3.6.3)
+
+Other libraries, such as HDF5 and Boost, will need to be installed in order to
+build SAMRAI.
+
+CleverLeaf uses a number of variables in the Makefile to control complation.
+These variables can be set as required to get CleverLeaf to compile on your
+system:
+
+- `CXX`: The C++ compiler to use.
+- `F90`: The Fortran90 compiler to use.
+- `HDF_DIR`: The location of HDF5.
+- `BOOST_DIR`: The location of the Boost library (headers only).
+- `SAMRAI_DIR`: The location of the SAMRAI library.
+
+Once these variables have been set, CleverLeaf should build correctly. However,
+the `CPPFLAGS`, `FFLAGS`, and `LDFLAGS` can be modified if necessary.
+
+CleverLeaf currently supports to targets: `ref` and `openmp`. The `ref` target
+builds the vanilla version of CleverLeaf using MPI only. The `openmp` target
+builds a hybrid version that uses both MPI and OpenMP.
 
 ## About
 
