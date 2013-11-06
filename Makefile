@@ -18,7 +18,7 @@
 #  
 include Make.inc
 
-GIT_VERSION := $(shell git rev-parse --short HEAD)
+GIT_VERSION := 1.0
 HOST_NAME := $(shell uname -n)
 
 CXXFLAGS_INTEL=-O3 -ipo -fp-model source -fp-model strict -prec-div -prec-sqrt
