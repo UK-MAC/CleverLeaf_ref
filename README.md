@@ -5,19 +5,27 @@ CleverLeaf is a hydrodynamics mini-app that extends
 Refinement using the
 [SAMRAI](http://computation.llnl.gov/casc/SAMRAI/index.html) toolkit from
 Lawrence Livermore National Laboratory. The primary goal of CleverLeaf is to
-evaluate the application of AMR to the Lagriangian-Eulerian hydrodynamics scheme
+evaluate the application of AMR to the Lagrangian-Eulerian hydrodynamics scheme
 used by CloverLeaf.
 
 ## Quick Start
 
-Ensure you have SAMRAI (and it's dependencies installed). Edit `Makefile`,
-ensuring that `HDF_DIR` and `SAMRAI_DIR` point to the correct locations.
+Ensure you have SAMRAI (and it's dependencies installed). Edit `Make.inc`,
+ensuring that `HDF_DIR` and `BOOST_DIR` and `SAMRAI_DIR` point to the correct
+locations, and that `COMPILER`, `CXX`, and `F90` are set appropriately.
 
 To build the reference version, type: `make ref`
 
 To run the test problem, type: `make test`  
 **N.B.** Running the test assumes that the command `mpirun` can be used to
 launch an executable.
+
+To run other problems:
+
+  mpirun -n <processes> ./cleverleaf <input_file>
+
+Substitute `mpirun` with the appropriate command for running parallel jobs on
+your machine.
 
 ## Detailed Build Instructions
 
@@ -28,10 +36,12 @@ CleverLeaf's only explicit dependency is:
 Other libraries, such as HDF5 and Boost, will need to be installed in order to
 build SAMRAI.
 
-CleverLeaf uses a number of variables in the Makefile to control complation.
+CleverLeaf uses a number of variables in the `Make.inc` to control compilation.
 These variables can be set as required to get CleverLeaf to compile on your
 system:
 
+- `COMPILER`: The compiler vendor, used for selecting appropriate flags
+              (`INTEL` or `GNU`).
 - `CXX`: The C++ compiler to use.
 - `F90`: The Fortran90 compiler to use.
 - `HDF_DIR`: The location of HDF5.
@@ -109,3 +119,13 @@ of refinement. To coarsen the field variables, two additional operators have
 been added: CartesianCellDoubleMassWeightedAverage, and
 CartesianCellDoubleVolumeWeightedAverage. These are used to conservatively
 coarsen energy and pressure.
+
+Cells are tagged based on three criteria: energy gradient, density gradient,
+and artificial viscosity value. Please see `Cleverleaf.h` for further
+documentation on how to control this tagging.
+
+# Further Documentation
+
+All header files contain detailed comments, and the `make doc` target can be
+used to build the documentation using Doxygen. Documentation for the current
+release version can be found at: 

@@ -1,29 +1,41 @@
+# 
+# Copyright 2013 David Beckingsale.
+# 
+# This file is part of CleverLeaf.
+# 
+# CleverLeaf is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation, either version 3 of the License, or (at your option)
+# any later version.
+# 
+# CleverLeaf is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+# more details.
+# 
+# You should have received a copy of the GNU General Public License along with
+# CleverLeaf. If not, see http://www.gnu.org/licenses/.
+#  
+include Make.inc
+
 GIT_VERSION := $(shell git rev-parse --short HEAD)
 HOST_NAME := $(shell uname -n)
 
-HDF_DIR=/home/dab/opt/hdf5/1.8.11/intel-13.1.1.163/impi-4.1.0.24
-HDF_INC=-I$(HDF_DIR)/include
-HDF_LIB=-L$(HDF_DIR)/lib -lhdf5
+CXXFLAGS_INTEL=-O3 -ipo -fp-model source -fp-model strict -prec-div -prec-sqrt
+FFLAGS_INTEL=-O3 -ipo -warn all -fp-model strict -fp-model source -prec-div -prec-sqrt -module obj/
+LDFLAGS_INTEL=-ipo -nofor_main
+OMP_INTEL=-openmp
 
-BOOST_DIR=/home/dab/opt/boost/1.52.0/intel-13.1.1.163
-BOOST_INC=-I$(BOOST_DIR)/include
+CXXFLAGS_GNU=-O3 -march=native -funroll-loops -ffloat-store
+FFLAGS_GNU=-O3 -march=native -funroll-loops -ffloat-store
+LDFLAGS_GNU=
+OMP_GNU=-fopenmp
 
-SAMRAI_DIR=/home/dab/opt/SAMRAI/3.6.3/intel-13.1.1.163/impi-4.1.0.24/opt
-SAMRAI_INC=-I$(SAMRAI_DIR)/include
-SAMRAI_LDIR=$(SAMRAI_DIR)/lib
-SAMRAI_LIB=$(SAMRAI_LDIR)/libSAMRAI_appu.a $(SAMRAI_LDIR)/libSAMRAI_algs.a $(SAMRAI_LDIR)/libSAMRAI_solv.a $(SAMRAI_LDIR)/libSAMRAI_geom.a $(SAMRAI_LDIR)/libSAMRAI_mesh.a $(SAMRAI_LDIR)/libSAMRAI_math.a $(SAMRAI_LDIR)/libSAMRAI_pdat.a $(SAMRAI_LDIR)/libSAMRAI_xfer.a $(SAMRAI_LDIR)/libSAMRAI_hier.a $(SAMRAI_LDIR)/libSAMRAI_tbox.a
-
-LAPACK_DIR=/home/dab/opt/lapack/3.4.2/intel-13.1.1.163
-BLAS_DIR=/home/dab/opt/lapack/3.4.2/intel-13.1.1.163
-MATH_INC=-I$(LAPACK_DIR)/include
-MATH_LIB=-L$(LAPACK_DIR)/lib -llapack -lblas
-
-CXX=mpiicpc
-F90=mpiifort
-
-CPPFLAGS=-O3 -fp-model source -fp-model strict -prec-div -prec-sqrt -lz $(BOOST_INC) $(HDF_INC) $(SAMRAI_INC) $(MATH_INC) -DVERSION=\"$(GIT_VERSION)\" -DHOST_NAME=\"$(HOST_NAME)\"
-FFLAGS=-O3 -warn all -fp-model strict -fp-model source -prec-div -prec-sqrt -module obj/
-LDFLAGS=-lz $(SAMRAI_LIB) $(HDF_LIB) $(MATH_LIB) -lstdc++ -nofor_main
+CXXFLAGS=$(CXXFLAGS_$(COMPILER)) \
+				 -lz $(BOOST_INC) $(HDF_INC) $(SAMRAI_INC) $(MATH_INC) \
+				 -DVERSION=\"$(GIT_VERSION)\" -DHOST_NAME=\"$(HOST_NAME)\"
+FFLAGS=$(FFLAGS_$(COMPILER)) 
+LDFLAGS=$(LDFLAGS_$(COMPILER)) -lz $(SAMRAI_LIB) $(HDF_LIB) $(MATH_LIB) -lstdc++
 
 CPP_FILES := $(wildcard src/*.C)
 F90_FILES := $(wildcard src/fortran/*.f90)
@@ -31,16 +43,16 @@ OBJ_FILES := $(addprefix obj/,$(notdir $(F90_FILES:.f90=.o) $(CPP_FILES:.C=.o)))
 
 ref: obj cleverleaf
 
-openmp: CPPFLAGS+=-openmp
-openmp: LDFLAGS+=-openmp
-openmp: FFLAGS+=-openmp
+openmp: CXXFLAGS+=$(OMP_$(COMPILER))
+openmp: LDFLAGS+=$(OMP_$(COMPILER))
+openmp: FFLAGS+=$(OMP_$(COMPILER))
 openmp: ref
 
 cleverleaf: $(OBJ_FILES)
 	$(F90) $^ $(LDFLAGS) -o $@
 
 obj/%.o: src/%.C
-	$(CXX) $(CPPFLAGS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 obj/%.o: src/fortran/%.f90
 	$(F90) $(FFLAGS) -c -o $@ $<
