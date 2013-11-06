@@ -1,0 +1,22 @@
+var searchData=
+[
+  ['facecomplexconstantrefine',['FaceComplexConstantRefine',['http://athens/docs/SAMRAI/3.6.3/classSAMRAI_1_1pdat_1_1FaceComplexConstantRefine.html',1,'SAMRAI::pdat']]],
+  ['facecomplexlineartimeinterpolateop',['FaceComplexLinearTimeInterpolateOp',['http://athens/docs/SAMRAI/3.6.3/classSAMRAI_1_1pdat_1_1FaceComplexLinearTimeInterpolateOp.html',1,'SAMRAI::pdat']]],
+  ['facedata',['FaceData',['http://athens/docs/SAMRAI/3.6.3/classSAMRAI_1_1pdat_1_1FaceData.html',1,'SAMRAI::pdat']]],
+  ['facedatafactory',['FaceDataFactory',['http://athens/docs/SAMRAI/3.6.3/classSAMRAI_1_1pdat_1_1FaceDataFactory.html',1,'SAMRAI::pdat']]],
+  ['facedoubleconstantrefine',['FaceDoubleConstantRefine',['http://athens/docs/SAMRAI/3.6.3/classSAMRAI_1_1pdat_1_1FaceDoubleConstantRefine.html',1,'SAMRAI::pdat']]],
+  ['facedoublelineartimeinterpolateop',['FaceDoubleLinearTimeInterpolateOp',['http://athens/docs/SAMRAI/3.6.3/classSAMRAI_1_1pdat_1_1FaceDoubleLinearTimeInterpolateOp.html',1,'SAMRAI::pdat']]],
+  ['facefloatconstantrefine',['FaceFloatConstantRefine',['http://athens/docs/SAMRAI/3.6.3/classSAMRAI_1_1pdat_1_1FaceFloatConstantRefine.html',1,'SAMRAI::pdat']]],
+  ['facefloatlineartimeinterpolateop',['FaceFloatLinearTimeInterpolateOp',['http://athens/docs/SAMRAI/3.6.3/classSAMRAI_1_1pdat_1_1FaceFloatLinearTimeInterpolateOp.html',1,'SAMRAI::pdat']]],
+  ['facegeometry',['FaceGeometry',['http://athens/docs/SAMRAI/3.6.3/classSAMRAI_1_1pdat_1_1FaceGeometry.html',1,'SAMRAI::pdat']]],
+  ['faceindex',['FaceIndex',['http://athens/docs/SAMRAI/3.6.3/classSAMRAI_1_1pdat_1_1FaceIndex.html',1,'SAMRAI::pdat']]],
+  ['faceintegerconstantrefine',['FaceIntegerConstantRefine',['http://athens/docs/SAMRAI/3.6.3/classSAMRAI_1_1pdat_1_1FaceIntegerConstantRefine.html',1,'SAMRAI::pdat']]],
+  ['faceiterator',['FaceIterator',['http://athens/docs/SAMRAI/3.6.3/classSAMRAI_1_1pdat_1_1FaceIterator.html',1,'SAMRAI::pdat']]],
+  ['faceoverlap',['FaceOverlap',['http://athens/docs/SAMRAI/3.6.3/classSAMRAI_1_1pdat_1_1FaceOverlap.html',1,'SAMRAI::pdat']]],
+  ['facevariable',['FaceVariable',['http://athens/docs/SAMRAI/3.6.3/classSAMRAI_1_1pdat_1_1FaceVariable.html',1,'SAMRAI::pdat']]],
+  ['facoperatorstrategy',['FACOperatorStrategy',['http://athens/docs/SAMRAI/3.6.3/classSAMRAI_1_1solv_1_1FACOperatorStrategy.html',1,'SAMRAI::solv']]],
+  ['facpreconditioner',['FACPreconditioner',['http://athens/docs/SAMRAI/3.6.3/classSAMRAI_1_1solv_1_1FACPreconditioner.html',1,'SAMRAI::solv']]],
+  ['firstlayercellnocornersvariablefillpattern',['FirstLayerCellNoCornersVariableFillPattern',['http://athens/docs/SAMRAI/3.6.3/classSAMRAI_1_1pdat_1_1FirstLayerCellNoCornersVariableFillPattern.html',1,'SAMRAI::pdat']]],
+  ['firstlayercellvariablefillpattern',['FirstLayerCellVariableFillPattern',['http://athens/docs/SAMRAI/3.6.3/classSAMRAI_1_1pdat_1_1FirstLayerCellVariableFillPattern.html',1,'SAMRAI::pdat']]],
+  ['firstlayernodevariablefillpattern',['FirstLayerNodeVariableFillPattern',['http://athens/docs/SAMRAI/3.6.3/classSAMRAI_1_1pdat_1_1FirstLayerNodeVariableFillPattern.html',1,'SAMRAI::pdat']]]
+];
