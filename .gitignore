@@ -1,8 +1,6 @@
-Clamour.o
-clamour
-main.o
 tags
 cleverleaf
 cleverleaf.visit/
 fix_indices
 dox/
+obj/*
