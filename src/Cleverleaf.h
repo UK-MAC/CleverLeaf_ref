@@ -81,6 +81,9 @@ using namespace std;
  *    - \b    tag_energy
  *       gradient threshold for energy tagging.
  *
+ *    - \b    physics_weight
+ *       multiplicative factor to adjust cost of physics kernels.
+ *
  *    - \b    states
  *       set of states.
  *
@@ -174,6 +177,11 @@ using namespace std;
  *     <td>tag_energy</td>
  *     <td>double</td>
  *     <td>0.1</td>
+ *   </tr>
+ *   <tr>
+ *     <td>physics_weight</td>
+ *     <td>int</td>
+ *     <td>1</td>
  *   </tr>
  *   <tr>
  *     <td colspan=3><b>states</b></td>
@@ -366,6 +374,8 @@ class Cleverleaf:
     double d_tag_q_threshold;
     double d_tag_density_gradient;
     double d_tag_energy_gradient;
+
+    int d_pdv_weight;
 
     boost::shared_ptr<pdat::NodeVariable<double> > d_velocity;
     boost::shared_ptr<pdat::EdgeVariable<double> > d_massflux;

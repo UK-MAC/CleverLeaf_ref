@@ -211,6 +211,8 @@ Cleverleaf::Cleverleaf(
       "tag_density", 0.1);
   d_tag_energy_gradient = input_database->getDoubleWithDefault(
       "tag_energy", 0.1);
+  d_pdv_weight = input_database->getIntegerWithDefault(
+      "physics_weight", 1);
 }
 
 void Cleverleaf::registerModelVariables(
@@ -940,27 +942,32 @@ void Cleverleaf::pdv_knl(hier::Patch& patch, double dt, bool predict)
   else
     prdct = 0;
 
-  F90_FUNC(pdv_kernel, PDV_KERNEL)
-    (&prdct,
-     &xmin,
-     &xmax,
-     &ymin,
-     &ymax,
-     &dt,
-     cell_deltas->getPointer(1),
-     cell_deltas->getPointer(0),
-     volume->getPointer(),
-     density0->getPointer(),
-     density1->getPointer(),
-     energy0->getPointer(),
-     energy1->getPointer(),
-     pressure->getPointer(),
-     viscosity->getPointer(),
-     velocity0->getPointer(0),
-     velocity1->getPointer(0),
-     velocity0->getPointer(1),
-     velocity1->getPointer(1),
-     volume_change.getPointer());
+  /*
+   * Iterate over PdV kernel to increase cost of physics.
+   */
+  for (int i = 0; i < d_pdv_weight; i++) {
+    F90_FUNC(pdv_kernel, PDV_KERNEL)
+      (&prdct,
+       &xmin,
+       &xmax,
+       &ymin,
+       &ymax,
+       &dt,
+       cell_deltas->getPointer(1),
+       cell_deltas->getPointer(0),
+       volume->getPointer(),
+       density0->getPointer(),
+       density1->getPointer(),
+       energy0->getPointer(),
+       energy1->getPointer(),
+       pressure->getPointer(),
+       viscosity->getPointer(),
+       velocity0->getPointer(0),
+       velocity1->getPointer(0),
+       velocity0->getPointer(1),
+       velocity1->getPointer(1),
+       volume_change.getPointer());
+  }
 }
 
 void Cleverleaf::flux_calc_knl(hier::Patch& patch, double dt)
