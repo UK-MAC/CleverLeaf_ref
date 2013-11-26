@@ -21,6 +21,7 @@
 #include <cstdlib>
 #include <string>
 #include <fstream>
+#include <unistd.h>
 
 #if defined(_OPENMP)
 #include <omp.h>
@@ -57,13 +58,63 @@ int main(int argc, char* argv[]) {
   const tbox::SAMRAI_MPI& mpi(tbox::SAMRAI_MPI::getSAMRAIWorld());
 
   {
+    if (argc == 1) {
+      tbox::pout << "USAGE: " << argv[0] 
+        << " [-l max_level] [-r refinement_ratio] [-f regrid_frequency]" 
+        << " <input filename>" << std::endl;
+      exit(1);
+    }
+
     string input_path;
 
-    if ((argc != 2)) {
-      tbox::pout << "USAGE: " << argv[0] << " <input filename>"
-        << endl;
+    int max_level_number = -1;
+    int refinement_ratio = -1;
+    int regrid_interval = -1;
+
+    int opt;
+
+    while ((opt = getopt(argc,argv,"l:r:f:i:")) != EOF ) {
+      switch (opt) {
+        case 'l':
+          max_level_number = atoi(optarg);
+          tbox::plog << "max_level_number overide using command-line: " 
+            << max_level_number << endl;
+          break;
+        case 'r':
+          refinement_ratio = atoi(optarg);
+          tbox::plog << "refinement_ratio overide using command-line: " 
+            << refinement_ratio << endl;
+          break;
+        case 'f':
+          regrid_interval = atoi(optarg);
+          tbox::plog << "regrid_interval overide using command-line: " 
+            << regrid_interval << endl;
+          break;
+        case 'i':
+          input_path = optarg;
+          break;
+        case '?':
+          if (optopt == 'i')
+            tbox::perr << "Option -i requires input file argument" << std::endl;
+          else
+            tbox::perr << "Unknown option " << optopt << std::endl;
+
+          tbox::pout << "USAGE: " << argv[0] 
+            << " [-l max_level] [-r refinement_ratio] [-f regrid_frequency]" 
+            << " <input filename>" << std::endl;
+
+          exit(1);
+      }
+    }
+
+    if (input_path.empty() && optind < argc) {
+      input_path = argv[optind];
     } else {
-      input_path = argv[1];
+      tbox::perr << "Input file required" << std::endl;
+      tbox::pout << "USAGE: " << argv[0] 
+        << " [-l max_level] [-r refinement_ratio] [-f regrid_frequency]" 
+        << " <input filename>" << std::endl;
+      exit(1);
     }
 
     tbox::pout << "CleverLeaf version #" << VERSION 
@@ -121,6 +172,27 @@ int main(int argc, char* argv[]) {
           "CartesianGeometry",
           input_db->getDatabase("CartesianGeometry")));
 
+    /*
+     * Overwrite max_levels and ratio_to_coarser if passed as command line
+     * arguments.
+     */
+    if(max_level_number != -1) {
+      input_db->getDatabase("PatchHierarchy")
+        ->putInteger("max_levels", max_level_number);
+    }
+
+    if(refinement_ratio != -1) {
+      std::vector<int> ratio_vector(dim.getValue());
+
+      for(int i = 0; i < dim.getValue(); i++) {
+        ratio_vector[i] = refinement_ratio;
+      }
+
+      input_db->getDatabase("PatchHierarchy")
+        ->getDatabase("ratio_to_coarser")
+        ->putIntegerVector("level_1", ratio_vector);
+    }
+
     boost::shared_ptr<hier::PatchHierarchy> patch_hierarchy(
         new hier::PatchHierarchy(
           "PatchHierarchy",
@@ -167,6 +239,14 @@ int main(int argc, char* argv[]) {
           error_detector,
           box_generator,
           load_balancer));
+
+    /*
+     * Overwrite regrid_interval option if necessary.
+     */
+    if(regrid_interval != -1) {
+      input_db->getDatabase("LagrangianEulerianIntegrator")
+        ->putInteger("regrid_interval", regrid_interval);
+    }
 
     boost::shared_ptr<LagrangianEulerianIntegrator>
       lagrangian_eulerian_integrator(
