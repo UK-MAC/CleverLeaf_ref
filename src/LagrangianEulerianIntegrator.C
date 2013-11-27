@@ -31,6 +31,8 @@ boost::shared_ptr<tbox::Timer>
 LagrangianEulerianIntegrator::t_initialize_hierarchy;
 boost::shared_ptr<tbox::Timer>
 LagrangianEulerianIntegrator::t_advance_hierarchy;
+boost::shared_ptr<tbox::Timer>
+LagrangianEulerianIntegrator::t_synchronize_levels;
 
 LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
     const boost::shared_ptr<tbox::Database>& input_db,
@@ -244,15 +246,21 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
     d_dt = d_end_time - d_integrator_time;
   }
 
+  t_advance_hierarchy->stop();
+
   int coarse_level_number = 0;
 
   if (finest_level_number > 0) {
+    t_synchronize_levels->start();
+
     d_level_integrator->standardLevelSynchronization(
         d_patch_hierarchy,
         0,
         finest_level_number,
         d_integrator_time,
         d_integrator_time - dt);
+
+    t_synchronize_levels->stop();
   }
 
   /*
@@ -280,8 +288,9 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
      * Synchronize data on new levels.
      */
     if (d_patch_hierarchy->getFinestLevelNumber() > 0) {
-
       const bool initial_time = false;
+
+      t_synchronize_levels->start();
 
       d_level_integrator->synchronizeNewLevels(
           d_patch_hierarchy,
@@ -289,10 +298,10 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
           d_patch_hierarchy->getFinestLevelNumber(),
           d_integrator_time,
           initial_time);
+
+      t_synchronize_levels->stop();
     }
   }
-
-  t_advance_hierarchy->stop();
 
   return d_dt;
 }
@@ -428,10 +437,13 @@ void LagrangianEulerianIntegrator::initializeCallback()
       "LagrangianEulerianIntegrator::initializeHierarchy()");
   t_advance_hierarchy = tbox::TimerManager::getManager()->getTimer(
       "LagrangianEulerianIntegrator::advanceHierarchy()");
+  t_synchronize_levels = tbox::TimerManager::getManager()->getTimer(
+      "LagrangianEulerianIntegrator::synchronizeLevels()");
 }
 
 void LagrangianEulerianIntegrator::finalizeCallback()
 {
   t_initialize_hierarchy.reset();
   t_advance_hierarchy.reset();
+  t_synchronize_levels.reset();
 }
