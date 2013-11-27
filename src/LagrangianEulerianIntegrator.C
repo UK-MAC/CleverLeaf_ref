@@ -33,6 +33,8 @@ boost::shared_ptr<tbox::Timer>
 LagrangianEulerianIntegrator::t_advance_hierarchy;
 boost::shared_ptr<tbox::Timer>
 LagrangianEulerianIntegrator::t_synchronize_levels;
+boost::shared_ptr<tbox::Timer>
+LagrangianEulerianIntegrator::t_get_min_hierarchy_dt;
 
 LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
     const boost::shared_ptr<tbox::Database>& input_db,
@@ -313,6 +315,8 @@ bool LagrangianEulerianIntegrator::stepsRemaining() const
 
 void LagrangianEulerianIntegrator::getMinHeirarchyDt(const bool initial_time)
 {
+  t_get_min_hierarchy_dt->start();
+
   int finest_level_number = d_patch_hierarchy->getFinestLevelNumber();
   int level_number = 0;
 
@@ -371,6 +375,8 @@ void LagrangianEulerianIntegrator::getMinHeirarchyDt(const bool initial_time)
   } else {
     d_dt = d_max_dt;
   }
+
+  t_get_min_hierarchy_dt->stop();
 }
 
 double LagrangianEulerianIntegrator::printFieldSummary()
@@ -439,6 +445,8 @@ void LagrangianEulerianIntegrator::initializeCallback()
       "LagrangianEulerianIntegrator::advanceHierarchy()");
   t_synchronize_levels = tbox::TimerManager::getManager()->getTimer(
       "LagrangianEulerianIntegrator::synchronizeLevels()");
+  t_get_min_hierarchy_dt = tbox::TimerManager::getManager()->getTimer(
+      "LagrangianEulerianIntegrator::getMinHierarchyDt()");
 }
 
 void LagrangianEulerianIntegrator::finalizeCallback()
@@ -446,4 +454,5 @@ void LagrangianEulerianIntegrator::finalizeCallback()
   t_initialize_hierarchy.reset();
   t_advance_hierarchy.reset();
   t_synchronize_levels.reset();
+  t_get_min_hierarchy_dt.reset();
 }

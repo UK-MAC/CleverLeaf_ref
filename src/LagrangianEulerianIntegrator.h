@@ -250,6 +250,7 @@ class LagrangianEulerianIntegrator {
     static boost::shared_ptr<tbox::Timer> t_initialize_hierarchy;
     static boost::shared_ptr<tbox::Timer> t_advance_hierarchy;
     static boost::shared_ptr<tbox::Timer> t_synchronize_levels;
+    static boost::shared_ptr<tbox::Timer> t_get_min_hierarchy_dt;
 
     static void initializeCallback();
     static void finalizeCallback();
