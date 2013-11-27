@@ -315,7 +315,6 @@ bool LagrangianEulerianIntegrator::stepsRemaining() const
 
 void LagrangianEulerianIntegrator::getMinHeirarchyDt(const bool initial_time)
 {
-  t_get_min_hierarchy_dt->start();
 
   int finest_level_number = d_patch_hierarchy->getFinestLevelNumber();
   int level_number = 0;
@@ -351,6 +350,8 @@ void LagrangianEulerianIntegrator::getMinHeirarchyDt(const bool initial_time)
     d_level_integrator->postViscosityHaloExchange(
         patch_level, d_patch_hierarchy, d_integrator_time);
   }
+
+  t_get_min_hierarchy_dt->start();
 
   double dt = tbox::MathUtilities<double>::getMax();
 
