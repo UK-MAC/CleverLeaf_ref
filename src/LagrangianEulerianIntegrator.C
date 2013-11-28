@@ -244,6 +244,15 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
   d_integrator_time += dt;
   d_integrator_step++;
 
+  /*
+   * Advance data timestamp before regrid and synchronize
+   */
+  for (level_number = 0; level_number <= finest_level_number; level_number++) {
+    boost::shared_ptr<hier::PatchLevel> patch_level(
+        d_patch_hierarchy->getPatchLevel(level_number));
+
+    d_level_integrator->stampDataTime(patch_level, d_integrator_time);
+  }
 
   if ((d_integrator_time + d_dt) > d_end_time) {
     d_dt = d_end_time - d_integrator_time;
