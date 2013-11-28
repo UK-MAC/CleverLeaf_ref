@@ -251,6 +251,16 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
 
   t_advance_hierarchy->stop();
 
+  /*
+   * Advance data timestamp before regrid and synchronize
+   */
+  for (level_number = 0; level_number <= finest_level_number; level_number++) {
+    boost::shared_ptr<hier::PatchLevel> patch_level(
+        d_patch_hierarchy->getPatchLevel(level_number));
+
+    d_level_integrator->stampDataTime(patch_level, d_integrator_time);
+  }
+
   int coarse_level_number = 0;
 
   if (finest_level_number > 0) {
@@ -264,16 +274,6 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
         d_integrator_time - dt);
 
     t_synchronize_levels->stop();
-  }
-
-  /*
-   * Advance data timestamp before regrid and synchronize
-   */
-  for (level_number = 0; level_number <= finest_level_number; level_number++) {
-    boost::shared_ptr<hier::PatchLevel> patch_level(
-        d_patch_hierarchy->getPatchLevel(level_number));
-
-    d_level_integrator->stampDataTime(patch_level, d_integrator_time);
   }
 
   /*
