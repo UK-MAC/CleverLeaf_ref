@@ -31,6 +31,8 @@
 #include "SAMRAI/pdat/EdgeVariable.h"
 #include "SAMRAI/geom/CartesianGridGeometry.h"
 #include "SAMRAI/appu/CartesianBoundaryDefines.h"
+#include "SAMRAI/tbox/Timer.h"
+#include "SAMRAI/tbox/StartupShutdownManager.h"
 
 #include "LagrangianEulerianPatchStrategy.h"
 #include "LagrangianEulerianLevelIntegrator.h"
@@ -421,5 +423,12 @@ class Cleverleaf:
 
     const static double g_small = 1.0e-16;
     const static double g_big = 1.0e+21;
+
+    static boost::shared_ptr<tbox::Timer> t_fill_boundary;
+
+    static void initializeCallback();
+    static void finalizeCallback();
+
+    static tbox::StartupShutdownManager::Handler s_initialize_handler;
 };
 #endif

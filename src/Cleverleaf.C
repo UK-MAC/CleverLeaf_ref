@@ -134,6 +134,16 @@ const int Cleverleaf::g_point;
 const double Cleverleaf::g_small;
 const double Cleverleaf::g_big;
 
+tbox::StartupShutdownManager::Handler
+Cleverleaf::s_initialize_handler(
+    Cleverleaf::initializeCallback,
+    0,
+    0,
+    Cleverleaf::finalizeCallback,
+    tbox::StartupShutdownManager::priorityTimers);
+
+boost::shared_ptr<tbox::Timer> Cleverleaf::t_fill_boundary;
+
 Cleverleaf::Cleverleaf(
     boost::shared_ptr<tbox::Database> input_database,
     boost::shared_ptr<hier::PatchHierarchy> hierarchy,
@@ -1187,6 +1197,8 @@ void Cleverleaf::setPhysicalBoundaryConditions(
     const double fill_time,
     const hier::IntVector& ghost_width_to_fill)
 {
+  t_fill_boundary->start();
+
   boost::shared_ptr<pdat::CellData<double> > v_pressure(
       patch.getPatchData(d_pressure, getScratchDataContext()),
       boost::detail::dynamic_cast_tag());
@@ -1480,6 +1492,8 @@ void Cleverleaf::setPhysicalBoundaryConditions(
                 exit(-1);
     }
   }
+
+  t_fill_boundary->stop();
 }
 
 void Cleverleaf::field_summary(
@@ -1655,4 +1669,15 @@ void Cleverleaf::debug_knl(hier::Patch& patch)
      velocity0->getPointer(1),
      velocity1->getPointer(0),
      velocity1->getPointer(1));
+}
+
+void Cleverleaf::initializeCallback()
+{
+  t_fill_boundary = tbox::TimerManager::getManager()->getTimer(
+      "Cleverleaf::setPhysicalBoundaryConditions()");
+}
+
+void Cleverleaf::finalizeCallback()
+{
+  t_fill_boundary.reset();
 }
