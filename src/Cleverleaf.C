@@ -131,8 +131,8 @@ const int Cleverleaf::g_rectangle;
 const int Cleverleaf::g_circle;
 const int Cleverleaf::g_point;
 
-const double Cleverleaf::g_small;
-const double Cleverleaf::g_big;
+const double Cleverleaf::g_small = 1.0e-16;
+const double Cleverleaf::g_big = 1.0e+21;
 
 tbox::StartupShutdownManager::Handler
 Cleverleaf::s_initialize_handler(

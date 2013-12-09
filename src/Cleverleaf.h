@@ -421,8 +421,8 @@ class Cleverleaf:
     const static int g_circle = 2;
     const static int g_point = 4;
 
-    const static double g_small = 1.0e-16;
-    const static double g_big = 1.0e+21;
+    const static double g_small;
+    const static double g_big;
 
     static boost::shared_ptr<tbox::Timer> t_fill_boundary;
 
