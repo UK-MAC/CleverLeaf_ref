@@ -34,6 +34,7 @@
 #include "SAMRAI/mesh/BergerRigoutsos.h"
 #include "SAMRAI/geom/CartesianGridGeometry.h"
 #include "SAMRAI/mesh/GriddingAlgorithm.h"
+#include "SAMRAI/mesh/ChopAndPackLoadBalancer.h"
 #include "SAMRAI/mesh/TreeLoadBalancer.h"
 #include "SAMRAI/hier/PatchHierarchy.h"
 #include "SAMRAI/hier/VariableDatabase.h"
@@ -224,12 +225,27 @@ int main(int argc, char* argv[]) {
             "BergerRigoutsos",
             boost::shared_ptr<SAMRAI::tbox::Database>())));
 
-    boost::shared_ptr<mesh::TreeLoadBalancer> load_balancer(
-        new mesh::TreeLoadBalancer(
+    bool DEV_use_chop_and_pack = false;
+    DEV_use_chop_and_pack = main_db->getBoolWithDefault(
+        "DEV_use_chop_and_pack",
+        DEV_use_chop_and_pack);
+
+    boost::shared_ptr<mesh::LoadBalanceStrategy> load_balancer;
+
+    if (DEV_use_chop_and_pack) {
+      load_balancer.reset(new mesh::ChopAndPackLoadBalancer(
+            dim,
+            "LoadBalancer",
+            input_db->getDatabase("LoadBalancer")));
+    } else {
+      mesh::TreeLoadBalancer* tree_load_balancer = new mesh::TreeLoadBalancer(
           dim,
           "LoadBalancer",
-          input_db->getDatabase("LoadBalancer")));
-    load_balancer->setSAMRAI_MPI(SAMRAI::tbox::SAMRAI_MPI::getSAMRAIWorld());
+          input_db->getDatabase("LoadBalancer"));
+      tree_load_balancer->setSAMRAI_MPI(SAMRAI::tbox::SAMRAI_MPI::getSAMRAIWorld());
+
+      load_balancer.reset(tree_load_balancer);
+    }
 
     boost::shared_ptr<mesh::GriddingAlgorithm> gridding_algorithm(
         new mesh::GriddingAlgorithm(
