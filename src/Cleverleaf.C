@@ -113,7 +113,7 @@ extern "C" {
 
   void F90_FUNC(field_summary_kernel, FIELD_SUMMARY_KERNEL)
     (int*,int*,int*,int*,double*,double*,double*,double*,double*,double*,int*,
-     double*,double*,double*,double*,double*,int*);
+     double*,double*,double*,double*,double*,int*,int*);
 
   void F90_FUNC(initialise_chunk_kernel, INITIALISE_CHUNK_KERNEL)
     (int*,int*,int*,int*,double*,double*,double*,double*,double*,double*,
@@ -1502,7 +1502,8 @@ void Cleverleaf::field_summary(
     double* total_mass,
     double* total_pressure,
     double* total_internal_energy,
-    double* total_kinetic_energy)
+    double* total_kinetic_energy,
+    int* total_effective_cells)
 {
   boost::shared_ptr<pdat::CellData<double> > volume(
       patch.getPatchData(d_volume, getCurrentDataContext()),
@@ -1555,6 +1556,7 @@ void Cleverleaf::field_summary(
      total_internal_energy,
      total_kinetic_energy,
      total_pressure,
+     total_effective_cells,
      &level_number);
 }
 

@@ -391,7 +391,8 @@ class LagrangianEulerianLevelIntegrator:
         double* level_mass,
         double* level_pressure,
         double* level_internal_energy,
-        double* level_kinetic_energy);
+        double* level_kinetic_energy,
+        int* level_effective_cells);
   private:
     LagrangianEulerianPatchStrategy* d_patch_strategy;
 

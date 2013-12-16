@@ -726,7 +726,8 @@ void LagrangianEulerianLevelIntegrator::getFieldSummary(
     double* level_mass,
     double* level_pressure,
     double* level_internal_energy,
-    double* level_kinetic_energy)
+    double* level_kinetic_energy,
+    int* level_effective_cells)
 {
   const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
 
@@ -735,12 +736,14 @@ void LagrangianEulerianLevelIntegrator::getFieldSummary(
   double pressure = 0.0;
   double internal_energy = 0.0;
   double kinetic_energy = 0.0;
+  int effective_cells = 0;
 
   *level_volume = 0.0;
   *level_mass = 0.0;
   *level_pressure = 0.0;
   *level_internal_energy = 0.0;
   *level_kinetic_energy = 0.0;
+  *level_effective_cells = 0;
 
   for(hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p){
     boost::shared_ptr<hier::Patch> patch = *p;
@@ -753,13 +756,15 @@ void LagrangianEulerianLevelIntegrator::getFieldSummary(
         &mass,
         &pressure,
         &internal_energy,
-        &kinetic_energy);
+        &kinetic_energy,
+        &effective_cells);
 
     *level_volume += volume;
     *level_mass += mass;
     *level_pressure += pressure;
     *level_internal_energy += internal_energy;
     *level_kinetic_energy += kinetic_energy;
+    *level_effective_cells += effective_cells;
   }
 
   if (mpi.getSize() > 1) {

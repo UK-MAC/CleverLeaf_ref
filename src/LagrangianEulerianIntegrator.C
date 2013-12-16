@@ -398,6 +398,7 @@ double LagrangianEulerianIntegrator::printFieldSummary()
   double pressure = 0.0;
   double internal_energy = 0.0;
   double kinetic_energy = 0.0;
+  int effective_cells = 0;
 
   double global_volume = 0.0;
   double global_mass = 0.0;
@@ -405,6 +406,7 @@ double LagrangianEulerianIntegrator::printFieldSummary()
   double global_internal_energy = 0.0;
   double global_kinetic_energy = 0.0;
   double global_total_energy = 0.0;
+  int global_effective_cells = 0;
 
   int finest_level_number = d_patch_hierarchy->getFinestLevelNumber();
 
@@ -418,13 +420,15 @@ double LagrangianEulerianIntegrator::printFieldSummary()
         &mass,
         &pressure,
         &internal_energy,
-        &kinetic_energy);
+        &kinetic_energy,
+        &effective_cells);
 
     global_volume += volume;
     global_mass += mass;
     global_pressure += pressure;
     global_internal_energy += internal_energy;
     global_kinetic_energy += kinetic_energy;
+    global_effective_cells += effective_cells;
   }
 
   global_total_energy = global_internal_energy + global_kinetic_energy;
@@ -445,6 +449,38 @@ double LagrangianEulerianIntegrator::printFieldSummary()
     <<  std::setw(17) << global_internal_energy
     <<  std::setw(17) << global_kinetic_energy
     <<  std::setw(17) << global_total_energy << std::endl;
+
+  tbox::plog << "Effective Cells: " << global_effective_cells << std::endl;
+
+  int total_cells = 0;
+  for(int level_number = 0; level_number <= finest_level_number; level_number++) {
+    boost::shared_ptr<hier::PatchLevel> patch_level(
+        d_patch_hierarchy->getPatchLevel(level_number));
+
+    for(hier::PatchLevel::iterator p(patch_level->begin()); 
+        p != patch_level->end();
+        ++p){
+      boost::shared_ptr<hier::Patch> patch = *p;
+
+      total_cells += patch->getBox().size();
+    }
+  }
+
+  int min_total_cells = total_cells;
+  int max_total_cells = total_cells;
+  int min_total_cell_location = -1;
+  int max_total_cell_location = -1;
+
+  const tbox::SAMRAI_MPI& mpi(tbox::SAMRAI_MPI::getSAMRAIWorld());
+
+  mpi.AllReduce(&min_total_cells, 1, MPI_MINLOC, &min_total_cell_location);
+  mpi.AllReduce(&max_total_cells, 1, MPI_MAXLOC, &max_total_cell_location);
+
+  tbox::plog << "Total Cells: "
+    << min_total_cells << " @ p" << min_total_cell_location << " (min) "
+    << max_total_cells << " @ p" << max_total_cell_location << " (max)" << std::endl;
+
+  //tbox::plog << "Total Cells: " << total_cells << "@" << mpi.getRank() << std::endl;
 
   return global_kinetic_energy;
 }

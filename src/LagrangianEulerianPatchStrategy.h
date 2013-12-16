@@ -172,7 +172,8 @@ class LagrangianEulerianPatchStrategy: public xfer::RefinePatchStrategy
         double* total_mass,
         double* total_pressure,
         double* total_internal_energy,
-        double* total_kinetic_energy) = 0;
+        double* total_kinetic_energy,
+        int* total_effective_cells) = 0;
 
     /**
      * Method to call the debug method on a patch.

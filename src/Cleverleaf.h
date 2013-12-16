@@ -350,7 +350,8 @@ class Cleverleaf:
         double* total_mass,
         double* total_pressure,
         double* total_internal_energy,
-        double* total_kinetic_energy);
+        double* total_kinetic_energy,
+        int* total_effective_cells);
 
     virtual void tagGradientDetectorCells(
         hier::Patch& patch,

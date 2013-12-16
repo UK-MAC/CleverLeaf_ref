@@ -29,6 +29,7 @@ SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max, &
                                 yvel0,                   &
                                 level_indicator,         & 
                                 vol,mass,ie,ke,press,    &
+                                cells,                   &
                                 level)
 
   IMPLICIT NONE
@@ -40,6 +41,7 @@ SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max, &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: xvel0,yvel0
   INTEGER,      DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: level_indicator
   REAL(KIND=8) :: vol,mass,ie,ke,press
+  INTEGER      :: cells
   INTEGER      :: level
 
   INTEGER      :: j,k,jv,kv
@@ -50,6 +52,7 @@ SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max, &
   ie=0.0
   ke=0.0
   press=0.0
+  cells=0
 
 !$OMP PARALLEL
 !$OMP DO PRIVATE(vsqrd,cell_vol,cell_mass) REDUCTION(+ : vol,mass,press,ie,ke)
@@ -69,6 +72,7 @@ SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max, &
         ie=ie+cell_mass*energy0(j,k)
         ke=ke+cell_mass*0.5*vsqrd
         press=press+cell_vol*pressure(j,k)
+        cells = cells+1
       ENDIF
     ENDDO
   ENDDO
