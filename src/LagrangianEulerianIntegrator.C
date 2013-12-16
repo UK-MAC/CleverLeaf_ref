@@ -40,9 +40,9 @@ LagrangianEulerianIntegrator::LagrangianEulerianIntegrator(
     const boost::shared_ptr<tbox::Database>& input_db,
     const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
     const boost::shared_ptr<LagrangianEulerianLevelIntegrator>&
-      level_integrator,
+    level_integrator,
     const boost::shared_ptr<mesh::GriddingAlgorithmStrategy>&
-      gridding_algorithm):
+    gridding_algorithm):
   d_patch_hierarchy(hierarchy),
   d_level_integrator(level_integrator),
   d_gridding_algorithm(gridding_algorithm),
@@ -292,10 +292,10 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
     }
 
     d_gridding_algorithm->regridAllFinerLevels(
-          coarse_level_number,
-          d_tag_buffer,
-          d_integrator_step,
-          d_integrator_time);
+        coarse_level_number,
+        d_tag_buffer,
+        d_integrator_step,
+        d_integrator_time);
 
     /*
      * Synchronize data on new levels.
@@ -475,9 +475,10 @@ double LagrangianEulerianIntegrator::printFieldSummary()
 
   mpi.AllReduce(&min_total_cells, 1, MPI_MINLOC, &min_total_cell_location);
   mpi.AllReduce(&max_total_cells, 1, MPI_MAXLOC, &max_total_cell_location);
+  mpi.AllReduce(&total_cells, 1, MPI_SUM);
 
-  tbox::plog << "Total Cells: "
-    << min_total_cells << " @ p" << min_total_cell_location << " (min) "
+  tbox::plog << "Total Cells: " << total_cells << std::endl
+    << "per-process: " << min_total_cells << " @ p" << min_total_cell_location << " (min) "
     << max_total_cells << " @ p" << max_total_cell_location << " (max)" << std::endl;
 
   //tbox::plog << "Total Cells: " << total_cells << "@" << mpi.getRank() << std::endl;
