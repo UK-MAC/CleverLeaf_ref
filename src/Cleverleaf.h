@@ -396,6 +396,14 @@ class Cleverleaf:
     boost::shared_ptr<pdat::NodeVariable<double> > d_vertexdeltas;
     boost::shared_ptr<pdat::NodeVariable<double> > d_vertexcoords;
 
+    boost::shared_ptr<pdat::NodeVariable<double> > d_workarray1;
+    boost::shared_ptr<pdat::NodeVariable<double> > d_workarray2;
+    boost::shared_ptr<pdat::NodeVariable<double> > d_workarray3;
+    boost::shared_ptr<pdat::NodeVariable<double> > d_workarray4;
+    boost::shared_ptr<pdat::NodeVariable<double> > d_workarray5;
+    boost::shared_ptr<pdat::NodeVariable<double> > d_workarray6;
+    boost::shared_ptr<pdat::NodeVariable<double> > d_workarray7;
+
     boost::shared_ptr<pdat::CellVariable<int> > d_level_indicator;
 
     boost::shared_ptr<hier::VariableContext> d_plot_context;

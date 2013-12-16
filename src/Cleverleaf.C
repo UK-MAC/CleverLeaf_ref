@@ -164,16 +164,18 @@ Cleverleaf::Cleverleaf(
   d_density(new pdat::CellVariable<double>(d_dim, "density", 1)),
   d_energy(new pdat::CellVariable<double>(d_dim, "energy", 1)),
   d_volume(new pdat::CellVariable<double>(d_dim, "volume", 1)),
-  d_celldeltas(new pdat::CellVariable<double>(
-        d_dim, "celldelta", d_dim.getValue())),
-  d_cellcoords(new pdat::CellVariable<double>(
-        d_dim, "cellcoords", d_dim.getValue())),
-  d_vertexdeltas(new pdat::NodeVariable<double>(
-        d_dim, "vertexdeltas", d_dim.getValue())),
-  d_vertexcoords(new pdat::NodeVariable<double>(
-        d_dim, "vertexcoords", d_dim.getValue())),
-  d_level_indicator(new pdat::CellVariable<int>(
-        d_dim, "level_indicator", d_dim.getValue())),
+  d_celldeltas(new pdat::CellVariable<double>(d_dim, "celldelta", dim.getValue())),
+  d_cellcoords(new pdat::CellVariable<double>(d_dim, "cellcoords", dim.getValue())),
+  d_vertexdeltas(new pdat::NodeVariable<double>(d_dim, "vertexdeltas",dim.getValue())),
+  d_vertexcoords(new pdat::NodeVariable<double>(d_dim, "vertexcoords", dim.getValue())),
+  d_workarray1(new pdat::NodeVariable<double>(d_dim, "workarray 1", 1)),
+  d_workarray2(new pdat::NodeVariable<double>(d_dim, "workarray 2", 1)),
+  d_workarray3(new pdat::NodeVariable<double>(d_dim, "workarray 3", 1)),
+  d_workarray4(new pdat::NodeVariable<double>(d_dim, "workarray 4", 1)),
+  d_workarray5(new pdat::NodeVariable<double>(d_dim, "workarray 5", 1)),
+  d_workarray6(new pdat::NodeVariable<double>(d_dim, "workarray 6", 1)),
+  d_workarray7(new pdat::NodeVariable<double>(d_dim, "workarray 7", 1)),
+  d_level_indicator(new pdat::CellVariable<int>(d_dim, "level_indicator", 1)),
   d_exchange_fields(new int[15])
 {
   d_hierarchy = hierarchy;
@@ -330,6 +332,55 @@ void Cleverleaf::registerModelVariables(
 
   integrator->registerVariable(
       d_vertexcoords,
+      LagrangianEulerianLevelIntegrator::NORMAL,
+      LagrangianEulerianLevelIntegrator::NO_EXCH,
+      d_nghosts,
+      d_grid_geometry);
+
+  integrator->registerVariable(
+      d_workarray1,
+      LagrangianEulerianLevelIntegrator::NORMAL,
+      LagrangianEulerianLevelIntegrator::NO_EXCH,
+      d_nghosts,
+      d_grid_geometry);
+
+  integrator->registerVariable(
+      d_workarray2,
+      LagrangianEulerianLevelIntegrator::NORMAL,
+      LagrangianEulerianLevelIntegrator::NO_EXCH,
+      d_nghosts,
+      d_grid_geometry);
+
+  integrator->registerVariable(
+      d_workarray3,
+      LagrangianEulerianLevelIntegrator::NORMAL,
+      LagrangianEulerianLevelIntegrator::NO_EXCH,
+      d_nghosts,
+      d_grid_geometry);
+
+  integrator->registerVariable(
+      d_workarray4,
+      LagrangianEulerianLevelIntegrator::NORMAL,
+      LagrangianEulerianLevelIntegrator::NO_EXCH,
+      d_nghosts,
+      d_grid_geometry);
+
+  integrator->registerVariable(
+      d_workarray5,
+      LagrangianEulerianLevelIntegrator::NORMAL,
+      LagrangianEulerianLevelIntegrator::NO_EXCH,
+      d_nghosts,
+      d_grid_geometry);
+
+  integrator->registerVariable(
+      d_workarray6,
+      LagrangianEulerianLevelIntegrator::NORMAL,
+      LagrangianEulerianLevelIntegrator::NO_EXCH,
+      d_nghosts,
+      d_grid_geometry);
+
+  integrator->registerVariable(
+      d_workarray7,
       LagrangianEulerianLevelIntegrator::NORMAL,
       LagrangianEulerianLevelIntegrator::NO_EXCH,
       d_nghosts,
@@ -666,6 +717,10 @@ void Cleverleaf::accelerate(hier::Patch& patch, double dt)
       patch.getPatchData(d_velocity, getNewDataContext()),
       boost::detail::dynamic_cast_tag());
 
+  boost::shared_ptr<pdat::NodeData<double> > step_by_mass(
+      patch.getPatchData(d_workarray1, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
   const hier::Index ifirst = patch.getBox().lower();
   const hier::Index ilast = patch.getBox().upper();
 
@@ -673,9 +728,6 @@ void Cleverleaf::accelerate(hier::Patch& patch, double dt)
   int xmax = ilast(0);
   int ymin = ifirst(1);
   int ymax = ilast(1);
-
-  pdat::NodeData<double> step_by_mass(
-      patch.getBox(), 1, hier::IntVector(d_dim, 2));
 
   F90_FUNC(accelerate_kernel,ACCELERATE_KERNEL)
     (&xmin,
@@ -693,7 +745,7 @@ void Cleverleaf::accelerate(hier::Patch& patch, double dt)
      velocity0->getPointer(1),
      velocity1->getPointer(0),
      velocity1->getPointer(1),
-     step_by_mass.getPointer());
+     step_by_mass->getPointer());
 }
 
 void Cleverleaf::ideal_gas_knl(hier::Patch& patch, bool predict)
@@ -832,6 +884,10 @@ double Cleverleaf::calc_dt_knl(hier::Patch& patch)
       patch.getPatchData(d_cellcoords, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
 
+  boost::shared_ptr<pdat::NodeData<double> > dtmin(
+      patch.getPatchData(d_workarray1, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
   const hier::Index ifirst = patch.getBox().lower();
   const hier::Index ilast = patch.getBox().upper();
 
@@ -851,8 +907,6 @@ double Cleverleaf::calc_dt_knl(hier::Patch& patch)
   int jldt, kldt;
   double xl_pos, yl_pos;
   int small;
-
-  pdat::NodeData<double> dtmin(patch.getBox(), 1, hier::IntVector(d_dim, 2));
 
   F90_FUNC(calc_dt_kernel, CALC_DT_KERNEL)
     (&xmin,
@@ -880,7 +934,7 @@ double Cleverleaf::calc_dt_knl(hier::Patch& patch)
      soundspeed->getPointer(),
      velocity0->getPointer(0),
      velocity0->getPointer(1),
-     dtmin.getPointer(),
+     dtmin->getPointer(),
      &dt_min_val,
      &dtl_control,
      &xl_pos,
@@ -934,6 +988,10 @@ void Cleverleaf::pdv_knl(hier::Patch& patch, double dt, bool predict)
       patch.getPatchData(d_velocity, getNewDataContext()),
       boost::detail::dynamic_cast_tag());
 
+  boost::shared_ptr<pdat::NodeData<double> > volume_change(
+      patch.getPatchData(d_workarray1, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
   const hier::Index ifirst = patch.getBox().lower();
   const hier::Index ilast = patch.getBox().upper();
 
@@ -941,9 +999,6 @@ void Cleverleaf::pdv_knl(hier::Patch& patch, double dt, bool predict)
   int xmax = ilast(0);
   int ymin = ifirst(1);
   int ymax = ilast(1);
-
-  pdat::NodeData<double> volume_change(
-      patch.getBox(), 1, hier::IntVector(d_dim, 2));
 
   int prdct;
 
@@ -976,7 +1031,7 @@ void Cleverleaf::pdv_knl(hier::Patch& patch, double dt, bool predict)
        velocity1->getPointer(0),
        velocity0->getPointer(1),
        velocity1->getPointer(1),
-       volume_change.getPointer());
+       volume_change->getPointer());
   }
 }
 
@@ -1049,6 +1104,34 @@ void Cleverleaf::advec_cell(hier::Patch& patch, int sweep_number, ADVEC_DIR dir)
       patch.getPatchData(d_vertexdeltas, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
 
+  boost::shared_ptr<pdat::NodeData<double> > pre_volume(
+      patch.getPatchData(d_workarray1, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::NodeData<double> > post_volume(
+      patch.getPatchData(d_workarray2, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::NodeData<double> > pre_mass(
+      patch.getPatchData(d_workarray3, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::NodeData<double> > post_mass(
+      patch.getPatchData(d_workarray4, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::NodeData<double> > advected_volume(
+      patch.getPatchData(d_workarray5, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::NodeData<double> > post_energy(
+      patch.getPatchData(d_workarray6, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::NodeData<double> > energy_flux(
+      patch.getPatchData(d_workarray7, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
   const hier::Index ifirst = patch.getBox().lower();
   const hier::Index ilast = patch.getBox().upper();
 
@@ -1057,20 +1140,6 @@ void Cleverleaf::advec_cell(hier::Patch& patch, int sweep_number, ADVEC_DIR dir)
   int ymin = ifirst(1); 
   int ymax = ilast(1); 
 
-  pdat::NodeData<double> pre_volume(
-      patch.getBox(), 1, hier::IntVector(d_dim, 2));
-  pdat::NodeData<double> post_volume(
-      patch.getBox(), 1, hier::IntVector(d_dim, 2));
-  pdat::NodeData<double> pre_mass(
-      patch.getBox(), 1, hier::IntVector(d_dim, 2));
-  pdat::NodeData<double> post_mass(
-      patch.getBox(), 1, hier::IntVector(d_dim, 2));
-  pdat::NodeData<double> advected_volume(
-      patch.getBox(), 1, hier::IntVector(d_dim, 2));
-  pdat::NodeData<double> post_energy(
-      patch.getBox(), 1, hier::IntVector(d_dim, 2));
-  pdat::NodeData<double> energy_flux(
-      patch.getBox(), 1, hier::IntVector(d_dim, 2));
 
   int idir;
   if(dir == X)
@@ -1093,13 +1162,13 @@ void Cleverleaf::advec_cell(hier::Patch& patch, int sweep_number, ADVEC_DIR dir)
      volume_flux->getPointer(1),
      mass_flux->getPointer(0),
      volume_flux->getPointer(0),
-     pre_volume.getPointer(),
-     post_volume.getPointer(),
-     pre_mass.getPointer(),
-     post_mass.getPointer(),
-     advected_volume.getPointer(),
-     post_energy.getPointer(),
-     energy_flux.getPointer());
+     pre_volume->getPointer(),
+     post_volume->getPointer(),
+     pre_mass->getPointer(),
+     post_mass->getPointer(),
+     advected_volume->getPointer(),
+     post_energy->getPointer(),
+     energy_flux->getPointer());
 }
 
 void Cleverleaf::advec_mom(
@@ -1132,6 +1201,34 @@ void Cleverleaf::advec_mom(
       patch.getPatchData(d_celldeltas, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
 
+  boost::shared_ptr<pdat::NodeData<double> > node_flux(
+      patch.getPatchData(d_workarray1, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::NodeData<double> > node_mass_post(
+      patch.getPatchData(d_workarray2, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::NodeData<double> > node_mass_pre(
+      patch.getPatchData(d_workarray3, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::NodeData<double> > advection_velocity(
+      patch.getPatchData(d_workarray4, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::NodeData<double> > momentum_flux(
+      patch.getPatchData(d_workarray5, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::NodeData<double> > pre_volume(
+      patch.getPatchData(d_workarray6, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::NodeData<double> > post_volume(
+      patch.getPatchData(d_workarray7, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
   const hier::Index ifirst = patch.getBox().lower();
   const hier::Index ilast = patch.getBox().upper();
 
@@ -1139,21 +1236,6 @@ void Cleverleaf::advec_mom(
   int xmax = ilast(0); 
   int ymin = ifirst(1); 
   int ymax = ilast(1); 
-
-  pdat::NodeData<double> node_flux(
-      patch.getBox(), 1, hier::IntVector(d_dim, 2));
-  pdat::NodeData<double> node_mass_post(
-      patch.getBox(), 1, hier::IntVector(d_dim, 2));
-  pdat::NodeData<double> node_mass_pre(
-      patch.getBox(), 1, hier::IntVector(d_dim, 2));
-  pdat::NodeData<double> advection_velocity(
-      patch.getBox(), 1, hier::IntVector(d_dim, 2));
-  pdat::NodeData<double> momentum_flux(
-      patch.getBox(), 1, hier::IntVector(d_dim, 2));
-  pdat::NodeData<double> pre_volume(
-      patch.getBox(), 1, hier::IntVector(d_dim, 2));
-  pdat::NodeData<double> post_volume(
-      patch.getBox(), 1, hier::IntVector(d_dim, 2));
 
   int iwhich, idir;
 
@@ -1178,13 +1260,13 @@ void Cleverleaf::advec_mom(
      volume_flux->getPointer(0),
      volume->getPointer(),
      density1->getPointer(),
-     node_flux.getPointer(),
-     node_mass_post.getPointer(),
-     node_mass_pre.getPointer(),
-     advection_velocity.getPointer(),
-     momentum_flux.getPointer(),
-     pre_volume.getPointer(),
-     post_volume.getPointer(),
+     node_flux->getPointer(),
+     node_mass_post->getPointer(),
+     node_mass_pre->getPointer(),
+     advection_velocity->getPointer(),
+     momentum_flux->getPointer(),
+     pre_volume->getPointer(),
+     post_volume->getPointer(),
      cell_deltas->getPointer(0),
      cell_deltas->getPointer(1),
      &iwhich,
@@ -1239,9 +1321,9 @@ void Cleverleaf::setPhysicalBoundaryConditions(
       patch.getPatchData(d_volflux, getScratchDataContext()),
       boost::detail::dynamic_cast_tag());
 
-  boost::shared_ptr<pdat::CellData<double> > v_soundspeed( 
-      patch.getPatchData(d_soundspeed, getScratchDataContext()),
-      boost::detail::dynamic_cast_tag());
+//  boost::shared_ptr<pdat::CellData<double> > v_soundspeed( 
+//      patch.getPatchData(d_soundspeed, getScratchDataContext()),
+//      boost::detail::dynamic_cast_tag());
 
   const hier::Index ifirst = patch.getBox().lower();
   const hier::Index ilast = patch.getBox().upper();

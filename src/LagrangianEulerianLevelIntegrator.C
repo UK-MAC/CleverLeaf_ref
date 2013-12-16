@@ -506,13 +506,24 @@ void LagrangianEulerianLevelIntegrator::registerVariable(
   }
 
   int current_id = variable_db->registerVariableAndContext(var, d_current, ghosts);
+  d_var_cur_data.setFlag(current_id);
 
-  int new_id = variable_db->registerVariableAndContext(var, d_new, ghosts);
+  int new_id = -1;
+  int scratch_id = -1;
+  int scratch_new_id = -1;
 
-  int scratch_id = variable_db->registerVariableAndContext(var, d_scratch, ghosts);
+  if ((var_exchanges & NO_EXCH) != NO_EXCH) {
+    new_id = variable_db->registerVariableAndContext(var, d_new, ghosts);
 
-  int scratch_new_id = variable_db->registerVariableAndContext(
-      var, d_scratch_new, ghosts);
+    scratch_id = variable_db->registerVariableAndContext(var, d_scratch, ghosts);
+
+    scratch_new_id = variable_db->registerVariableAndContext(
+        var, d_scratch_new, ghosts);
+
+    d_var_new_data.setFlag(new_id);
+    d_var_scratch_data.setFlag(scratch_id);
+    d_var_scratch_new_data.setFlag(scratch_new_id);
+  }
 
   boost::shared_ptr<hier::RefineOperator> refine_operator;
   boost::shared_ptr<hier::CoarsenOperator> coarsen_operator;
@@ -647,11 +658,6 @@ void LagrangianEulerianLevelIntegrator::registerVariable(
           refine_operator);
     }
   }
-
-  d_var_cur_data.setFlag(current_id);
-  d_var_new_data.setFlag(new_id);
-  d_var_scratch_data.setFlag(scratch_id);
-  d_var_scratch_new_data.setFlag(scratch_new_id);
 }
 
 boost::shared_ptr<hier::VariableContext>
