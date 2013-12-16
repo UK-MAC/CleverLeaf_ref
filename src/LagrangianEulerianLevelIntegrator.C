@@ -773,6 +773,7 @@ void LagrangianEulerianLevelIntegrator::getFieldSummary(
     mpi.AllReduce(level_pressure, 1, MPI_SUM);
     mpi.AllReduce(level_internal_energy, 1, MPI_SUM);
     mpi.AllReduce(level_kinetic_energy, 1, MPI_SUM);
+    mpi.AllReduce(level_effective_cells, 1, MPI_SUM);
   }
 }
 
