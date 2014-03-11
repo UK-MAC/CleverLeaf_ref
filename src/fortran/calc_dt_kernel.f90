@@ -57,10 +57,10 @@ SUBROUTINE calc_dt_kernel(x_min,x_max,y_min,y_max,             &
   REAL(KIND=8)  :: dtc_safe,dtu_safe,dtv_safe,dtdiv_safe
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: xarea
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: yarea
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2)             :: cellx
-  REAL(KIND=8), DIMENSION(y_min-2:y_max+2)             :: celly
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2)             :: celldx
-  REAL(KIND=8), DIMENSION(y_min-2:y_max+2)             :: celldy
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2, y_min-2:y_max+2) :: cellx
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2, y_min-2:y_max+2) :: celldx
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2, y_min-2:y_max+2) :: celly
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2, y_min-2:y_max+2) :: celldy
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: volume
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density0
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: energy0
@@ -89,8 +89,8 @@ SUBROUTINE calc_dt_kernel(x_min,x_max,y_min,y_max,             &
   DO k=y_min,y_max
     DO j=x_min,x_max
 
-       dsx=celldx(j)
-       dsy=celldy(k)
+       dsx=celldx(j,k)
+       dsy=celldy(j,k)
 
        cc=soundspeed(j,k)*soundspeed(j,k)
        cc=cc+2.0_8*viscosity(j,k)/density0(j,k)
@@ -149,7 +149,7 @@ SUBROUTINE calc_dt_kernel(x_min,x_max,y_min,y_max,             &
   IF(small.NE.0)THEN
     WRITE(0,*) 'Timestep information:'
     WRITE(0,*) 'j, k                 : ',jldt,kldt
-    WRITE(0,*) 'x, y                 : ',cellx(jldt),celly(kldt)
+    WRITE(0,*) 'x, y                 : ',cellx(jldt,kldt),celly(jldt,kldt)
     WRITE(0,*) 'timestep : ',dt_min_val
     WRITE(0,*) 'Cell velocities;'
     WRITE(0,*) xvel0(jldt  ,kldt  ),yvel0(jldt  ,kldt  )

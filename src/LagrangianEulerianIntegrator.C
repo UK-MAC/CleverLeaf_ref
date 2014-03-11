@@ -104,7 +104,7 @@ void LagrangianEulerianIntegrator::initializeLevelData(const int level_number)
   bool initial_time = true;
 
   if (d_patch_hierarchy->levelCanBeRefined(level_number)) {
-    int tag_buffer = 2;
+    int tag_buffer = d_regrid_interval;
 
     double regrid_start_time = d_integrator_time - d_dt;
 
@@ -145,6 +145,14 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
         d_patch_hierarchy->getPatchLevel(level_number));
 
     d_level_integrator->stampDataTime(patch_level, d_integrator_time);
+  }
+
+  for (level_number = 0; level_number <= finest_level_number; level_number++) {
+    boost::shared_ptr<hier::PatchLevel> patch_level(
+        d_patch_hierarchy->getPatchLevel(level_number));
+
+    d_level_integrator->preLagrangeHaloExchange(
+        patch_level, d_patch_hierarchy, d_integrator_time);
   }
 
   for (level_number = 0; level_number <= finest_level_number; level_number++) {
@@ -239,15 +247,8 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
     d_level_integrator->resetField(patch_level);
   }
 
-  getMinHeirarchyDt(false);
-
   d_integrator_time += dt;
   d_integrator_step++;
-
-
-  if ((d_integrator_time + d_dt) > d_end_time) {
-    d_dt = d_end_time - d_integrator_time;
-  }
 
   t_advance_hierarchy->stop();
 
@@ -314,6 +315,12 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
 
       t_synchronize_levels->stop();
     }
+  }
+
+  getMinHeirarchyDt(false);
+
+  if ((d_integrator_time + d_dt) > d_end_time) {
+    d_dt = d_end_time - d_integrator_time;
   }
 
   return d_dt;

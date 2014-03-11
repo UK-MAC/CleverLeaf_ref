@@ -65,8 +65,8 @@ SUBROUTINE advec_cell_kernel(x_min,       &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: post_ener
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: ener_flux
 
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+3) :: vertexdx
-  REAL(KIND=8), DIMENSION(y_min-2:y_max+3) :: vertexdy
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3, y_min-2:y_max+3) :: vertexdx
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3, y_min-2:y_max+3) :: vertexdy
 
   INTEGER :: j,k,upwind,donor,downwind,dif
 
@@ -116,7 +116,7 @@ SUBROUTINE advec_cell_kernel(x_min,       &
         ENDIF
 
         sigmat=ABS(vol_flux_x(j,k))/pre_vol(donor,k)
-        sigma3=(1.0_8+sigmat)*(vertexdx(j)/vertexdx(dif))
+        sigma3=(1.0_8+sigmat)*(vertexdx(j,k)/vertexdx(dif,k))
         sigma4=2.0_8-sigmat
 
         sigma=sigmat
@@ -201,7 +201,7 @@ SUBROUTINE advec_cell_kernel(x_min,       &
         ENDIF
 
         sigmat=ABS(vol_flux_y(j,k))/pre_vol(j,donor)
-        sigma3=(1.0_8+sigmat)*(vertexdy(k)/vertexdy(dif))
+        sigma3=(1.0_8+sigmat)*(vertexdy(j,k)/vertexdy(j,dif))
         sigma4=2.0_8-sigmat
 
         sigma=sigmat

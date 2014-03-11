@@ -33,8 +33,8 @@ SUBROUTINE viscosity_kernel(x_min,x_max,y_min,y_max,    &
   IMPLICIT NONE
 
   INTEGER     :: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2)                     :: celldx
-  REAL(KIND=8), DIMENSION(y_min-2:y_max+2)                     :: celldy
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2, y_min-2:y_max+2) :: celldx
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2, y_min-2:y_max+2) :: celldy
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2)     :: density0
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2)     :: pressure
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2)     :: viscosity
@@ -53,18 +53,18 @@ SUBROUTINE viscosity_kernel(x_min,x_max,y_min,y_max,    &
 
       vgrad=(yvel0(j  ,k+1)+yvel0(j+1,k+1))-(yvel0(j  ,k  )+yvel0(j+1,k  ))
 
-      div = (celldx(j)*(ugrad)+  celldy(k)*(vgrad))
+      div = (celldx(j,k)*(ugrad)+  celldy(j,k)*(vgrad))
 
-      strain2 = 0.5_8*(xvel0(j,  k+1) + xvel0(j+1,k+1)-xvel0(j  ,k  )-xvel0(j+1,k  ))/celldy(k) &
-              + 0.5_8*(yvel0(j+1,k  ) + yvel0(j+1,k+1)-yvel0(j  ,k  )-yvel0(j  ,k+1))/celldx(j)
+      strain2 = 0.5_8*(xvel0(j,  k+1) + xvel0(j+1,k+1)-xvel0(j  ,k  )-xvel0(j+1,k  ))/celldy(j,k) &
+              + 0.5_8*(yvel0(j+1,k  ) + yvel0(j+1,k+1)-yvel0(j  ,k  )-yvel0(j  ,k+1))/celldx(j,k)
 
-      pgradx=(pressure(j+1,k)-pressure(j-1,k))/(celldx(j)+celldx(j+1))
-      pgrady=(pressure(j,k+1)-pressure(j,k-1))/(celldy(k)+celldy(k+1))
+      pgradx=(pressure(j+1,k)-pressure(j-1,k))/(celldx(j,k)+celldx(j+1,k))
+      pgrady=(pressure(j,k+1)-pressure(j,k-1))/(celldy(j,k)+celldy(j,k+1))
 
       pgradx2 = pgradx*pgradx
       pgrady2 = pgrady*pgrady
 
-      limiter = ((0.5_8*(ugrad)/celldx(j))*pgradx2+(0.5_8*(vgrad)/celldy(k))*pgrady2+strain2*pgradx*pgrady)  &
+      limiter = ((0.5_8*(ugrad)/celldx(j,k))*pgradx2+(0.5_8*(vgrad)/celldy(j,k))*pgrady2+strain2*pgradx*pgrady)  &
               /MAX(pgradx2+pgrady2,1.0e-16_8)
 
       IF ((limiter.GT.0.0).OR.(div.GE.0.0))THEN
@@ -73,8 +73,8 @@ SUBROUTINE viscosity_kernel(x_min,x_max,y_min,y_max,    &
         pgradx = SIGN(MAX(1.0e-16_8,ABS(pgradx)),pgradx)
         pgrady = SIGN(MAX(1.0e-16_8,ABS(pgrady)),pgrady)
         pgrad = SQRT(pgradx*pgradx+pgrady*pgrady)
-        xgrad = ABS(celldx(j)*pgrad/pgradx)
-        ygrad = ABS(celldy(k)*pgrad/pgrady)
+        xgrad = ABS(celldx(j,k)*pgrad/pgradx)
+        ygrad = ABS(celldy(j,k)*pgrad/pgrady)
         grad  = MIN(xgrad,ygrad)
         grad2 = grad*grad
 
