@@ -109,7 +109,9 @@ extern "C" {
     (int*,int*,int*,int*,int*);
 
   void F90_FUNC(debug_kernel, DEBUG_KERNEL)
-    (int*, int*, int*, int*, double*, double*, double*, double*);
+    (int*, int*, int*, int*, double*, double*, double*, double*, double*, double*, 
+     double*, double*, double*, double*, double*, double*, double*, double*, double*,
+     double*, double*, double*, double*, double*, double*, double*);
 
   void F90_FUNC(field_summary_kernel, FIELD_SUMMARY_KERNEL)
     (int*,int*,int*,int*,double*,double*,double*,double*,double*,double*,int*,
@@ -1728,12 +1730,76 @@ void Cleverleaf::tagGradientDetectorCells(
 
 void Cleverleaf::debug_knl(hier::Patch& patch)
 {
+  boost::shared_ptr<pdat::CellData<double> > density0(
+      patch.getPatchData(d_density, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::CellData<double> > density1(
+      patch.getPatchData(d_density, getNewDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::CellData<double> > energy0(
+      patch.getPatchData(d_energy, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::CellData<double> > energy1(
+      patch.getPatchData(d_energy, getNewDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::CellData<double> > pressure(
+      patch.getPatchData(d_pressure, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::CellData<double> > soundspeed(
+      patch.getPatchData(d_soundspeed, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::CellData<double> > viscosity(
+      patch.getPatchData(d_viscosity, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
   boost::shared_ptr<pdat::NodeData<double> > velocity0(
       patch.getPatchData(d_velocity, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
 
   boost::shared_ptr<pdat::NodeData<double> > velocity1(
       patch.getPatchData(d_velocity, getNewDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::EdgeData<double> > volume_flux(
+      patch.getPatchData(d_volflux, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::EdgeData<double> > mass_flux(
+      patch.getPatchData(d_massflux, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::NodeData<double> > pre_volume(
+      patch.getPatchData(d_workarray1, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::NodeData<double> > post_volume(
+      patch.getPatchData(d_workarray2, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::NodeData<double> > pre_mass(
+      patch.getPatchData(d_workarray3, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::NodeData<double> > post_mass(
+      patch.getPatchData(d_workarray4, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::NodeData<double> > advected_volume(
+      patch.getPatchData(d_workarray5, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::NodeData<double> > post_energy(
+      patch.getPatchData(d_workarray6, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
+  boost::shared_ptr<pdat::NodeData<double> > energy_flux(
+      patch.getPatchData(d_workarray7, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
 
   const hier::Index ifirst = patch.getBox().lower();
@@ -1749,10 +1815,28 @@ void Cleverleaf::debug_knl(hier::Patch& patch)
      &xmax,
      &ymin,
      &ymax,
+     density0->getPointer(),
+     density1->getPointer(),
+     energy0->getPointer(),
+     energy1->getPointer(),
+     pressure->getPointer(),
+     soundspeed->getPointer(),
+     viscosity->getPointer(),
      velocity0->getPointer(0),
      velocity0->getPointer(1),
      velocity1->getPointer(0),
-     velocity1->getPointer(1));
+     velocity1->getPointer(1),
+     volume_flux->getPointer(1),
+     volume_flux->getPointer(0),
+     mass_flux->getPointer(1),
+     mass_flux->getPointer(0),
+     pre_volume->getPointer(),
+     post_volume->getPointer(),
+     pre_mass->getPointer(),
+     post_mass->getPointer(),
+     advected_volume->getPointer(),
+     post_energy->getPointer(),
+     energy_flux->getPointer());
 }
 
 void Cleverleaf::initializeCallback()

@@ -234,6 +234,17 @@ void LagrangianEulerianLevelIntegrator::synchronizeNewLevels(
       t_synchronize_levels_fill->start();
       coarsen_schedule->coarsenData();
       t_synchronize_levels_fill->stop();
+
+      // TODO: should this be here?
+      t_synchronize_levels_create->start();
+      coarsen_schedule = d_coarsen_field_data->createSchedule(
+          coarse_level,
+          fine_level);
+      t_synchronize_levels_create->stop();
+
+      t_synchronize_levels_fill->start();
+      coarsen_schedule->coarsenData();
+      t_synchronize_levels_fill->stop();
     }
   }
 

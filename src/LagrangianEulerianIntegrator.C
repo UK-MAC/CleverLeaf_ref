@@ -19,6 +19,14 @@
 
 #include "LagrangianEulerianIntegrator.h"
 
+
+#define DEBUG_LEVELS() \
+  for (level_number = 0; level_number <= finest_level_number; level_number++) { \
+    boost::shared_ptr<hier::PatchLevel> patch_level( \
+        d_patch_hierarchy->getPatchLevel(level_number)); \
+    d_level_integrator->debugLevel(patch_level); \
+  }
+
 tbox::StartupShutdownManager::Handler
 LagrangianEulerianIntegrator::s_initialize_handler(
     LagrangianEulerianIntegrator::initializeCallback,
@@ -155,12 +163,17 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
         patch_level, d_patch_hierarchy, d_integrator_time);
   }
 
+  DEBUG_LEVELS();
+
+
   for (level_number = 0; level_number <= finest_level_number; level_number++) {
     boost::shared_ptr<hier::PatchLevel> patch_level(
         d_patch_hierarchy->getPatchLevel(level_number));
 
     d_level_integrator->lagrangianPredictor(patch_level, dt);
   }
+
+  DEBUG_LEVELS();
 
   for (level_number = 0; level_number <= finest_level_number; level_number++) {
     boost::shared_ptr<hier::PatchLevel> patch_level(
@@ -172,12 +185,16 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
         d_integrator_time);
   }
 
+  DEBUG_LEVELS();
+
   for (level_number = 0; level_number <= finest_level_number; level_number++) {
     boost::shared_ptr<hier::PatchLevel> patch_level(
         d_patch_hierarchy->getPatchLevel(level_number));
 
     d_level_integrator->lagrangianCorrector(patch_level, dt);
   }
+
+  DEBUG_LEVELS();
 
   for (level_number = 0; level_number <= finest_level_number; level_number++) {
     boost::shared_ptr<hier::PatchLevel> patch_level(
@@ -189,12 +206,16 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
         d_integrator_time);
   }
 
+  DEBUG_LEVELS();
+
   for (level_number = 0; level_number <= finest_level_number; level_number++) {
     boost::shared_ptr<hier::PatchLevel> patch_level(
         d_patch_hierarchy->getPatchLevel(level_number));
 
     d_level_integrator->advecCellSweep1(patch_level);
   }
+
+  DEBUG_LEVELS();
 
   for (level_number = 0; level_number <= finest_level_number; level_number++) {
     boost::shared_ptr<hier::PatchLevel> patch_level(
@@ -206,6 +227,8 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
         d_integrator_time);
   }
 
+  DEBUG_LEVELS();
+
   for (level_number = 0; level_number <= finest_level_number; level_number++) {
     boost::shared_ptr<hier::PatchLevel> patch_level(
         d_patch_hierarchy->getPatchLevel(level_number));
@@ -213,12 +236,16 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
     d_level_integrator->advecMomSweep1(patch_level);
   }
 
+  DEBUG_LEVELS();
+
   for (level_number = 0; level_number <= finest_level_number; level_number++) {
     boost::shared_ptr<hier::PatchLevel> patch_level(
         d_patch_hierarchy->getPatchLevel(level_number));
 
     d_level_integrator->advecCellSweep2(patch_level);
   }
+
+  DEBUG_LEVELS();
 
   for (level_number = 0; level_number <= finest_level_number; level_number++) {
 
@@ -231,12 +258,16 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
         d_integrator_time);
   }
 
+  DEBUG_LEVELS();
+
   for (level_number = 0; level_number <= finest_level_number; level_number++) {
     boost::shared_ptr<hier::PatchLevel> patch_level(
         d_patch_hierarchy->getPatchLevel(level_number));
 
     d_level_integrator->advecMomSweep2(patch_level);
   }
+
+  DEBUG_LEVELS();
 
   d_level_integrator->swapAdvecDir();
 
@@ -246,6 +277,8 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
 
     d_level_integrator->resetField(patch_level);
   }
+
+  DEBUG_LEVELS();
 
   d_integrator_time += dt;
   d_integrator_step++;
