@@ -26,13 +26,15 @@
 #include "SAMRAI/geom/CartesianPatchGeometry.h"
 #include "SAMRAI/pdat/CellData.h"
 #include "SAMRAI/pdat/NodeData.h"
-#include "SAMRAI/pdat/EdgeData.h"
+#include "SAMRAI/pdat/SideData.h"
 #include "SAMRAI/appu/CartesianBoundaryUtilities2.h"
 #include "SAMRAI/appu/CartesianBoundaryDefines.h"
 #include "SAMRAI/pdat/NodeDoubleInjection.h"
 #include "SAMRAI/geom/CartesianNodeDoubleLinearRefine.h"
-#include "SAMRAI/geom/CartesianEdgeDoubleConservativeLinearRefine.h"
+#include "SAMRAI/geom/CartesianSideDoubleConservativeLinearRefine.h"
 #include "SAMRAI/geom/CartesianCellDoubleConservativeLinearRefine.h"
+
+#include "SAMRAI/pdat/SideDoubleConstantRefine.h"
 
 #include "CartesianCellDoubleVolumeWeightedAverage.h"
 #include "CartesianCellDoubleMassWeightedAverage.h"
@@ -158,8 +160,8 @@ Cleverleaf::Cleverleaf(
   state_prefix("state"),
   d_velocity(new pdat::NodeVariable<double>(
         d_dim, "velocity", d_dim.getValue())),
-  d_massflux(new pdat::EdgeVariable<double>(d_dim, "massflux", 2)),
-  d_volflux(new pdat::EdgeVariable<double>(d_dim, "volflux", 2)),
+  d_massflux(new pdat::SideVariable<double>(d_dim, "massflux", 2)),
+  d_volflux(new pdat::SideVariable<double>(d_dim, "volflux", 2)),
   d_pressure(new pdat::CellVariable<double>(d_dim, "pressure", 1)),
   d_viscosity(new pdat::CellVariable<double>(d_dim, "viscosity", 1)),
   d_soundspeed(new pdat::CellVariable<double>(d_dim, "soundspeed", 1)),
@@ -200,7 +202,7 @@ Cleverleaf::Cleverleaf(
   boost::shared_ptr<hier::RefineOperator> cndlr(
       new geom::CartesianNodeDoubleLinearRefine());
   boost::shared_ptr<hier::RefineOperator> cedclr(
-      new geom::CartesianEdgeDoubleConservativeLinearRefine());
+      new pdat::SideDoubleConstantRefine());
   boost::shared_ptr<hier::RefineOperator> ccdclr(
       new geom::CartesianCellDoubleConservativeLinearRefine());
 
@@ -215,7 +217,7 @@ Cleverleaf::Cleverleaf(
   d_grid_geometry->addRefineOperator(
       typeid(pdat::NodeVariable<double>).name(), cndlr);
   d_grid_geometry->addRefineOperator(
-      typeid(pdat::EdgeVariable<double>).name(), cedclr);
+      typeid(pdat::SideVariable<double>).name(), cedclr);
   d_grid_geometry->addRefineOperator(
       typeid(pdat::CellVariable<double>).name(), ccdclr);
 
@@ -535,11 +537,11 @@ void Cleverleaf::initializeDataOnPatch(
         patch.getPatchData(d_velocity, getCurrentDataContext()),
         boost::detail::dynamic_cast_tag());
 
-    boost::shared_ptr<pdat::EdgeData<double> > mass_flux(
+    boost::shared_ptr<pdat::SideData<double> > mass_flux(
         patch.getPatchData(d_massflux, getCurrentDataContext()),
         boost::detail::dynamic_cast_tag());
 
-    boost::shared_ptr<pdat::EdgeData<double> > volume_flux(
+    boost::shared_ptr<pdat::SideData<double> > volume_flux(
         patch.getPatchData(d_volflux, getCurrentDataContext()),
         boost::detail::dynamic_cast_tag());
 
@@ -1048,7 +1050,7 @@ void Cleverleaf::flux_calc_knl(hier::Patch& patch, double dt)
       patch.getPatchData(d_velocity, getNewDataContext()),
       boost::detail::dynamic_cast_tag());
 
-  boost::shared_ptr<pdat::EdgeData<double> > volume_flux(
+  boost::shared_ptr<pdat::SideData<double> > volume_flux(
       patch.getPatchData(d_volflux, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
 
@@ -1076,8 +1078,8 @@ void Cleverleaf::flux_calc_knl(hier::Patch& patch, double dt)
      velocity0->getPointer(1),
      velocity1->getPointer(0),
      velocity1->getPointer(1),
-     volume_flux->getPointer(1),
-     volume_flux->getPointer(0));
+     volume_flux->getPointer(0),
+     volume_flux->getPointer(1));
 }
 
 void Cleverleaf::advec_cell(hier::Patch& patch, int sweep_number, ADVEC_DIR dir)
@@ -1094,11 +1096,11 @@ void Cleverleaf::advec_cell(hier::Patch& patch, int sweep_number, ADVEC_DIR dir)
       patch.getPatchData(d_volume, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
 
-  boost::shared_ptr<pdat::EdgeData<double> > volume_flux(
+  boost::shared_ptr<pdat::SideData<double> > volume_flux(
       patch.getPatchData(d_volflux, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
 
-  boost::shared_ptr<pdat::EdgeData<double> > mass_flux(
+  boost::shared_ptr<pdat::SideData<double> > mass_flux(
       patch.getPatchData(d_massflux, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
 
@@ -1160,10 +1162,10 @@ void Cleverleaf::advec_cell(hier::Patch& patch, int sweep_number, ADVEC_DIR dir)
      volume->getPointer(),
      density1->getPointer(),
      energy1->getPointer(),
-     mass_flux->getPointer(1),
-     volume_flux->getPointer(1),
      mass_flux->getPointer(0),
      volume_flux->getPointer(0),
+     mass_flux->getPointer(1),
+     volume_flux->getPointer(1),
      pre_volume->getPointer(),
      post_volume->getPointer(),
      pre_mass->getPointer(),
@@ -1191,11 +1193,11 @@ void Cleverleaf::advec_mom(
       patch.getPatchData(d_velocity, getNewDataContext()),
       boost::detail::dynamic_cast_tag());
 
-  boost::shared_ptr<pdat::EdgeData<double> > volume_flux(
+  boost::shared_ptr<pdat::SideData<double> > volume_flux(
       patch.getPatchData(d_volflux, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
 
-  boost::shared_ptr<pdat::EdgeData<double> > mass_flux(
+  boost::shared_ptr<pdat::SideData<double> > mass_flux(
       patch.getPatchData(d_massflux, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
 
@@ -1256,10 +1258,10 @@ void Cleverleaf::advec_mom(
      &ymax,
      velocity1->getPointer(0),
      velocity1->getPointer(1),
-     mass_flux->getPointer(1),
-     volume_flux->getPointer(1),
      mass_flux->getPointer(0),
      volume_flux->getPointer(0),
+     mass_flux->getPointer(1),
+     volume_flux->getPointer(1),
      volume->getPointer(),
      density1->getPointer(),
      node_flux->getPointer(),
@@ -1315,11 +1317,11 @@ void Cleverleaf::setPhysicalBoundaryConditions(
       patch.getPatchData(d_velocity, getScratchNewDataContext()),
       boost::detail::dynamic_cast_tag());
 
-  boost::shared_ptr<pdat::EdgeData<double> > v_massflux( 
+  boost::shared_ptr<pdat::SideData<double> > v_massflux( 
       patch.getPatchData(d_massflux, getScratchDataContext()),
       boost::detail::dynamic_cast_tag());
 
-  boost::shared_ptr<pdat::EdgeData<double> > v_volflux( 
+  boost::shared_ptr<pdat::SideData<double> > v_volflux( 
       patch.getPatchData(d_volflux, getScratchDataContext()),
       boost::detail::dynamic_cast_tag());
 
@@ -1441,8 +1443,8 @@ void Cleverleaf::setPhysicalBoundaryConditions(
 
         density1 = v_density1->getPointer();
         energy1 = v_energy1->getPointer();
-        vol_flux_x = v_volflux->getPointer(1);
-        vol_flux_y = v_volflux->getPointer(0);
+        vol_flux_x = v_volflux->getPointer(0);
+        vol_flux_y = v_volflux->getPointer(1);
       } break;
     case LagrangianEulerianLevelIntegrator::PRE_SWEEP_1_MOM_EXCH:
       {
@@ -1459,8 +1461,8 @@ void Cleverleaf::setPhysicalBoundaryConditions(
         xvel1 = v_vel1->getPointer(0);
         yvel1 = v_vel1->getPointer(1);
 
-        mass_flux_x = v_massflux->getPointer(1);
-        mass_flux_y = v_massflux->getPointer(0);
+        mass_flux_x = v_massflux->getPointer(0);
+        mass_flux_y = v_massflux->getPointer(1);
       } break;
     case LagrangianEulerianLevelIntegrator::PRE_SWEEP_2_MOM_EXCH:
       {
@@ -1477,8 +1479,8 @@ void Cleverleaf::setPhysicalBoundaryConditions(
         xvel1 = v_vel1->getPointer(0);
         yvel1 = v_vel1->getPointer(1);
 
-        mass_flux_x = v_massflux->getPointer(1);
-        mass_flux_y = v_massflux->getPointer(0);
+        mass_flux_x = v_massflux->getPointer(0);
+        mass_flux_y = v_massflux->getPointer(1);
       } break;
     default : tbox::perr << "[ERROR] Unknown exchange id in setPhysicalBoundaryConditions... " 
               << std::endl;
@@ -1766,11 +1768,11 @@ void Cleverleaf::debug_knl(hier::Patch& patch)
       patch.getPatchData(d_velocity, getNewDataContext()),
       boost::detail::dynamic_cast_tag());
 
-  boost::shared_ptr<pdat::EdgeData<double> > volume_flux(
+  boost::shared_ptr<pdat::SideData<double> > volume_flux(
       patch.getPatchData(d_volflux, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
 
-  boost::shared_ptr<pdat::EdgeData<double> > mass_flux(
+  boost::shared_ptr<pdat::SideData<double> > mass_flux(
       patch.getPatchData(d_massflux, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
 
@@ -1826,10 +1828,10 @@ void Cleverleaf::debug_knl(hier::Patch& patch)
      velocity0->getPointer(1),
      velocity1->getPointer(0),
      velocity1->getPointer(1),
-     volume_flux->getPointer(1),
      volume_flux->getPointer(0),
-     mass_flux->getPointer(1),
+     volume_flux->getPointer(1),
      mass_flux->getPointer(0),
+     mass_flux->getPointer(1),
      pre_volume->getPointer(),
      post_volume->getPointer(),
      pre_mass->getPointer(),

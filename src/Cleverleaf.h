@@ -28,7 +28,7 @@
 #include "SAMRAI/hier/IntVector.h"
 #include "SAMRAI/pdat/CellVariable.h"
 #include "SAMRAI/pdat/NodeVariable.h"
-#include "SAMRAI/pdat/EdgeVariable.h"
+#include "SAMRAI/pdat/SideVariable.h"
 #include "SAMRAI/geom/CartesianGridGeometry.h"
 #include "SAMRAI/appu/CartesianBoundaryDefines.h"
 #include "SAMRAI/tbox/Timer.h"
@@ -381,8 +381,8 @@ class Cleverleaf:
     int d_pdv_weight;
 
     boost::shared_ptr<pdat::NodeVariable<double> > d_velocity;
-    boost::shared_ptr<pdat::EdgeVariable<double> > d_massflux;
-    boost::shared_ptr<pdat::EdgeVariable<double> > d_volflux;
+    boost::shared_ptr<pdat::SideVariable<double> > d_massflux;
+    boost::shared_ptr<pdat::SideVariable<double> > d_volflux;
     boost::shared_ptr<pdat::CellVariable<double> > d_pressure;
     boost::shared_ptr<pdat::CellVariable<double> > d_viscosity;
     boost::shared_ptr<pdat::CellVariable<double> > d_soundspeed;
