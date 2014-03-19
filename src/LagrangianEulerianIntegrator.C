@@ -19,13 +19,16 @@
 
 #include "LagrangianEulerianIntegrator.h"
 
-
+#ifdef DEBUG
 #define DEBUG_LEVELS() \
   for (level_number = 0; level_number <= finest_level_number; level_number++) { \
     boost::shared_ptr<hier::PatchLevel> patch_level( \
         d_patch_hierarchy->getPatchLevel(level_number)); \
     d_level_integrator->debugLevel(patch_level); \
   }
+#else
+#define DEBUG_LEVELS() ;
+#endif
 
 tbox::StartupShutdownManager::Handler
 LagrangianEulerianIntegrator::s_initialize_handler(

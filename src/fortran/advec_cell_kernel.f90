@@ -131,31 +131,6 @@ SUBROUTINE advec_cell_kernel(x_min,       &
           limiter=0.0
         ENDIF
 
-        IF (j .EQ. 483 .AND. k .EQ. 3) THEN
-          WRITE(*,*) 'donor = ', donor
-          WRITE(*,*) 'downwind = ', downwind
-          WRITE(*,*) 'upwind = ', upwind
-          WRITE(*,*) 'dif = ', dif
-          WRITE(*,*) 'limiter = ', limiter
-          WRITE(*,*) 'sigmat = ', sigmat
-          WRITE(*,*) 'sigma3 = ', sigma3
-          WRITE(*,*) 'sigma4 = ', sigma4
-          WRITE(*,*) 'sigma = ', sigma
-          WRITE(*,*) 'sigmav = ', sigmav
-          WRITE(*,*) 'diffuw = ', diffuw
-          WRITE(*,*) 'diffdw = ', diffdw
-          WRITE(*,*) 'density1(donor,k) = ', density1(donor,k)
-          WRITE(*,*) 'density1(upwind,k) = ', density1(upwind,k)
-          WRITE(*,*) 'density1(downwind,k) = ', density1(downwind,k)
-          WRITE(*,*) 'vol_flux_x(j,k)', vol_flux_x(j,k)
-          WRITE(*,*) 'vol_flux_x(j+1,k)', vol_flux_x(j+1,k)
-          WRITE(*,*) 'pre_vol', pre_vol(j,k)
-          WRITE(*,*) 'pre_vol(donor,k)', pre_vol(donor,k)
-          WRITE(*,*) 'vol_flux_x(donor,k)', vol_flux_x(donor,k)
-          WRITE(*,*) 'vol_flux_x(donor+1,k)', vol_flux_x(donor+1,k)
-          WRITE(*,*) 'volume(donor,k)', volume(donor,k)
-        ENDIF
-
         mass_flux_x(j,k)=vol_flux_x(j,k)*(density1(donor,k)+limiter)
 
         sigmam=ABS(mass_flux_x(j,k))/(density1(donor,k)*pre_vol(donor,k))
@@ -183,26 +158,6 @@ SUBROUTINE advec_cell_kernel(x_min,       &
         advec_vol(j,k)=pre_vol(j,k)+vol_flux_x(j,k)-vol_flux_x(j+1,k)
         density1(j,k)=post_mass(j,k)/advec_vol(j,k)
         energy1(j,k)=post_ener(j,k)
-      IF (j .EQ. 483 .AND. k .EQ. 3 .AND. density1(j,k) .LT. 0.0_8) THEN
-        WRITE(*,*) 'advec'
-        WRITE(*,*) 'pre_mass', pre_mass(j,k)
-        WRITE(*,*) 'pre_vol', pre_vol(j,k)
-        WRITE(*,*) 'pre_vol(donor,k)', pre_vol(482,k)
-        WRITE(*,*) 'mass_flux_x(j,k)', mass_flux_x(j,k)
-        WRITE(*,*) 'mass_flux_x(j+1,k)', mass_flux_x(j+1,k)
-        WRITE(*,*) 'vol_flux_x(j,k)', vol_flux_x(j,k)
-        WRITE(*,*) 'vol_flux_x(j+1,k)', vol_flux_x(j+1,k)
-        WRITE(*,*) 'density1(donor,k)', density1(482,k)
-        WRITE(*,*) 'density1(upwind,k)', density1(481,k)
-        WRITE(*,*) 'density1(downwind,k)', density1(483,k)
-        WRITE(*,*) 'post_mass', post_mass(j,k)
-        WRITE(*,*) 'post_ener', post_ener(j,k)
-        WRITE(*,*) 'advec_vol', advec_vol(j,k)
-        WRITE(*,*) 'density1', density1(j,k)
-        WRITE(*,*) 'energy1', energy1(j,k)
-        WRITE(*,*) 'vertexdx', vertexdx(j,k)
-        WRITE(*,*) 'vertexdx', vertexdx(482,k)
-      ENDIF
       ENDDO
     ENDDO
 !$OMP END DO
@@ -287,9 +242,6 @@ SUBROUTINE advec_cell_kernel(x_min,       &
         advec_vol(j,k)=pre_vol(j,k)+vol_flux_y(j,k)-vol_flux_y(j,k+1)
         density1(j,k)=post_mass(j,k)/advec_vol(j,k)
         energy1(j,k)=post_ener(j,k)
-      IF (j .EQ. 483 .AND. k .EQ. 3 .AND. density1(j,k) .LT. 0.0) THEN
-        WRITE(*,*) 'advec'
-      ENDIF
       ENDDO
     ENDDO
 !$OMP END DO

@@ -21,12 +21,12 @@ include Make.inc
 GIT_VERSION := $(shell git rev-parse --short HEAD)
 HOST_NAME := $(shell uname -n)
 
-# CXXFLAGS_INTEL=-O3 -ipo -fp-model source -fp-model strict -prec-div -prec-sqrt
-# FFLAGS_INTEL=-O3 -ipo -fpe0 -warn all -fp-model strict -fp-model source -prec-div -prec-sqrt -module obj/
-CXXFLAGS_INTEL=-O0 -g -debug all -fp-model source -fp-model strict -prec-div -prec-sqrt
-FFLAGS_INTEL=-O0 -g -fpe0 -warn all -debug all -ftrapuv -check uninit -fp-model strict -fp-model source -prec-div -prec-sqrt -module obj/
-#LDFLAGS_INTEL=-ipo -nofor_main
-LDFLAGS_INTEL=-nofor_main -O0 -g -debug all
+CXXFLAGS_INTEL=-O3 -ipo -fp-model source -fp-model strict -prec-div -prec-sqrt
+FFLAGS_INTEL=-O3 -ipo -fpe0 -warn all -fp-model strict -fp-model source -prec-div -prec-sqrt -module obj/
+# CXXFLAGS_INTEL=-O0 -g -debug all -fp-model source -fp-model strict -prec-div -prec-sqrt
+# FFLAGS_INTEL=-O0 -g -fpe0 -warn all -debug all -ftrapuv -check uninit -fp-model strict -fp-model source -prec-div -prec-sqrt -module obj/
+LDFLAGS_INTEL=-ipo -nofor_main
+#LDFLAGS_INTEL=-nofor_main -O0 -g -debug all
 OMP_INTEL=-openmp
 
 CXXFLAGS_GNU=-O3 -march=native -funroll-loops -ffloat-store
