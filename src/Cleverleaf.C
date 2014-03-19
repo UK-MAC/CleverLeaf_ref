@@ -39,6 +39,7 @@
 #include "CartesianCellDoubleVolumeWeightedAverage.h"
 #include "CartesianCellDoubleMassWeightedAverage.h"
 #include "CartesianCellIntConstantCoarsen.h"
+#include "CartesianSideDoubleFirstOrderRefine.h"
 
 #define F90_FUNC(name,NAME) name ## _
 
@@ -202,7 +203,7 @@ Cleverleaf::Cleverleaf(
   boost::shared_ptr<hier::RefineOperator> cndlr(
       new geom::CartesianNodeDoubleLinearRefine());
   boost::shared_ptr<hier::RefineOperator> cedclr(
-      new pdat::SideDoubleConstantRefine());
+      new CartesianSideDoubleFirstOrderRefine());
   boost::shared_ptr<hier::RefineOperator> ccdclr(
       new geom::CartesianCellDoubleConservativeLinearRefine());
 

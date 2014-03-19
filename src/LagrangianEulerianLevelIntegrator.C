@@ -543,6 +543,8 @@ void LagrangianEulerianLevelIntegrator::registerVariable(
     if(var->getName() == "velocity" || var->getName()=="vertexdeltas" || var->getName()=="vertexcoords") {
       refine_operator = transfer_geom->lookupRefineOperator(var, "LINEAR_REFINE");
       coarsen_operator = transfer_geom->lookupCoarsenOperator(var, "CONSTANT_COARSEN");
+    } else if (var->getName() == "massflux" || var->getName() == "volflux") {
+      refine_operator = transfer_geom->lookupRefineOperator(var, "FIRST_ORDER_REFINE");
     } else {
       refine_operator = transfer_geom->lookupRefineOperator(var, "CONSERVATIVE_LINEAR_REFINE");
     }
