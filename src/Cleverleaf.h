@@ -360,6 +360,10 @@ class Cleverleaf:
         const int tag_index);
 
     void debug_knl(hier::Patch& patch);
+
+    void fillLevelIndicator(
+        hier::Patch& patch,
+        const int level_number);
   private:
     boost::shared_ptr<hier::PatchHierarchy> d_hierarchy;
     boost::shared_ptr<appu::VisItDataWriter> d_visit_writer;

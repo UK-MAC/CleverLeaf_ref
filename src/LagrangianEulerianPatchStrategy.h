@@ -294,6 +294,10 @@ class LagrangianEulerianPatchStrategy: public xfer::RefinePatchStrategy
           const hier::Patch& coarse,
           const hier::Box& fine_box,
           const hier::IntVector& ratio);
+
+    virtual void fillLevelIndicator(
+          hier::Patch& patch,
+          const int level_number) = 0;
   protected:
     int d_which_exchange;
   private:

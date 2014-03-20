@@ -1842,6 +1842,17 @@ void Cleverleaf::debug_knl(hier::Patch& patch)
      energy_flux->getPointer());
 }
 
+void Cleverleaf::fillLevelIndicator(
+    hier::Patch& patch,
+    const int level_number)
+{
+    boost::shared_ptr<pdat::CellData<int> > level_indicator(
+        patch.getPatchData(d_level_indicator, getCurrentDataContext()),
+        boost::detail::dynamic_cast_tag());
+
+    level_indicator->fillAll(level_number);
+}
+
 void Cleverleaf::initializeCallback()
 {
   t_fill_boundary = tbox::TimerManager::getManager()->getTimer(

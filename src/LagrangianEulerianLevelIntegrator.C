@@ -431,12 +431,6 @@ void LagrangianEulerianLevelIntegrator::resetHierarchyConfiguration (
   }
 
   boost::shared_ptr<xfer::CoarsenSchedule> coarsen_schedule;
-  hier::VariableDatabase* variable_db = hier::VariableDatabase::getDatabase();
-
-  int level_indicator_id = variable_db->mapVariableAndContextToIndex(
-      variable_db->getVariable("level_indicator"), 
-      variable_db->getContext("CURRENT"));
-
 
   for (int level_number = finest_level_number;
       level_number >= 0;
@@ -447,11 +441,7 @@ void LagrangianEulerianLevelIntegrator::resetHierarchyConfiguration (
     for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
       boost::shared_ptr<hier::Patch> patch(*p);
 
-      boost::shared_ptr<pdat::CellData<int> > level_indicator(
-          patch->getPatchData(level_indicator_id),
-          boost::detail::dynamic_cast_tag());
-
-      level_indicator->fillAll(level_number);
+      d_patch_strategy->fillLevelIndicator(*patch, level_number);
     }
 
     if (level_number < finest_level_number) {
