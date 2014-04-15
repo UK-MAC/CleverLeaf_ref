@@ -119,14 +119,8 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max, &
     DO k=y_min-2,y_max+2
       DO j=x_min-2,x_max+2
         IF(state_geometry(state).EQ.g_rect ) THEN
-          IF( (vertexx(j+1,k) - state_xmin(state) .GT. (ABS(vertexx(j+1,k))*EPSILON(1.0_8)) &
-             .OR. (ABS(vertexx(j+1,k) - state_xmin(state))) .LE. (ABS(vertexx(j+1,k))*EPSILON(1.0_8))) &
-              ! check whether vertexx is less than state_xmax, taking into account machine epsilon
-              .AND. (state_xmax(state) - vertexx(j,k)) .GT. (abs(vertexx(j,k))*epsilon(1.0_8)) ) THEN
-            IF( (vertexy(j,k+1) - state_ymin(state) .GT. (ABS(vertexy(j,k+1))*EPSILON(1.0_8)) &
-                .OR. (ABS(vertexy(j,k+1) - state_ymin(state))) .LE.  (ABS(vertexy(j,k+1))*EPSILON(1.0_8))) &
-              ! check whether vertexy is less than state_xmax, taking into account machine epsilon
-                .AND. (state_ymax(state) - vertexy(j,k)) .GT. (abs(vertexy(j,k))*epsilon(1.0_8)) )  THEN
+          IF(vertexx(j+1,k).GE.state_xmin(state).AND.vertexx(j,k).LT.state_xmax(state)) THEN
+            IF(vertexy(j,k+1).GE.state_ymin(state).AND.vertexy(j,k).LT.state_ymax(state)) THEN
               energy0(j,k)=state_energy(state)
               density0(j,k)=state_density(state)
               DO kt=k,k+1
@@ -139,8 +133,7 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max, &
           ENDIF
         ELSEIF(state_geometry(state).EQ.g_circ ) THEN
           radius=SQRT((cellx(j,k)-x_cent)*(cellx(j,k)-x_cent)+(celly(j,k)-y_cent)*(celly(j,k)-y_cent))
-          IF( (state_radius(state) - radius) .GT. (ABS(radius)*EPSILON(1.0_8)) &
-              .OR. ABS(radius - state_radius(state)) .LE. (ABS(radius)*EPSILON(1.0_8))) THEN
+          IF(radius.LE.state_radius(state))THEN
             energy0(j,k)=state_energy(state)
             density0(j,k)=state_density(state)
             DO kt=k,k+1
@@ -151,10 +144,7 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max, &
             ENDDO
           ENDIF
         ELSEIF(state_geometry(state).EQ.g_point) THEN
-            ! check whether vertexx is approximately equal to x_cent and vertexy
-            ! is approximately equal to y_cent
-          IF ( ABS(vertexx(j,k) - x_cent) .LE. (ABS(vertexx(j,k))*EPSILON(1.0_8)) &
-              .AND. ABS(vertexy(j,k) - y_cent) .LE. (ABS(vertexy(j,k))*EPSILON(1.0_8))) THEN
+          IF(vertexx(j,k).EQ.x_cent .AND. vertexy(j,k).EQ.y_cent) THEN
             energy0(j,k)=state_energy(state)
             density0(j,k)=state_density(state)
             DO kt=k,k+1

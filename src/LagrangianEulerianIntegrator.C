@@ -158,14 +158,6 @@ double LagrangianEulerianIntegrator::advanceHierarchy(const double dt)
     d_level_integrator->stampDataTime(patch_level, d_integrator_time);
   }
 
-  for (level_number = 0; level_number <= finest_level_number; level_number++) {
-    boost::shared_ptr<hier::PatchLevel> patch_level(
-        d_patch_hierarchy->getPatchLevel(level_number));
-
-    d_level_integrator->preLagrangeHaloExchange(
-        patch_level, d_patch_hierarchy, d_integrator_time);
-  }
-
   DEBUG_LEVELS();
 
 
