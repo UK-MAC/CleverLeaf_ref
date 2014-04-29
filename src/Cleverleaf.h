@@ -381,6 +381,7 @@ class Cleverleaf:
     double d_tag_q_threshold;
     double d_tag_density_gradient;
     double d_tag_energy_gradient;
+    double d_tag_pressure_gradient;
 
     int d_pdv_weight;
 

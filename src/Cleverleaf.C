@@ -108,6 +108,9 @@ extern "C" {
   void F90_FUNC(tag_density_kernel,TAG_DENSITY_KERNEL)
     (int*,int*,int*,int*,double*,double*,int*);
 
+  void F90_FUNC(tag_pressure_kernel,TAG_PRESSURE_KERNEL)
+    (int*,int*,int*,int*,double*,double*,int*);
+
   void F90_FUNC(tag_all_kernel,TAG_ALL_KERNEL)
     (int*,int*,int*,int*,int*);
 
@@ -228,6 +231,8 @@ Cleverleaf::Cleverleaf(
       "tag_density", 0.1);
   d_tag_energy_gradient = input_database->getDoubleWithDefault(
       "tag_energy", 0.1);
+  d_tag_pressure_gradient = input_database->getDoubleWithDefault(
+      "tag_pressure", 0.1);
   d_pdv_weight = input_database->getIntegerWithDefault(
       "physics_weight", 1);
 }
@@ -1665,6 +1670,10 @@ void Cleverleaf::tagGradientDetectorCells(
       patch.getPatchData(d_energy, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
 
+  boost::shared_ptr<pdat::CellData<double> > pressure(
+      patch.getPatchData(d_pressure, getCurrentDataContext()),
+      boost::detail::dynamic_cast_tag());
+
   boost::shared_ptr<pdat::CellData<double> > viscosity(
       patch.getPatchData(d_viscosity, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
@@ -1711,6 +1720,15 @@ void Cleverleaf::tagGradientDetectorCells(
      &ymax,
      &d_tag_energy_gradient,
      energy0->getPointer(),
+     temporary_tags->getPointer());
+
+  F90_FUNC(tag_pressure_kernel,TAG_PRESSURE_KERNEL)
+    (&xmin,
+     &xmax,
+     &ymin,
+     &ymax,
+     &d_tag_pressure_gradient,
+     pressure->getPointer(),
      temporary_tags->getPointer());
 
   if(d_tag_all) {

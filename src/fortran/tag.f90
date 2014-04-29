@@ -40,14 +40,14 @@ SUBROUTINE tag_q_kernel(x_min,x_max,y_min,y_max,&
     DO j=x_min,x_max
       IF (viscosity(j,k) .GT. q_threshold) THEN
         tags(j,k) = 1
-        tags(j+1,k) = 1
-        tags(j,k+1) = 1
-        tags(j-1,k) = 1
-        tags(j,k-1) = 1
-        tags(j-1,k-1) = 1
-        tags(j+1,k-1) = 1
-        tags(j-1,k+1) = 1
-        tags(j+1,k+1) = 1
+!        tags(j+1,k) = 1
+!        tags(j,k+1) = 1
+!        tags(j-1,k) = 1
+!        tags(j,k-1) = 1
+!        tags(j-1,k-1) = 1
+!        tags(j+1,k-1) = 1
+!        tags(j-1,k+1) = 1
+!        tags(j+1,k+1) = 1
       ENDIF
     ENDDO
   ENDDO
@@ -88,14 +88,14 @@ SUBROUTINE tag_density_kernel(x_min,x_max,y_min,y_max,&
 
       IF (dd .GT. density_gradient_threshold) THEN
         tags(j,k) = 1
-        tags(j+1,k) = 1
-        tags(j,k+1) = 1
-        tags(j-1,k) = 1
-        tags(j,k-1) = 1
-        tags(j-1,k-1) = 1
-        tags(j+1,k-1) = 1
-        tags(j-1,k+1) = 1
-        tags(j+1,k+1) = 1
+!        tags(j+1,k) = 1
+!        tags(j,k+1) = 1
+!        tags(j-1,k) = 1
+!        tags(j,k-1) = 1
+!        tags(j-1,k-1) = 1
+!        tags(j+1,k-1) = 1
+!        tags(j-1,k+1) = 1
+!        tags(j+1,k+1) = 1
       ENDIF
     ENDDO
   ENDDO
@@ -137,14 +137,14 @@ SUBROUTINE tag_energy_kernel(x_min,x_max,y_min,y_max,&
 
       IF (dd .GT. energy_gradient_threshold) THEN
         tags(j,k) = 1
-        tags(j+1,k) = 1
-        tags(j,k+1) = 1
-        tags(j-1,k) = 1
-        tags(j,k-1) = 1
-        tags(j-1,k-1) = 1
-        tags(j+1,k-1) = 1
-        tags(j-1,k+1) = 1
-        tags(j+1,k+1) = 1
+!        tags(j+1,k) = 1
+!        tags(j,k+1) = 1
+!        tags(j-1,k) = 1
+!        tags(j,k-1) = 1
+!        tags(j-1,k-1) = 1
+!        tags(j+1,k-1) = 1
+!        tags(j-1,k+1) = 1
+!        tags(j+1,k+1) = 1
       ENDIF
     ENDDO
   ENDDO
@@ -152,6 +152,55 @@ SUBROUTINE tag_energy_kernel(x_min,x_max,y_min,y_max,&
 !$OMP END PARALLEL
 
 END SUBROUTINE tag_energy_kernel
+
+!>  @brief Fortran pressure tagging kernel
+!>  @author David Beckingsale
+!>  @details Tags cells for refinement based on the pressure gradient.
+SUBROUTINE tag_pressure_kernel(x_min,x_max,y_min,y_max,&
+                            pressure_gradient_threshold,&
+                            pressure,           &
+                            tags)
+
+  IMPLICIT NONE
+
+  INTEGER :: x_min,x_max,y_min,y_max
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: pressure
+  INTEGER, DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: tags
+  REAL(KIND=8) :: pressure_gradient_threshold
+
+  INTEGER :: j,k
+  REAL(KIND=8) :: d2x,d2y,dxy,dyx,dd
+
+
+!$OMP PARALLEL
+!$OMP DO PRIVATE(d2x,d2y,dxy,dyx,dd)
+  DO k=y_min,y_max
+    DO j=x_min,x_max
+      d2x = abs(pressure(j+1,k) - 2.0*pressure(j,k) + pressure(j-1,k));
+      d2y = abs(pressure(j,k+1) - 2.0*pressure(j,k) + pressure(j,k-1));
+
+      dxy = abs(pressure(j+1,k+1) - 2.0*pressure(j,k) + pressure(j-1,k-1));
+      dyx = abs(pressure(j-1,k+1) - 2.0*pressure(j,k) + pressure(j+1,k-1));
+
+      dd = max(d2x,max(d2y,max(dxy,dyx)));
+
+      IF (dd .GT. pressure_gradient_threshold) THEN
+        tags(j,k) = 1
+!        tags(j+1,k) = 1
+!        tags(j,k+1) = 1
+!        tags(j-1,k) = 1
+!        tags(j,k-1) = 1
+!        tags(j-1,k-1) = 1
+!        tags(j+1,k-1) = 1
+!        tags(j-1,k+1) = 1
+!        tags(j+1,k+1) = 1
+      ENDIF
+    ENDDO
+  ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+
+END SUBROUTINE tag_pressure_kernel
 
 !>  @brief Fortran "tag all" kernel
 !>  @author David Beckingsale
