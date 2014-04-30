@@ -226,13 +226,20 @@ Cleverleaf::Cleverleaf(
       typeid(pdat::CellVariable<double>).name(), ccdclr);
 
   d_tag_all = input_database->getBoolWithDefault("tag_all", false);
-  d_tag_q_threshold = input_database->getDoubleWithDefault("tag_q", 0.001);
+  d_tag_q = input_database->getBoolWithDefault("tag_q", true);
+  d_tag_density = input_database->getBoolWithDefault("tag_density", true);
+  d_tag_energy = input_database->getBoolWithDefault("tag_energy", true);
+  d_tag_pressure = input_database->getBoolWithDefault("tag_pressure", true);
+
+  d_tag_q_threshold = input_database->getDoubleWithDefault(
+      "tag_q_threshold", 0.001);
   d_tag_density_gradient = input_database->getDoubleWithDefault(
-      "tag_density", 0.1);
+      "tag_density_threshold", 0.1);
   d_tag_energy_gradient = input_database->getDoubleWithDefault(
-      "tag_energy", 0.1);
+      "tag_energy_threshold", 0.1);
   d_tag_pressure_gradient = input_database->getDoubleWithDefault(
-      "tag_pressure", 0.1);
+      "tag_pressure_threshold", 0.1);
+
   d_pdv_weight = input_database->getIntegerWithDefault(
       "physics_weight", 1);
 }
@@ -1695,41 +1702,49 @@ void Cleverleaf::tagGradientDetectorCells(
   temporary_tags->fillAll(0);
   tags->fillAll(0);
 
-  F90_FUNC(tag_q_kernel,TAG_Q_KERNEL)
-    (&xmin,
-     &xmax,
-     &ymin,
-     &ymax,
-     &d_tag_q_threshold,
-     viscosity->getPointer(),
-     temporary_tags->getPointer());
+  if (d_tag_q) {
+    F90_FUNC(tag_q_kernel,TAG_Q_KERNEL)
+      (&xmin,
+       &xmax,
+       &ymin,
+       &ymax,
+       &d_tag_q_threshold,
+       viscosity->getPointer(),
+       temporary_tags->getPointer());
+  }
 
-  F90_FUNC(tag_density_kernel,TAG_DENSITY_KERNEL)
-    (&xmin,
-     &xmax,
-     &ymin,
-     &ymax,
-     &d_tag_density_gradient,
-     density0->getPointer(),
-     temporary_tags->getPointer());
+  if (d_tag_density) {
+    F90_FUNC(tag_density_kernel,TAG_DENSITY_KERNEL)
+      (&xmin,
+       &xmax,
+       &ymin,
+       &ymax,
+       &d_tag_density_gradient,
+       density0->getPointer(),
+       temporary_tags->getPointer());
+  }
 
-  F90_FUNC(tag_energy_kernel,TAG_ENERGY_KERNEL)
-    (&xmin,
-     &xmax,
-     &ymin,
-     &ymax,
-     &d_tag_energy_gradient,
-     energy0->getPointer(),
-     temporary_tags->getPointer());
+  if (d_tag_energy) {
+    F90_FUNC(tag_energy_kernel,TAG_ENERGY_KERNEL)
+      (&xmin,
+       &xmax,
+       &ymin,
+       &ymax,
+       &d_tag_energy_gradient,
+       energy0->getPointer(),
+       temporary_tags->getPointer());
+  }
 
-  F90_FUNC(tag_pressure_kernel,TAG_PRESSURE_KERNEL)
-    (&xmin,
-     &xmax,
-     &ymin,
-     &ymax,
-     &d_tag_pressure_gradient,
-     pressure->getPointer(),
-     temporary_tags->getPointer());
+  if (d_tag_pressure) {
+    F90_FUNC(tag_pressure_kernel,TAG_PRESSURE_KERNEL)
+      (&xmin,
+       &xmax,
+       &ymin,
+       &ymax,
+       &d_tag_pressure_gradient,
+       pressure->getPointer(),
+       temporary_tags->getPointer());
+  }
 
   if(d_tag_all) {
     F90_FUNC(tag_all_kernel,TAG_ALL_KERNEL)

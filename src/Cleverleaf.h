@@ -378,6 +378,11 @@ class Cleverleaf:
     const std::string state_prefix;
 
     bool d_tag_all;
+    bool d_tag_q;
+    bool d_tag_density;
+    bool d_tag_energy;
+    bool d_tag_pressure;
+
     double d_tag_q_threshold;
     double d_tag_density_gradient;
     double d_tag_energy_gradient;
