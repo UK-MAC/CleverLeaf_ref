@@ -48,7 +48,7 @@ extern "C" {
     (int*,int*,int*,int*,double*,double*,double*,double*);
 
   void F90_FUNC(accelerate_kernel, ACCELERATE_KERNEL)
-    (int*,int*,int*,int*,double*,double*,double*,double*,double*,double*,
+    (int*,int*,int*,int*,double*,int*,double*,double*,double*,double*,double*,
      double*,double*,double*,double*,double*,double*);
 
   void F90_FUNC(viscosity_kernel, VISCOSITY_KERNEL)
@@ -242,6 +242,8 @@ Cleverleaf::Cleverleaf(
 
   d_pdv_weight = input_database->getIntegerWithDefault(
       "physics_weight", 1);
+
+  d_gravity = input_database->getBoolWithDefault("gravity", false);
 }
 
 void Cleverleaf::registerModelVariables(
@@ -746,12 +748,21 @@ void Cleverleaf::accelerate(hier::Patch& patch, double dt)
   int ymin = ifirst(1);
   int ymax = ilast(1);
 
+  int igravity;
+
+  if (d_gravity) {
+    igravity = 1;
+  } else {
+    igravity = 0;
+  }
+
   F90_FUNC(accelerate_kernel,ACCELERATE_KERNEL)
     (&xmin,
      &xmax,
      &ymin,
      &ymax,
      &dt,
+     &igravity,
      cell_deltas->getPointer(1),
      cell_deltas->getPointer(0),
      volume->getPointer(),
