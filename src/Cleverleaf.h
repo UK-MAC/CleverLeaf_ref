@@ -390,6 +390,8 @@ class Cleverleaf:
 
     int d_pdv_weight;
 
+    bool d_gravity;
+
     boost::shared_ptr<pdat::NodeVariable<double> > d_velocity;
     boost::shared_ptr<pdat::SideVariable<double> > d_massflux;
     boost::shared_ptr<pdat::SideVariable<double> > d_volflux;

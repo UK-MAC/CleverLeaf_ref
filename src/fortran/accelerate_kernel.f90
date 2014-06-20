@@ -22,6 +22,7 @@
 !>  @details The pressure and viscosity gradients are used to update the 
 !>  velocity field.
 SUBROUTINE accelerate_kernel(x_min,x_max,y_min,y_max,dt,     &
+                             igravity,                       &
                              xarea,yarea,                    &
                              volume,                         &
                              density0,                       &
@@ -50,6 +51,14 @@ SUBROUTINE accelerate_kernel(x_min,x_max,y_min,y_max,dt,     &
 
   INTEGER               :: j,k
   REAL(KIND=8)          :: nodal_mass
+  INTEGER               :: igravity
+  LOGICAL               :: gravity
+
+  IF (igravity.EQ.1) THEN
+    gravity = .TRUE.
+  ELSE
+    gravity = .FALSE.
+  ENDIF
 
 !$OMP PARALLEL
 
@@ -111,6 +120,18 @@ SUBROUTINE accelerate_kernel(x_min,x_max,y_min,y_max,dt,     &
     ENDDO
   ENDDO
 !$OMP END DO
+
+  IF (gravity) THEN
+!$OMP DO
+    DO k=y_min,y_max+1
+      DO j=x_min,x_max+1
+
+        yvel1(j,k)=yvel1(j,k) + 1.0e-9*dt
+
+      ENDDO
+    ENDDO
+!$OMP END DO
+  ENDIF
 
 !$OMP END PARALLEL
 
