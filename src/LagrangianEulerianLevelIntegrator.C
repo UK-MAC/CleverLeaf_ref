@@ -142,21 +142,15 @@ LagrangianEulerianLevelIntegrator::LagrangianEulerianLevelIntegrator(
    *
    * d_current corresponds to the current timelevel
    * d_new corresponds to timelevel 1
-   * d_scratch used during coarsen/refine (halo transfer)
    */
   d_current = hier::VariableDatabase::getDatabase()->getContext("CURRENT");
   d_new = hier::VariableDatabase::getDatabase()->getContext("NEW");
-  d_scratch = hier::VariableDatabase::getDatabase()->getContext("SCRATCH");
-  d_scratch_new = hier::VariableDatabase::getDatabase()->getContext(
-      "NEW_SCRATCH");
 
   /*
    * Pass these contexts up to the patch strategy
    */
   patch_strategy->setCurrentDataContext(d_current);
   patch_strategy->setNewDataContext(d_new);
-  patch_strategy->setScratchDataContext(d_scratch);
-  patch_strategy->setScratchNewDataContext(d_scratch_new);
 
   d_plot_context = d_current;
 }
@@ -268,8 +262,6 @@ void LagrangianEulerianLevelIntegrator::initializeLevelData (
 
   level->allocatePatchData(d_var_cur_data, init_data_time); 
   level->allocatePatchData(d_var_new_data, init_data_time); 
-  level->allocatePatchData(d_var_scratch_data, init_data_time);
-  level->allocatePatchData(d_var_scratch_new_data, init_data_time);
 
   const tbox::SAMRAI_MPI& mpi(level->getBoxLevel()->getMPI());
 
@@ -316,8 +308,6 @@ void LagrangianEulerianLevelIntegrator::initializeLevelData (
     t_prime_halos_exchange_fill->stop();
   } else {
     if ((level_number > 0) || old_level) {
-      level->allocatePatchData(d_var_scratch_data, init_data_time);
-      level->allocatePatchData(d_var_scratch_new_data, init_data_time);
 
       t_prime_halos_exchange_create->start();
       refine_schedule = d_bdry_fill_prime_halos->createSchedule(
@@ -509,20 +499,11 @@ void LagrangianEulerianLevelIntegrator::registerVariable(
   d_var_cur_data.setFlag(current_id);
 
   int new_id = -1;
-  int scratch_id = -1;
-  int scratch_new_id = -1;
 
   if ((var_exchanges & NO_EXCH) != NO_EXCH) {
     new_id = variable_db->registerVariableAndContext(var, d_new, ghosts);
 
-    scratch_id = variable_db->registerVariableAndContext(var, d_scratch, ghosts);
-
-    scratch_new_id = variable_db->registerVariableAndContext(
-        var, d_scratch_new, ghosts);
-
     d_var_new_data.setFlag(new_id);
-    d_var_scratch_data.setFlag(scratch_id);
-    d_var_scratch_new_data.setFlag(scratch_new_id);
   }
 
   boost::shared_ptr<hier::RefineOperator> refine_operator;
@@ -543,7 +524,7 @@ void LagrangianEulerianLevelIntegrator::registerVariable(
     d_fill_new_level->registerRefine(
         current_id,
         current_id,
-        scratch_id,
+        current_id,
         refine_operator);
 
     if (var->getName() == "velocity") {
@@ -575,7 +556,7 @@ void LagrangianEulerianLevelIntegrator::registerVariable(
     d_bdry_fill_prime_halos->registerRefine(
         current_id,
         current_id,
-        scratch_id,
+        current_id,
         refine_operator);
 
     if(var->getName() == "density" ||
@@ -584,7 +565,7 @@ void LagrangianEulerianLevelIntegrator::registerVariable(
       d_bdry_fill_prime_halos->registerRefine(
           new_id,
           new_id,
-          scratch_new_id,
+          new_id,
           refine_operator);
     }
   }
@@ -593,7 +574,7 @@ void LagrangianEulerianLevelIntegrator::registerVariable(
     d_bdry_fill_pre_lagrange->registerRefine(
         current_id,
         current_id,
-        scratch_id,
+        current_id,
         refine_operator);
   }
 
@@ -601,7 +582,7 @@ void LagrangianEulerianLevelIntegrator::registerVariable(
     d_bdry_fill_post_viscosity->registerRefine(
         current_id,
         current_id,
-        scratch_id,
+        current_id,
         refine_operator);
   }
 
@@ -609,7 +590,7 @@ void LagrangianEulerianLevelIntegrator::registerVariable(
     d_bdry_fill_half_step->registerRefine(
         current_id,
         current_id,
-        scratch_id,
+        current_id,
         refine_operator);
   }
 
@@ -618,13 +599,13 @@ void LagrangianEulerianLevelIntegrator::registerVariable(
       d_bdry_fill_pre_sweep1_cell->registerRefine(
           current_id,
           current_id,
-          scratch_id,
+          current_id,
           refine_operator);
     } else {
       d_bdry_fill_pre_sweep1_cell->registerRefine(
           new_id,
           new_id,
-          scratch_new_id,
+          new_id,
           refine_operator);
     }
   }
@@ -634,13 +615,13 @@ void LagrangianEulerianLevelIntegrator::registerVariable(
       d_bdry_fill_pre_sweep1_mom->registerRefine(
           current_id,
           current_id,
-          scratch_id,
+          current_id,
           refine_operator);
     } else {
       d_bdry_fill_pre_sweep1_mom->registerRefine(
           new_id,
           new_id,
-          scratch_new_id,
+          new_id,
           refine_operator);
     }
   }
@@ -650,13 +631,13 @@ void LagrangianEulerianLevelIntegrator::registerVariable(
       d_bdry_fill_pre_sweep2_mom->registerRefine(
           current_id,
           current_id,
-          scratch_id,
+          current_id,
           refine_operator);
     } else {
       d_bdry_fill_pre_sweep2_mom->registerRefine(
           new_id,
           new_id,
-          scratch_new_id,
+          new_id,
           refine_operator);
     }
   }
@@ -1096,8 +1077,6 @@ void LagrangianEulerianLevelIntegrator::stampDataTime(
 {
   level->setTime(current_time, d_var_cur_data);
   level->setTime(current_time, d_var_new_data);
-  level->setTime(current_time, d_var_scratch_data);
-  level->setTime(current_time, d_var_scratch_new_data);
 }
 
 void LagrangianEulerianLevelIntegrator::debugLevel(

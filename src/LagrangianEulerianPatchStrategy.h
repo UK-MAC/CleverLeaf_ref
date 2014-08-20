@@ -201,15 +201,6 @@ class LagrangianEulerianPatchStrategy: public xfer::RefinePatchStrategy
     boost::shared_ptr<hier::VariableContext> getNewDataContext();
 
     /**
-     * Get the data context corresponding to the scratch storage.
-     *
-     * @returns Scratch data context.
-     */
-    boost::shared_ptr<hier::VariableContext> getScratchDataContext();
-
-    boost::shared_ptr<hier::VariableContext> getScratchNewDataContext();
-
-    /**
      * Set the data context for the current time.
      *
      * This context contains the current data.
@@ -227,26 +218,6 @@ class LagrangianEulerianPatchStrategy: public xfer::RefinePatchStrategy
      * @param context Context for new time.
      */
     void setNewDataContext(
-        boost::shared_ptr<hier::VariableContext> context);
-
-    /**
-     * Set the data context for the scratch space.
-     *
-     * This context contains scratch data for current timelevel variables.
-     *
-     * @param context Context for scratch space.
-     */
-    void setScratchDataContext(
-        boost::shared_ptr<hier::VariableContext> context);
-
-    /**
-     * Set the data context for the scratch new space.
-     *
-     * This context contains scratch data for new timelevel variables.
-     *
-     * @param context Context for the new scratch space.
-     */
-    void setScratchNewDataContext(
         boost::shared_ptr<hier::VariableContext> context);
 
     /**
@@ -305,7 +276,5 @@ class LagrangianEulerianPatchStrategy: public xfer::RefinePatchStrategy
 
     boost::shared_ptr<hier::VariableContext> d_new_data_context;
     boost::shared_ptr<hier::VariableContext> d_current_data_context;
-    boost::shared_ptr<hier::VariableContext> d_scratch_data_context;
-    boost::shared_ptr<hier::VariableContext> d_scratch_new_data_context;
 };
 #endif

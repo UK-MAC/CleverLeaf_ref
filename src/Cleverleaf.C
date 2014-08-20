@@ -1310,48 +1310,44 @@ void Cleverleaf::setPhysicalBoundaryConditions(
   t_fill_boundary->start();
 
   boost::shared_ptr<pdat::CellData<double> > v_pressure(
-      patch.getPatchData(d_pressure, getScratchDataContext()),
+      patch.getPatchData(d_pressure, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
 
   boost::shared_ptr<pdat::CellData<double> > v_density0(
-      patch.getPatchData(d_density, getScratchDataContext()),
+      patch.getPatchData(d_density, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
 
   boost::shared_ptr<pdat::CellData<double> > v_density1(
-      patch.getPatchData(d_density, getScratchNewDataContext()),
+      patch.getPatchData(d_density, getNewDataContext()),
       boost::detail::dynamic_cast_tag());
 
   boost::shared_ptr<pdat::CellData<double> > v_energy0(
-      patch.getPatchData(d_energy, getScratchDataContext()),
+      patch.getPatchData(d_energy, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
 
   boost::shared_ptr<pdat::CellData<double> > v_energy1(
-      patch.getPatchData(d_energy, getScratchNewDataContext()),
+      patch.getPatchData(d_energy, getNewDataContext()),
       boost::detail::dynamic_cast_tag());
 
   boost::shared_ptr<pdat::CellData<double> > v_viscosity(
-      patch.getPatchData(d_viscosity, getScratchDataContext()),
+      patch.getPatchData(d_viscosity, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
 
   boost::shared_ptr<pdat::NodeData<double> > v_vel0(
-      patch.getPatchData(d_velocity, getScratchDataContext()),
+      patch.getPatchData(d_velocity, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
 
   boost::shared_ptr<pdat::NodeData<double> > v_vel1(
-      patch.getPatchData(d_velocity, getScratchNewDataContext()),
+      patch.getPatchData(d_velocity, getNewDataContext()),
       boost::detail::dynamic_cast_tag());
 
   boost::shared_ptr<pdat::SideData<double> > v_massflux( 
-      patch.getPatchData(d_massflux, getScratchDataContext()),
+      patch.getPatchData(d_massflux, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
 
   boost::shared_ptr<pdat::SideData<double> > v_volflux( 
-      patch.getPatchData(d_volflux, getScratchDataContext()),
+      patch.getPatchData(d_volflux, getCurrentDataContext()),
       boost::detail::dynamic_cast_tag());
-
-//  boost::shared_ptr<pdat::CellData<double> > v_soundspeed( 
-//      patch.getPatchData(d_soundspeed, getScratchDataContext()),
-//      boost::detail::dynamic_cast_tag());
 
   const hier::Index ifirst = patch.getBox().lower();
   const hier::Index ilast = patch.getBox().upper();
