@@ -30,7 +30,7 @@ SUBROUTINE cartclinrefclevercelldoub2d(ifirstc0,ifirstc1,ilastc0,ilastc1,&
     arrayf(filo0:fihi0, filo1:fihi1), &
     diff0(cilo0:cihi0+1,cilo1:cihi1+1), &
     slope0(cilo0:cihi0, cilo1:cihi1), &
-    diff1(cilo0:cihi0+1,cilo1:cihi1+1), &
+    diff1(cilo0:cihi0+1, cilo1:cihi1+1), &
     slope1(cilo0:cihi0, cilo1:cihi1)
 
 !$OMP PARALLEL

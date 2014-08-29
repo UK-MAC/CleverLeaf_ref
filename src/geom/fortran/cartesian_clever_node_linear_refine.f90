@@ -22,12 +22,8 @@
      filo0, filo1, fihi0, fihi1
 
 
-   REAL (KIND=8) :: arrayc(cilo0:cihi0, cilo1:cihi1), &
-     arrayf(filo0:fihi0, filo1:fihi1), &
-     diff0(cilo0:cihi0+1,cilo1:cihi1+1), &
-     slope0(cilo0:cihi0, cilo1:cihi1), &
-     diff1(cilo0:cihi0+1,cilo1:cihi1+1), &
-     slope1(cilo0:cihi0, cilo1:cihi1)
+   REAL (KIND=8) :: arrayc(cilo0:cihi0+1, cilo1:cihi1+1), &
+                    arrayf(filo0:fihi0+1, filo1:fihi1+1)
 
    REAL (KIND=8) :: coef2, bound, deltax1, deltax0, x, y, realrat0, realrat1
 
