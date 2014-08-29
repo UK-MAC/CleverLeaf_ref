@@ -16,14 +16,15 @@
  * You should have received a copy of the GNU General Public License along with
  * CleverLeaf. If not, see http://www.gnu.org/licenses/.
  */ 
-#include "CartesianCellDoubleMassWeightedAverage.h"
+#include "CartesianCleverCellDoubleMassWeightedAverage.h"
 
 #include "SAMRAI/geom/CartesianPatchGeometry.h"
 #include "SAMRAI/hier/Index.h"
-#include "SAMRAI/pdat/CellData.h"
-#include "SAMRAI/pdat/CellVariable.h"
 #include "SAMRAI/tbox/Utilities.h"
 #include "SAMRAI/hier/VariableDatabase.h"
+
+#include "pdat/CleverCellData.h"
+#include "pdat/CleverCellVariable.h"
 
 #define F90_FUNC(name,NAME) name ## _
 
@@ -36,32 +37,35 @@ extern "C" {
      const double*, const double*);
 }
 
+namespace clever {
+namespace geom {
+
 tbox::StartupShutdownManager::Handler 
-CartesianCellDoubleMassWeightedAverage::s_initialize_handler(
-    CartesianCellDoubleMassWeightedAverage::initializeCallback,
+CartesianCleverCellDoubleMassWeightedAverage::s_initialize_handler(
+    CartesianCleverCellDoubleMassWeightedAverage::initializeCallback,
     0,
     0,
-    CartesianCellDoubleMassWeightedAverage::finalizeCallback,
+    CartesianCleverCellDoubleMassWeightedAverage::finalizeCallback,
     tbox::StartupShutdownManager::priorityTimers);
 
 boost::shared_ptr<tbox::Timer>
-CartesianCellDoubleMassWeightedAverage::t_coarsen;
+CartesianCleverCellDoubleMassWeightedAverage::t_coarsen;
 
-CartesianCellDoubleMassWeightedAverage::CartesianCellDoubleMassWeightedAverage(
+CartesianCleverCellDoubleMassWeightedAverage::CartesianCleverCellDoubleMassWeightedAverage(
     const tbox::Dimension& dim):
   hier::CoarsenOperator("MASS_WEIGHTED_COARSEN")
 {
 }
 
-CartesianCellDoubleMassWeightedAverage::~CartesianCellDoubleMassWeightedAverage()
+CartesianCleverCellDoubleMassWeightedAverage::~CartesianCleverCellDoubleMassWeightedAverage()
 {
 }
 
-bool CartesianCellDoubleMassWeightedAverage::findCoarsenOperator(
+bool CartesianCleverCellDoubleMassWeightedAverage::findCoarsenOperator(
     const boost::shared_ptr<SAMRAI::hier::Variable>& var,
     const std::string& op_name) const
 {
-  const boost::shared_ptr<pdat::CellVariable<double> > cast_var(
+  const boost::shared_ptr<pdat::CleverCellVariable<double> > cast_var(
       var, boost::detail::dynamic_cast_tag());
 
   if (cast_var && (op_name == getOperatorName())) {
@@ -71,7 +75,7 @@ bool CartesianCellDoubleMassWeightedAverage::findCoarsenOperator(
   }
 }
 
-int CartesianCellDoubleMassWeightedAverage::getOperatorPriority() const
+int CartesianCleverCellDoubleMassWeightedAverage::getOperatorPriority() const
 {
   /*
    * This priority is lower than the priority of the volume_weighted coarsen,
@@ -81,12 +85,12 @@ int CartesianCellDoubleMassWeightedAverage::getOperatorPriority() const
 }
 
 hier::IntVector
-CartesianCellDoubleMassWeightedAverage::getStencilWidth(
+CartesianCleverCellDoubleMassWeightedAverage::getStencilWidth(
     const tbox::Dimension &dim) const {
   return hier::IntVector::getZero(dim);
 }
 
-void CartesianCellDoubleMassWeightedAverage::coarsen(
+void CartesianCleverCellDoubleMassWeightedAverage::coarsen(
     hier::Patch& coarse,
     const hier::Patch& fine,
     const int dst_component,
@@ -97,9 +101,9 @@ void CartesianCellDoubleMassWeightedAverage::coarsen(
   t_coarsen->start();
   const tbox::Dimension& dim(fine.getDim());
 
-  boost::shared_ptr<pdat::CellData<double> > fdata(
+  boost::shared_ptr<clever::pdat::CleverCellData<double> > fdata(
       fine.getPatchData(src_component), boost::detail::dynamic_cast_tag());
-  boost::shared_ptr<pdat::CellData<double> > cdata(
+  boost::shared_ptr<clever::pdat::CleverCellData<double> > cdata(
       coarse.getPatchData(dst_component), boost::detail::dynamic_cast_tag());
 
   /*
@@ -112,9 +116,9 @@ void CartesianCellDoubleMassWeightedAverage::coarsen(
       variable_db->getVariable("density"), 
       variable_db->getContext("CURRENT"));
 
-  boost::shared_ptr<pdat::CellData<double> > fmass(
+  boost::shared_ptr<clever::pdat::CleverCellData<double> > fmass(
       fine.getPatchData(density_id), boost::detail::dynamic_cast_tag());
-  boost::shared_ptr<pdat::CellData<double> > cmass(
+  boost::shared_ptr<clever::pdat::CleverCellData<double> > cmass(
       coarse.getPatchData(density_id), boost::detail::dynamic_cast_tag());
 
   const hier::Index filo = fdata->getGhostBox().lower();
@@ -122,9 +126,9 @@ void CartesianCellDoubleMassWeightedAverage::coarsen(
   const hier::Index cilo = cdata->getGhostBox().lower();
   const hier::Index cihi = cdata->getGhostBox().upper();
 
-  const boost::shared_ptr<geom::CartesianPatchGeometry> fgeom(
+  const boost::shared_ptr<SAMRAI::geom::CartesianPatchGeometry> fgeom(
       fine.getPatchGeometry(), boost::detail::dynamic_cast_tag());
-  const boost::shared_ptr<geom::CartesianPatchGeometry> cgeom(
+  const boost::shared_ptr<SAMRAI::geom::CartesianPatchGeometry> cgeom(
       coarse.getPatchGeometry(), boost::detail::dynamic_cast_tag());
 
   const hier::Index ifirstc = coarse_box.lower();
@@ -166,20 +170,23 @@ void CartesianCellDoubleMassWeightedAverage::coarsen(
          &Vf,
          &Vc);
     } else {
-      TBOX_ERROR("CartesianCellDoubleMassWeightedAverage error...\n"
+      TBOX_ERROR("CartesianCleverCellDoubleMassWeightedAverage error...\n"
           << "dim != 2 not supported." << std::endl);
     }
   }
   t_coarsen->stop();
 }
 
-void CartesianCellDoubleMassWeightedAverage::initializeCallback()
+void CartesianCleverCellDoubleMassWeightedAverage::initializeCallback()
 {
   t_coarsen = tbox::TimerManager::getManager()->getTimer(
-      "CartesianCellDoubleMassWeightedAverage::t_coarsen");
+      "CartesianCleverCellDoubleMassWeightedAverage::t_coarsen");
 }
 
-void CartesianCellDoubleMassWeightedAverage::finalizeCallback()
+void CartesianCleverCellDoubleMassWeightedAverage::finalizeCallback()
 {
   t_coarsen.reset();
+}
+
+}
 }

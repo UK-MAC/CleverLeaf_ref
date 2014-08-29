@@ -37,8 +37,9 @@
 #include "LagrangianEulerianPatchStrategy.h"
 #include "LagrangianEulerianLevelIntegrator.h"
 
-using namespace SAMRAI;
-using namespace std;
+#include "pdat/CleverCellVariable.h"
+#include "pdat/CleverNodeVariable.h"
+#include "pdat/CleverSideVariable.h"
 
 /**
  * @class Cleverleaf
@@ -284,10 +285,10 @@ class Cleverleaf:
      * @param grid_geometry The GridGeometry to use.
      */
     Cleverleaf(
-        boost::shared_ptr<tbox::Database> input_database,
-        boost::shared_ptr<hier::PatchHierarchy> hierarchy,
-        const tbox::Dimension& dim,
-        boost::shared_ptr<geom::CartesianGridGeometry> grid_geometry);
+        boost::shared_ptr<SAMRAI::tbox::Database> input_database,
+        boost::shared_ptr<SAMRAI::hier::PatchHierarchy> hierarchy,
+        const SAMRAI::tbox::Dimension& dim,
+        boost::shared_ptr<SAMRAI::geom::CartesianGridGeometry> grid_geometry);
 
     /**
      * Register a VisitDataWriter with the class.
@@ -298,54 +299,56 @@ class Cleverleaf:
      * @param writer The VisitDataWriter to register.
      */
     void registerVisItDataWriter(
-        boost::shared_ptr<appu::VisItDataWriter> writer);
+        boost::shared_ptr<SAMRAI::appu::VisItDataWriter> writer);
 
     void registerModelVariables(LagrangianEulerianLevelIntegrator* integrator);
 
     void initializeDataOnPatch(
-        hier::Patch&,
+        SAMRAI::hier::Patch& patch,
         double init_data_time,
         bool initial_time);
 
     void accelerate(
-        hier::Patch& patch,
+        SAMRAI::hier::Patch& patch,
         double dt);
 
     void ideal_gas_knl(
-        hier::Patch& patch,
+        SAMRAI::hier::Patch& patch,
         bool predict);
 
     void viscosity_knl(
-        hier::Patch& patch);
+        SAMRAI::hier::Patch& patch);
 
     double calc_dt_knl(
-        hier::Patch& patch);
+        SAMRAI::hier::Patch& patch);
 
     void pdv_knl(
-        hier::Patch& patch,
+        SAMRAI::hier::Patch& patch,
         double dt,
         bool predict);
 
     void flux_calc_knl(
-        hier::Patch& patch,
+        SAMRAI::hier::Patch& patch,
         double dt);
 
-    void advec_cell(hier::Patch& patch,
+    void advec_cell(
+        SAMRAI::hier::Patch& patch,
         int sweep_number,
         ADVEC_DIR direction);
 
-    void advec_mom(hier::Patch& patch,
+    void advec_mom(
+        SAMRAI::hier::Patch& patch,
         int sweep_number,
         ADVEC_DIR direction,
         ADVEC_DIR which_vel);
 
     void setPhysicalBoundaryConditions(
-        hier::Patch& patch,
+        SAMRAI::hier::Patch& patch,
         const double fill_time,
         const hier::IntVector& ghost_width_to_fill);
 
     void field_summary(
-        hier::Patch& patch,
+        SAMRAI::hier::Patch& patch,
         double* total_volume,
         double* total_mass,
         double* total_pressure,
@@ -354,27 +357,27 @@ class Cleverleaf:
         int* total_effective_cells);
 
     virtual void tagGradientDetectorCells(
-        hier::Patch& patch,
+        SAMRAI::hier::Patch& patch,
         const double regrid_time,
         const bool initial_error,
         const int tag_index);
 
-    void debug_knl(hier::Patch& patch);
+    void debug_knl(SAMRAI::hier::Patch& patch);
 
     void fillLevelIndicator(
-        hier::Patch& patch,
+        SAMRAI::hier::Patch& patch,
         const int level_number);
   private:
-    boost::shared_ptr<hier::PatchHierarchy> d_hierarchy;
-    boost::shared_ptr<appu::VisItDataWriter> d_visit_writer;
+    boost::shared_ptr<SAMRAI::hier::PatchHierarchy> d_hierarchy;
+    boost::shared_ptr<SAMRAI::appu::VisItDataWriter> d_visit_writer;
 
-    boost::shared_ptr<geom::CartesianGridGeometry> d_grid_geometry;
+    boost::shared_ptr<SAMRAI::geom::CartesianGridGeometry> d_grid_geometry;
 
-    const tbox::Dimension d_dim;
+    const SAMRAI::tbox::Dimension d_dim;
 
-    hier::IntVector d_nghosts;
+    SAMRAI::hier::IntVector d_nghosts;
 
-    boost::shared_ptr<tbox::Database> input_db;
+    boost::shared_ptr<SAMRAI::tbox::Database> input_db;
     const std::string state_prefix;
 
     bool d_tag_all;
@@ -392,33 +395,33 @@ class Cleverleaf:
 
     bool d_gravity;
 
-    boost::shared_ptr<pdat::NodeVariable<double> > d_velocity;
-    boost::shared_ptr<pdat::SideVariable<double> > d_massflux;
-    boost::shared_ptr<pdat::SideVariable<double> > d_volflux;
-    boost::shared_ptr<pdat::CellVariable<double> > d_pressure;
-    boost::shared_ptr<pdat::CellVariable<double> > d_viscosity;
-    boost::shared_ptr<pdat::CellVariable<double> > d_soundspeed;
-    boost::shared_ptr<pdat::CellVariable<double> > d_density;
-    boost::shared_ptr<pdat::CellVariable<double> > d_energy;
-    boost::shared_ptr<pdat::CellVariable<double> > d_volume;
+    boost::shared_ptr<clever::pdat::CleverNodeVariable<double> > d_velocity;
+    boost::shared_ptr<clever::pdat::CleverSideVariable<double> > d_massflux;
+    boost::shared_ptr<clever::pdat::CleverSideVariable<double> > d_volflux;
+    boost::shared_ptr<clever::pdat::CleverCellVariable<double> > d_pressure;
+    boost::shared_ptr<clever::pdat::CleverCellVariable<double> > d_viscosity;
+    boost::shared_ptr<clever::pdat::CleverCellVariable<double> > d_soundspeed;
+    boost::shared_ptr<clever::pdat::CleverCellVariable<double> > d_density;
+    boost::shared_ptr<clever::pdat::CleverCellVariable<double> > d_energy;
+    boost::shared_ptr<clever::pdat::CleverCellVariable<double> > d_volume;
 
-    boost::shared_ptr<pdat::CellVariable<double> > d_celldeltas;
-    boost::shared_ptr<pdat::CellVariable<double> > d_cellcoords;
+    boost::shared_ptr<clever::pdat::CleverCellVariable<double> > d_celldeltas;
+    boost::shared_ptr<clever::pdat::CleverCellVariable<double> > d_cellcoords;
 
-    boost::shared_ptr<pdat::NodeVariable<double> > d_vertexdeltas;
-    boost::shared_ptr<pdat::NodeVariable<double> > d_vertexcoords;
+    boost::shared_ptr<clever::pdat::CleverNodeVariable<double> > d_vertexdeltas;
+    boost::shared_ptr<clever::pdat::CleverNodeVariable<double> > d_vertexcoords;
 
-    boost::shared_ptr<pdat::NodeVariable<double> > d_workarray1;
-    boost::shared_ptr<pdat::NodeVariable<double> > d_workarray2;
-    boost::shared_ptr<pdat::NodeVariable<double> > d_workarray3;
-    boost::shared_ptr<pdat::NodeVariable<double> > d_workarray4;
-    boost::shared_ptr<pdat::NodeVariable<double> > d_workarray5;
-    boost::shared_ptr<pdat::NodeVariable<double> > d_workarray6;
-    boost::shared_ptr<pdat::NodeVariable<double> > d_workarray7;
+    boost::shared_ptr<clever::pdat::CleverNodeVariable<double> > d_workarray1;
+    boost::shared_ptr<clever::pdat::CleverNodeVariable<double> > d_workarray2;
+    boost::shared_ptr<clever::pdat::CleverNodeVariable<double> > d_workarray3;
+    boost::shared_ptr<clever::pdat::CleverNodeVariable<double> > d_workarray4;
+    boost::shared_ptr<clever::pdat::CleverNodeVariable<double> > d_workarray5;
+    boost::shared_ptr<clever::pdat::CleverNodeVariable<double> > d_workarray6;
+    boost::shared_ptr<clever::pdat::CleverNodeVariable<double> > d_workarray7;
 
-    boost::shared_ptr<pdat::CellVariable<int> > d_level_indicator;
+    boost::shared_ptr<clever::pdat::CleverCellVariable<int> > d_level_indicator;
 
-    boost::shared_ptr<hier::VariableContext> d_plot_context;
+    boost::shared_ptr<SAMRAI::hier::VariableContext> d_plot_context;
 
     int* d_exchange_fields;
 
@@ -445,11 +448,11 @@ class Cleverleaf:
     const static double g_small;
     const static double g_big;
 
-    static boost::shared_ptr<tbox::Timer> t_fill_boundary;
+    static boost::shared_ptr<SAMRAI::tbox::Timer> t_fill_boundary;
 
     static void initializeCallback();
     static void finalizeCallback();
 
-    static tbox::StartupShutdownManager::Handler s_initialize_handler;
+    static SAMRAI::tbox::StartupShutdownManager::Handler s_initialize_handler;
 };
 #endif
