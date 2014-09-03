@@ -27,9 +27,9 @@
 #include <omp.h>
 #endif
 
-#include "Cleverleaf.h"
-#include "LagrangianEulerianLevelIntegrator.h"
-#include "LagrangianEulerianIntegrator.h"
+#include "hydro/Cleverleaf.h"
+#include "hydro/LagrangianEulerianLevelIntegrator.h"
+#include "hydro/LagrangianEulerianIntegrator.h"
 
 #include "SAMRAI/mesh/BergerRigoutsos.h"
 #include "SAMRAI/geom/CartesianGridGeometry.h"

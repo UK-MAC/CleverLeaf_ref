@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License along with
  * CleverLeaf. If not, see http://www.gnu.org/licenses/.
  */ 
-#ifndef CLEVERLEAF_CARTESIANCELLDOUBLEMASSWEIGHTEDAVERAGE_H_
-#define CLEVERLEAF_CARTESIANCELLDOUBLEMASSWEIGHTEDAVERAGE_H_
+#ifndef CLEVER_GEOM_CARTESIANCELLDOUBLEMASSWEIGHTEDAVERAGE_H_
+#define CLEVER_GEOM_CARTESIANCELLDOUBLEMASSWEIGHTEDAVERAGE_H_
 
 #include <string>
 
@@ -31,14 +31,17 @@
 
 using namespace SAMRAI;
 
-class CartesianCellDoubleMassWeightedAverage:
+namespace clever {
+namespace geom {
+
+class CartesianCleverCellDoubleMassWeightedAverage:
   public hier::CoarsenOperator
 {
   public:
-    explicit CartesianCellDoubleMassWeightedAverage(
+    explicit CartesianCleverCellDoubleMassWeightedAverage(
         const tbox::Dimension& dim);
 
-    virtual ~CartesianCellDoubleMassWeightedAverage();
+    virtual ~CartesianCleverCellDoubleMassWeightedAverage();
 
     bool findCoarsenOperator(const boost::shared_ptr<hier::Variable>& var,
         const std::string& op_name) const;
@@ -62,4 +65,7 @@ class CartesianCellDoubleMassWeightedAverage:
 
     static tbox::StartupShutdownManager::Handler s_initialize_handler;
 };
-#endif
+
+}
+}
+#endif // CLEVER_GEOM_CARTESIANCELLDOUBLEMASSWEIGHTEDAVERAGE_H_

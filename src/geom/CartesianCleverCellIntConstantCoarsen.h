@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License along with
  * CleverLeaf. If not, see http://www.gnu.org/licenses/.
  */ 
-#ifndef CLEVERLEAF_CARTESIANCELLINTCONSTANTCOARSEN_H_
-#define CLEVERLEAF_CARTESIANCELLINTCONSTANTCOARSEN_H_
+#ifndef CLEVER_GEOM_CARTESIANCLEVERCELLINTCONSTANTCOARSEN_H_
+#define CLEVER_GEOM_CARTESIANCLEVERCELLINTCONSTANTCOARSEN_H_
 
 #include <string>
 
@@ -29,37 +29,41 @@
 #include "SAMRAI/tbox/Timer.h"
 #include "SAMRAI/tbox/TimerManager.h"
 
-using namespace SAMRAI;
+namespace clever {
+namespace geom {
 
-class CartesianCellIntConstantCoarsen:
-  public hier::CoarsenOperator
+class CartesianCleverCellIntConstantCoarsen:
+  public SAMRAI::hier::CoarsenOperator
 {
   public:
-    explicit CartesianCellIntConstantCoarsen(const tbox::Dimension& dim);
+    explicit CartesianCleverCellIntConstantCoarsen(const SAMRAI::tbox::Dimension& dim);
 
-    virtual ~CartesianCellIntConstantCoarsen();
+    virtual ~CartesianCleverCellIntConstantCoarsen();
 
     bool findCoarsenOperator(
-        const boost::shared_ptr<hier::Variable>& var,
+        const boost::shared_ptr<SAMRAI::hier::Variable>& var,
         const std::string& op_name) const;
 
     int getOperatorPriority() const; 
 
-    hier::IntVector getStencilWidth(const tbox::Dimension &dim ) const;
+    SAMRAI::hier::IntVector getStencilWidth(const SAMRAI::tbox::Dimension &dim ) const;
 
     void coarsen(
-        hier::Patch& coarse,
-        const hier::Patch& fine,
+        SAMRAI::hier::Patch& coarse,
+        const SAMRAI::hier::Patch& fine,
         const int dst_component,
         const int src_component,
-        const hier::Box& coarse_box,
-        const hier::IntVector& ratio) const;
+        const SAMRAI::hier::Box& coarse_box,
+        const SAMRAI::hier::IntVector& ratio) const;
   private:
-    static boost::shared_ptr<tbox::Timer> t_coarsen;
+    static boost::shared_ptr<SAMRAI::tbox::Timer> t_coarsen;
 
     static void initializeCallback();
     static void finalizeCallback();
 
-    static tbox::StartupShutdownManager::Handler s_initialize_handler;
+    static SAMRAI::tbox::StartupShutdownManager::Handler s_initialize_handler;
 };
+
+}
+}
 #endif

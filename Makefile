@@ -35,13 +35,13 @@ LDFLAGS_GNU=
 OMP_GNU=-fopenmp
 
 CXXFLAGS=$(CXXFLAGS_$(COMPILER)) \
-				 -lz $(BOOST_INC) $(HDF_INC) $(SAMRAI_INC) $(MATH_INC) \
+				 -lz -Isrc $(BOOST_INC) $(HDF_INC) $(SAMRAI_INC) $(MATH_INC) \
 				 -DVERSION=\"$(GIT_VERSION)\" -DHOST_NAME=\"$(HOST_NAME)\"
 FFLAGS=$(FFLAGS_$(COMPILER)) 
 LDFLAGS=$(LDFLAGS_$(COMPILER)) -lz $(SAMRAI_LIB) $(HDF_LIB) $(MATH_LIB) -lstdc++
 
-CPP_FILES := $(wildcard src/*.C)
-F90_FILES := $(wildcard src/fortran/*.f90)
+CPP_FILES := $(wildcard src/**/*.C src/*.C)
+F90_FILES := $(wildcard src/**/fortran/*.f90 src/fortran/*.f90)
 OBJ_FILES := $(addprefix obj/,$(notdir $(F90_FILES:.f90=.o) $(CPP_FILES:.C=.o)))
 
 ref: obj cleverleaf
@@ -56,6 +56,12 @@ cleverleaf: $(OBJ_FILES)
 
 obj/%.o: src/%.C
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+obj/%.o: src/**/%.C
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+obj/%.o: src/**/fortran/%.f90
+	$(F90) $(FFLAGS) -c -o $@ $<
 
 obj/%.o: src/fortran/%.f90
 	$(F90) $(FFLAGS) -c -o $@ $<
