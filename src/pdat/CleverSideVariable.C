@@ -40,8 +40,8 @@ template<typename TYPE>
 int CleverSideVariable<TYPE>::getDepth() const
 {
   boost::shared_ptr<CleverSideDataFactory<TYPE> > clever_side_data_factory(
-      getPatchDataFactory(),
-      boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(CleverSideDataFactory<TYPE> ,
+        getPatchDataFactory()));
 
   return clever_side_data_factory->getDepth();
 }

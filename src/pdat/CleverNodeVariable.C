@@ -42,8 +42,8 @@ template<typename TYPE>
 int CleverNodeVariable<TYPE>::getDepth() const
 {
   boost::shared_ptr<CleverNodeDataFactory<TYPE> > clever_node_data_factory(
-      getPatchDataFactory(),
-      boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(CleverNodeDataFactory<TYPE> ,
+        getPatchDataFactory()));
 
   return clever_node_data_factory->getDepth();
 }
@@ -62,9 +62,9 @@ bool CleverNodeVariable<TYPE>::packDerivedDataIntoDoubleBuffer(
     SAMRAI::hier::VariableDatabase::getDatabase();
 
   boost::shared_ptr<clever::pdat::CleverNodeData<TYPE> > node_data(
-      patch.getPatchData(
-        boost::const_pointer_cast<clever::pdat::CleverNodeVariable<TYPE> >(this->shared_from_this()),
-        variable_db->getContext("CURRENT")), boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(clever::pdat::CleverNodeData<TYPE>,
+        patch.getPatchData(boost::const_pointer_cast<clever::pdat::CleverNodeVariable<TYPE> >(this->shared_from_this()),
+          variable_db->getContext("CURRENT"))));
 
   bool data_on_patch = false;
 

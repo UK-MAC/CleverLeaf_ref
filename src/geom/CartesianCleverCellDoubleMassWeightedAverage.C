@@ -26,6 +26,8 @@
 #include "pdat/CleverCellData.h"
 #include "pdat/CleverCellVariable.h"
 
+#include "macros.h"
+
 #define F90_FUNC(name,NAME) name ## _
 
 extern "C" {
@@ -66,7 +68,8 @@ bool CartesianCleverCellDoubleMassWeightedAverage::findCoarsenOperator(
     const std::string& op_name) const
 {
   const boost::shared_ptr<pdat::CleverCellVariable<double> > cast_var(
-      var, boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(pdat::CleverCellVariable<double>,
+        var));
 
   if (cast_var && (op_name == getOperatorName())) {
     return true;
@@ -102,9 +105,11 @@ void CartesianCleverCellDoubleMassWeightedAverage::coarsen(
   const tbox::Dimension& dim(fine.getDim());
 
   boost::shared_ptr<clever::pdat::CleverCellData<double> > fdata(
-      fine.getPatchData(src_component), boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(clever::pdat::CleverCellData<double>,
+        fine.getPatchData(src_component)));
   boost::shared_ptr<clever::pdat::CleverCellData<double> > cdata(
-      coarse.getPatchData(dst_component), boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(clever::pdat::CleverCellData<double>,
+        coarse.getPatchData(dst_component)));
 
   /*
    * We need to access the current density values in order to work out the mass
@@ -117,9 +122,11 @@ void CartesianCleverCellDoubleMassWeightedAverage::coarsen(
       variable_db->getContext("CURRENT"));
 
   boost::shared_ptr<clever::pdat::CleverCellData<double> > fmass(
-      fine.getPatchData(density_id), boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(clever::pdat::CleverCellData<double>,
+        fine.getPatchData(density_id)));
   boost::shared_ptr<clever::pdat::CleverCellData<double> > cmass(
-      coarse.getPatchData(density_id), boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(clever::pdat::CleverCellData<double>,
+        coarse.getPatchData(density_id)));
 
   const hier::Index filo = fdata->getGhostBox().lower();
   const hier::Index fihi = fdata->getGhostBox().upper();
@@ -127,9 +134,11 @@ void CartesianCleverCellDoubleMassWeightedAverage::coarsen(
   const hier::Index cihi = cdata->getGhostBox().upper();
 
   const boost::shared_ptr<SAMRAI::geom::CartesianPatchGeometry> fgeom(
-      fine.getPatchGeometry(), boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(SAMRAI::geom::CartesianPatchGeometry,
+        fine.getPatchGeometry()));
   const boost::shared_ptr<SAMRAI::geom::CartesianPatchGeometry> cgeom(
-      coarse.getPatchGeometry(), boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(SAMRAI::geom::CartesianPatchGeometry,
+        coarse.getPatchGeometry()));
 
   const hier::Index ifirstc = coarse_box.lower();
   const hier::Index ilastc = coarse_box.upper();

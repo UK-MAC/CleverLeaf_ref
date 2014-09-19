@@ -5,6 +5,8 @@
 #include "SAMRAI/pdat/SideOverlap.h"
 #include "SAMRAI/geom/CartesianPatchGeometry.h"
 
+#include "macros.h"
+
 #define F90_FUNC(name,NAME) name ## _
 
 extern "C" {
@@ -60,15 +62,15 @@ void CartesianCleverSideDoubleFirstOrderRefine::refine(
   const SAMRAI::tbox::Dimension& dim(fine.getDim());
 
   boost::shared_ptr<clever::pdat::CleverSideData<double> > cdata(
-      coarse.getPatchData(src_component),
-      boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(clever::pdat::CleverSideData<double>,
+        coarse.getPatchData(src_component)));
 
   boost::shared_ptr<clever::pdat::CleverSideData<double> > fdata(
-      fine.getPatchData(dst_component),
-      boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(clever::pdat::CleverSideData<double>,
+        fine.getPatchData(dst_component)));
 
   const SAMRAI::pdat::SideOverlap* t_overlap =
-    static_cast<const SAMRAI::pdat::SideOverlap *>(&fine_overlap);
+    PTR_CAST(const SAMRAI::pdat::SideOverlap *,&fine_overlap);
 
   const SAMRAI::hier::Box cgbox(cdata->getGhostBox());
 

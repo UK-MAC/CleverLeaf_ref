@@ -42,8 +42,8 @@ template<typename TYPE>
 int CleverCellVariable<TYPE>::getDepth() const
 {
   boost::shared_ptr<CleverCellDataFactory<TYPE> > clever_cell_data_factory(
-      getPatchDataFactory(),
-      boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(CleverCellDataFactory<TYPE> ,
+        getPatchDataFactory()));
   return clever_cell_data_factory->getDepth();
 }
 
@@ -61,9 +61,9 @@ bool CleverCellVariable<TYPE>::packDerivedDataIntoDoubleBuffer(
     SAMRAI::hier::VariableDatabase::getDatabase();
 
   boost::shared_ptr<clever::pdat::CleverCellData<TYPE> > cell_data(
-      patch.getPatchData(
-        boost::const_pointer_cast<clever::pdat::CleverCellVariable<TYPE> >(this->shared_from_this()),
-        variable_db->getContext("CURRENT")), boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(clever::pdat::CleverCellData<TYPE> ,
+        patch.getPatchData(boost::const_pointer_cast<clever::pdat::CleverCellVariable<TYPE> >(this->shared_from_this()),
+          variable_db->getContext("CURRENT"))));
 
   bool data_on_patch = false;
 
