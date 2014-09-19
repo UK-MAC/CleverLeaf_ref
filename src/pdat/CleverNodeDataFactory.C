@@ -9,6 +9,8 @@
 
 #include "CleverNodeData.h"
 
+#include "macros.h"
+
 namespace clever {
 namespace pdat {
 
@@ -79,8 +81,8 @@ bool CleverNodeDataFactory<TYPE>::validCopyTo(
   bool valid_copy = false;
 
   boost::shared_ptr<CleverNodeDataFactory> node_data_factory(
-      dst_pdf,
-      boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(CleverNodeDataFactory,
+        dst_pdf));
 
   if(node_data_factory) {
     valid_copy = true;

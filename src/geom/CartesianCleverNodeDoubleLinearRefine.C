@@ -5,6 +5,8 @@
 #include "SAMRAI/pdat/NodeOverlap.h"
 #include "SAMRAI/geom/CartesianPatchGeometry.h"
 
+#include "macros.h"
+
 #define F90_FUNC(name,NAME) name ## _
 
 extern "C" {
@@ -52,7 +54,7 @@ void CartesianCleverNodeDoubleLinearRefine::refine(
     const SAMRAI::hier::IntVector& ratio) const
 {
   const SAMRAI::pdat::NodeOverlap* cell_overlap =
-    static_cast<const SAMRAI::pdat::NodeOverlap *>(&fine_overlap);
+    PTR_CAST(const SAMRAI::pdat::NodeOverlap *,&fine_overlap);
 
   const SAMRAI::hier::BoxContainer& boxes = 
     cell_overlap->getDestinationBoxContainer();
@@ -80,20 +82,20 @@ void CartesianCleverNodeDoubleLinearRefine::refine(
   const SAMRAI::tbox::Dimension& dim(fine.getDim());
 
   boost::shared_ptr<pdat::CleverNodeData<double> > coarse_data(
-      coarse.getPatchData(src_component),
-      boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(pdat::CleverNodeData<double>,
+        coarse.getPatchData(src_component)));
 
   boost::shared_ptr<pdat::CleverNodeData<double> > fine_data(
-      fine.getPatchData(dst_component),
-      boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(pdat::CleverNodeData<double>,
+        fine.getPatchData(dst_component)));
 
   const boost::shared_ptr<SAMRAI::geom::CartesianPatchGeometry> coarse_geometry(
-      coarse.getPatchGeometry(),
-      boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(SAMRAI::geom::CartesianPatchGeometry,
+        coarse.getPatchGeometry()));
 
   const boost::shared_ptr<SAMRAI::geom::CartesianPatchGeometry> fine_geometry(
-      fine.getPatchGeometry(),
-      boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(SAMRAI::geom::CartesianPatchGeometry,
+        fine.getPatchGeometry()));
 
    const SAMRAI::hier::Box coarse_box = SAMRAI::hier::Box::coarsen(fine_box, ratio);
    const SAMRAI::hier::Index ifirstc = coarse_box.lower();

@@ -8,6 +8,8 @@
 #include "pdat/CleverCellData.h"
 #include "pdat/CleverCellVariable.h"
 
+#include "macros.h"
+
 #define F90_FUNC(name,NAME) name ## _
 
 extern "C" {
@@ -47,7 +49,7 @@ bool CartesianCleverCellIntConstantCoarsen::findCoarsenOperator(
     const std::string& op_name) const
 {
   const boost::shared_ptr<clever::pdat::CleverCellVariable<int> > cast_var(
-      var, boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(clever::pdat::CleverCellVariable<int>, var));
 
   if (cast_var && (op_name == getOperatorName())) {
     return true;
@@ -79,9 +81,11 @@ void CartesianCleverCellIntConstantCoarsen::coarsen(
   const SAMRAI::tbox::Dimension& dim(fine.getDim());
 
   boost::shared_ptr<clever::pdat::CleverCellData<int> > fdata(
-      fine.getPatchData(src_component), boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(clever::pdat::CleverCellData<int>,
+        fine.getPatchData(src_component)));
   boost::shared_ptr<clever::pdat::CleverCellData<int> > cdata(
-      coarse.getPatchData(dst_component), boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(clever::pdat::CleverCellData<int>,
+        coarse.getPatchData(dst_component)));
 
   const SAMRAI::hier::Index filo = fdata->getGhostBox().lower();
   const SAMRAI::hier::Index fihi = fdata->getGhostBox().upper();
@@ -89,9 +93,11 @@ void CartesianCleverCellIntConstantCoarsen::coarsen(
   const SAMRAI::hier::Index cihi = cdata->getGhostBox().upper();
 
   const boost::shared_ptr<SAMRAI::geom::CartesianPatchGeometry> fgeom(
-      fine.getPatchGeometry(), boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(SAMRAI::geom::CartesianPatchGeometry,
+        fine.getPatchGeometry()));
   const boost::shared_ptr<SAMRAI::geom::CartesianPatchGeometry> cgeom(
-      coarse.getPatchGeometry(), boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(SAMRAI::geom::CartesianPatchGeometry,
+        coarse.getPatchGeometry()));
 
   const SAMRAI::hier::Index ifirstc = coarse_box.lower();
   const SAMRAI::hier::Index ilastc = coarse_box.upper();

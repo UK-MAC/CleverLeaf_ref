@@ -52,12 +52,12 @@ void CleverNodeInjection<TYPE>::coarsen(
     const SAMRAI::hier::IntVector& ratio) const
 {
   boost::shared_ptr<CleverNodeData<TYPE> > fine_data(
-      fine.getPatchData(src_component),
-      boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(CleverNodeData<TYPE> ,
+        fine.getPatchData(src_component)));
 
   boost::shared_ptr<CleverNodeData<TYPE> > coarse_data(
-      coarse.getPatchData(dst_component),
-      boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(CleverNodeData<TYPE> ,
+        coarse.getPatchData(dst_component)));
 
   const SAMRAI::hier::Box coarse_ghost_box =
     SAMRAI::pdat::NodeGeometry::toNodeBox(coarse_data->getGhostBox());

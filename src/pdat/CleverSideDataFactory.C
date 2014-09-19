@@ -79,8 +79,8 @@ bool CleverSideDataFactory<TYPE>::validCopyTo(
   bool valid_copy = false;
 
   boost::shared_ptr<CleverSideDataFactory> side_data_factory(
-      dst_pdf,
-      boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(CleverSideDataFactory,
+        dst_pdf));
 
   if(side_data_factory) {
     valid_copy = true;

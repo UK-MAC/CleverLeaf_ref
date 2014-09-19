@@ -9,6 +9,8 @@
 
 #include "CleverCellData.h"
 
+#include "macros.h"
+
 namespace clever {
 namespace pdat {
 
@@ -79,8 +81,8 @@ bool CleverCellDataFactory<TYPE>::validCopyTo(
   bool valid_copy = false;
 
   boost::shared_ptr<CleverCellDataFactory> cell_data_factory(
-      dst_pdf,
-      boost::detail::dynamic_cast_tag());
+      SHARED_PTR_CAST(CleverCellDataFactory,
+        dst_pdf));
 
   if(cell_data_factory) {
     valid_copy = true;
