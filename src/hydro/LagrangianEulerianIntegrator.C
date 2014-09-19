@@ -19,7 +19,7 @@
 
 #include "LagrangianEulerianIntegrator.h"
 
-#ifdef DEBUG
+#ifdef DEBUG_FIELDS
 #define DEBUG_LEVELS() \
   for (level_number = 0; level_number <= finest_level_number; level_number++) { \
     boost::shared_ptr<hier::PatchLevel> patch_level( \
