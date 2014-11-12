@@ -1,21 +1,20 @@
 !
-! Copyright 2013 David Beckingsale.
+! Crown Copyright 2014 AWE, Copyright 2014 David Beckingsale.
 !
 ! This file is part of CleverLeaf.
 !
-! CleverLeaf is free software: you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the 
-! Free Software Foundation, either version 3 of the License, or (at your option) 
-! any later version.
+! CleverLeaf is free software: you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the Free Software
+! Foundation, either version 3 of the License, or (at your option) any later
+! version.
 !
-! CleverLeaf is distributed in the hope that it will be useful, but 
-! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
-! details.
+! CleverLeaf is distributed in the hope that it will be useful, but WITHOUT ANY
+! WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+! A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 !
-! You should have received a copy of the GNU General Public License along with 
+! You should have received a copy of the GNU General Public License along with
 ! CleverLeaf. If not, see http://www.gnu.org/licenses/.
-
+!
 !>  @brief Fortran kernel to coarsen level indicator.
 !>  @author David Beckingsale
 !>  @details Directly coarsens fine level indicator value to cell on coarse
