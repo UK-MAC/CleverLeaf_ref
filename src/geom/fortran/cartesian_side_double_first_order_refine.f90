@@ -37,8 +37,9 @@ SUBROUTINE cartsidedoubfirstorderrefine0(ifirstc0,ifirstc1,&
 
   INTEGER :: ic0,ic1,if0,if1
 
-!$OMP PARALLEL
-!$OMP DO PRIVATE(if1,if0,ic0,ic1)
+!$OMP PARALLEL DEFAULT(NONE) PRIVATE(if1,if0,ic0,ic1) &
+!$OMP& SHARED(arrayf,arrayc,ratio,ifirstf1,ilastf1,ifirstf0,ilastf0)
+!$OMP DO 
   DO if1=ifirstf1,ilastf1+0
      IF (if1.lt.0) THEN
         ic1=(if1+1)/ratio(1)-1
@@ -55,7 +56,7 @@ SUBROUTINE cartsidedoubfirstorderrefine0(ifirstc0,ifirstc1,&
      ENDDO
   ENDDO
 !$OMP END DO
-!$OMP PARALLEL
+!$OMP END PARALLEL
 
 END SUBROUTINE cartsidedoubfirstorderrefine0
 
@@ -81,8 +82,9 @@ SUBROUTINE cartsidedoubfirstorderrefine1(ifirstc0,ifirstc1,&
 
   INTEGER :: ic0,ic1,if0,if1
 
-!$OMP PARALLEL
-!$OMP DO PRIVATE(if1,if0,ic0,ic1)
+!$OMP PARALLEL DEFAULT(NONE) PRIVATE(if1,if0,ic0,ic1) &
+!$OMP& SHARED(arrayf,arrayc,ratio,ifirstf1,ilastf1,ifirstf0,ilastf0)
+!$OMP DO
   DO if1=ifirstf1,ilastf1+1
      IF (if1.lt.0) THEN
         ic1=(if1+1)/ratio(1)-1
@@ -99,6 +101,6 @@ SUBROUTINE cartsidedoubfirstorderrefine1(ifirstc0,ifirstc1,&
      ENDDO
   ENDDO
 !$OMP END DO
-!$OMP PARALLEL
+!$OMP END PARALLEL
 
 END SUBROUTINE cartsidedoubfirstorderrefine1

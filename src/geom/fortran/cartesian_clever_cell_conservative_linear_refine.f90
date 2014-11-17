@@ -50,7 +50,10 @@ SUBROUTINE cartclinrefclevercelldoub2d(ifirstc0,ifirstc1,ilastc0,ilastc1,&
     diff1(cilo0:cihi0+1, cilo1:cihi1+1), &
     slope1(cilo0:cihi0, cilo1:cihi1)
 
-!$OMP PARALLEL
+!$OMP PARALLEL DEFAULT(NONE) &
+!$OMP& PRIVATE(coef2,bound,ic1,ic0,ir1,deltax1,deltax0,ir0) &
+!$OMP& SHARED(diff0,diff1,arrayc,arrayf,slope0,slope1,ratio,ifirstc1,ilastc1) &
+!$OMP& SHARED(ifirstc0,ilastc0,dxc,dxf,ifirstf1,ilastf1,ifirstf0,ilastf0)
 !$OMP DO
   DO ic1 = ifirstc1, ilastc1+1
     DO ic0 = ifirstc0, ilastc0+1

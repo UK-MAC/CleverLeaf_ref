@@ -47,7 +47,10 @@
    realrat0 = one/dble(ratio(0))
    realrat1 = one/dble(ratio(1))
 
-!$OMP PARALLEL DO PRIVATE(ic0,ic1,ir0,ir1,x,y)
+!$OMP PARALLEL DEFAULT(NONE) PRIVATE(ic0,ic1,ir0,ir1,x,y) &
+!$OMP& SHARED(arrayf,arrayc,ifirstf1,ilastf1,ifirstf0,ilastf0,ratio,realrat0) &
+!$OMP& SHARED(realrat1)
+!$OMP DO
   DO ie1 = ifirstf1, ilastf1
     DO ie0 = ifirstf0, ilastf0
 
@@ -67,6 +70,7 @@
         arrayc(ic0+1,ic1+1)*x)*y
     ENDDO
   ENDDO
-!$OMP END PARALLEL DO
+!$OMP END DO
+!$OMP END PARALLEL
 
 END SUBROUTINE cartlinrefclevernodedoub2d

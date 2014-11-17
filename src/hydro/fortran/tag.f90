@@ -32,7 +32,8 @@ SUBROUTINE tag_q_kernel(x_min,x_max,y_min,y_max,&
 
   INTEGER :: j,k
 
-!$OMP PARALLEL
+!$OMP PARALLEL DEFAULT(NONE) SHARED(tags, viscosity, q_threshold,y_min,y_max) &
+!$OMP& SHARED(x_min,x_max)
 !$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
@@ -72,8 +73,10 @@ SUBROUTINE tag_density_kernel(x_min,x_max,y_min,y_max,&
   INTEGER :: j,k
   REAL(KIND=8) :: d2x,d2y,dxy,dyx,dd
 
-!$OMP PARALLEL
-!$OMP DO PRIVATE(d2x,d2y,dxy,dyx,dd)
+!$OMP PARALLEL DEFAULT(NONE) PRIVATE(d2x,d2y,dxy,dyx,dd) &
+!$OMP& SHARED(density, tags, density_gradient_threshold) &
+!$OMP& SHARED(y_min, y_max, x_min, x_max)
+!$OMP DO 
   DO k=y_min,y_max
     DO j=x_min,x_max
       d2x = abs(density(j+1,k) - 2.0*density(j,k) + density(j-1,k));
@@ -121,8 +124,10 @@ SUBROUTINE tag_energy_kernel(x_min,x_max,y_min,y_max,&
   REAL(KIND=8) :: d2x,d2y,dxy,dyx,dd
 
 
-!$OMP PARALLEL
-!$OMP DO PRIVATE(d2x,d2y,dxy,dyx,dd)
+!$OMP PARALLEL DEFAULT(NONE) PRIVATE(d2x,d2y,dxy,dyx,dd) &
+!$OMP& SHARED(energy, tags, energy_gradient_threshold) &
+!$OMP& SHARED(y_min, y_max, x_min, x_max)
+!$OMP DO 
   DO k=y_min,y_max
     DO j=x_min,x_max
       d2x = abs(energy(j+1,k) - 2.0*energy(j,k) + energy(j-1,k));
@@ -170,8 +175,10 @@ SUBROUTINE tag_pressure_kernel(x_min,x_max,y_min,y_max,&
   REAL(KIND=8) :: d2x,d2y,dxy,dyx,dd
 
 
-!$OMP PARALLEL
-!$OMP DO PRIVATE(d2x,d2y,dxy,dyx,dd)
+!$OMP PARALLEL DEFAULT(NONE) PRIVATE(d2x,d2y,dxy,dyx,dd) &
+!$OMP& SHARED(pressure,tags,pressure_gradient_threshold) &
+!$OMP& SHARED(y_min, y_max, x_min, x_max)
+!$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
       d2x = abs(pressure(j+1,k) - 2.0*pressure(j,k) + pressure(j-1,k));
@@ -213,7 +220,8 @@ SUBROUTINE tag_all_kernel(x_min,x_max,y_min,y_max,&
 
   INTEGER :: j,k
 
-!$OMP PARALLEL
+!$OMP PARALLEL DEFAULT(NONE) SHARED(tags) &
+!$OMP& SHARED(y_min, y_max, x_min, x_max)
 !$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max

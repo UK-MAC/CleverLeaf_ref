@@ -37,8 +37,9 @@ SUBROUTINE conavgclevernodedoub2d(&
                   arrayc(cilo0:cihi0+1, cilo1:cihi1+1)
   INTEGER :: ie0,ie1,if1
 
-!$OMP PARALLEL
-!$OMP DO PRIVATE(if1)
+!$OMP PARALLEL DEFAULT(NONE) PRIVATE(if1,ie0) &
+!$OMP& SHARED(arrayc,arrayf,ratio,ifirstc1,ilastc1,ifirstc0,ilastc0)
+!$OMP DO
   DO ie1=ifirstc1,ilastc1+1
     if1=ie1*ratio(1)
     DO ie0=ifirstc0,ilastc0+1
