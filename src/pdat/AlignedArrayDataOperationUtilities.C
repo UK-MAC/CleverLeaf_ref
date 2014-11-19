@@ -225,42 +225,46 @@ void AlignedArrayDataOperationUtilities<TYPE, ALIGNMENT>::doArrayDataBufferOpera
      * Loop over each contiguous block of data.
      */
 
-    std::copy(&src_ptr[src_counter],
-        &src_ptr[src_counter+box_w[0]],
-        &dst_ptr[dst_counter]);
+    for (int nb = 0; nb < num_d0_blocks; ++nb) {
 
-    int dim_jump = 0;
+      std::copy(&src_ptr[src_counter],
+          &src_ptr[src_counter+box_w[0]],
+          &dst_ptr[dst_counter]);
 
-    /*
-     * After each contiguous block is packed, calculate the
-     * beginning array index for the next block.
-     */
+      int dim_jump = 0;
 
-    for (int j = 1; j < dim.getValue(); ++j) {
-      if (dim_counter[j] < box_w[j] - 1) {
-        ++dim_counter[j];
-        dim_jump = j;
-        break;
-      } else {
-        dim_counter[j] = 0;
-      }
-    }
+      /*
+       * After each contiguous block is packed, calculate the
+       * beginning array index for the next block.
+       */
 
-    if (dim_jump > 0) {
-
-      int dat_step = 1;
-      for (int k = 0; k < dim_jump; ++k) {
-        dat_step *= dat_w[k];
-      }
-      dat_counter = dat_b[dim_jump - 1] + dat_step;
-
-      for (int m = 0; m < dim_jump; ++m) {
-        dat_b[m] = dat_counter;
+      for (int j = 1; j < dim.getValue(); ++j) {
+        if (dim_counter[j] < box_w[j] - 1) {
+          ++dim_counter[j];
+          dim_jump = j;
+          break;
+        } else {
+          dim_counter[j] = 0;
+        }
       }
 
-    }  // if dim_jump > 0
+      if (dim_jump > 0) {
 
-    buf_counter += buf_offset;
+        int dat_step = 1;
+        for (int k = 0; k < dim_jump; ++k) {
+          dat_step *= dat_w[k];
+        }
+        dat_counter = dat_b[dim_jump - 1] + dat_step;
+
+        for (int m = 0; m < dim_jump; ++m) {
+          dat_b[m] = dat_counter;
+        }
+
+      }  // if dim_jump > 0
+
+      buf_counter += buf_offset;
+
+    } // nb loop over contiguous data blocks
 
     /*
      * After packing is complete on a full box for one depth index,
