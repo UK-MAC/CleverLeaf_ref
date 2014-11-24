@@ -1,20 +1,21 @@
-!
-! Crown Copyright 2014 AWE, Copyright 2014 David Beckingsale.
-!
+! 
+! Copyright 2013 David Beckingsale.
+! 
 ! This file is part of CleverLeaf.
-!
-! CleverLeaf is free software: you can redistribute it and/or modify it under
-! the terms of the GNU General Public License as published by the Free Software
-! Foundation, either version 3 of the License, or (at your option) any later
-! version.
-!
-! CleverLeaf is distributed in the hope that it will be useful, but WITHOUT ANY
-! WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
-! A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-!
-! You should have received a copy of the GNU General Public License along with
+! 
+! CleverLeaf is free software: you can redistribute it and/or modify it under 
+! the terms of the GNU General Public License as published by the 
+! Free Software Foundation, either version 3 of the License, or (at your option) 
+! any later version.
+! 
+! CleverLeaf is distributed in the hope that it will be useful, but 
+! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+! details.
+! 
+! You should have received a copy of the GNU General Public License along with 
 ! CleverLeaf. If not, see http://www.gnu.org/licenses/.
-!
+!  
 !>  @brief Fortran debug kernel.
 !>  @author David Beckingsale
 !>  @details This kernel is used for debugging, providing a convenient
@@ -73,39 +74,110 @@ SUBROUTINE debug_kernel(x_min,x_max,y_min,y_max,                &
 
   REAL(KIND=8) :: tmp
 
+  WRITE(*, *) 'density0'
   DO k=y_min-2, y_max+2
     DO j=x_min-2, x_max+2
-
-      density0(j,k) = density0(j,k)
-      density1(j,k) = density1(j,k)
-      energy0(j,k) = energy0(j,k)
-      energy1(j,k) = energy1(j,k)
-
-      tmp = density0(j,k)
-      IF(tmp .LE. 0.0_8) THEN
-        WRITE(*,*) 'Negative density at', j, k, ' = ', tmp
-      ENDIF
-
-      tmp = density1(j,k)
-      IF(tmp .LE. 0.0_8) THEN
-        WRITE(*,*) 'Negative density at', j, k, ' = ', tmp
-      ENDIF
-
-      tmp = energy0(j,k)
-      IF(tmp .LE. 0.0_8) THEN
-        WRITE(*,*) 'Negative energy at', j, k, ' = ', tmp
-      ENDIF
-
-      tmp = energy1(j,k)
-      IF(tmp .LE. 0.0_8) THEN
-        WRITE(*,*) 'Negative energy at', j, k, ' = ', tmp
-      ENDIF
-
-      tmp = mass_flux_x(j,k)
-      IF(tmp .LT. 0.0_8 .AND. j .EQ. 483 .AND. k .EQ. 3) THEN
-        WRITE(*,*) 'Negative mass flux at ', j,k, '=', tmp
-      ENDIF
+      WRITE(*, '(7E12.4,X)', advance='no') density0(j,k)
     ENDDO
+    WRITE(*, *) ''  ! this gives you the line break
+  ENDDO
+  WRITE(*, *) 'density1'
+  DO k=y_min-2, y_max+2
+    DO j=x_min-2, x_max+2
+      WRITE(*, '(7E12.4,X)', advance='no') density1(j,k)
+    ENDDO
+    WRITE(*, *) ''  ! this gives you the line break
+  ENDDO
+  WRITE(*, *) 'energy0'
+  DO k=y_min-2, y_max+2
+    DO j=x_min-2, x_max+2
+      WRITE(*, '(7E12.4,X)', advance='no') energy0(j,k)
+    ENDDO
+    WRITE(*, *) ''  ! this gives you the line break
+  ENDDO
+  WRITE(*, *) 'energy1'
+  DO k=y_min-2, y_max+2
+    DO j=x_min-2, x_max+2
+      WRITE(*, '(7E12.4,X)', advance='no') energy1(j,k)
+    ENDDO
+    WRITE(*, *) ''  ! this gives you the line break
+  ENDDO
+  WRITE(*, *) 'pressure'
+  DO k=y_min-2, y_max+2
+    DO j=x_min-2, x_max+2
+      WRITE(*, '(7E12.4,X)', advance='no') pressure(j,k)
+    ENDDO
+    WRITE(*, *) ''  ! this gives you the line break
+  ENDDO
+  WRITE(*, *) 'soundspeed'
+  DO k=y_min-2, y_max+2
+    DO j=x_min-2, x_max+2
+      WRITE(*, '(7E12.4,X)', advance='no') soundspeed(j,k)
+    ENDDO
+    WRITE(*, *) ''  ! this gives you the line break
+  ENDDO
+  WRITE(*, *) 'viscosity'
+  DO k=y_min-2, y_max+2
+    DO j=x_min-2, x_max+2
+      WRITE(*, '(7E12.4,X)', advance='no') viscosity(j,k)
+    ENDDO
+    WRITE(*, *) ''  ! this gives you the line break
+  ENDDO
+  WRITE(*, *) 'xvel0'
+  DO k=y_min-2, y_max+3
+    DO j=x_min-2, x_max+3
+      WRITE(*, '(7E12.4,X)', advance='no') xvel0(j,k)
+    ENDDO
+    WRITE(*, *) ''  ! this gives you the line break
+  ENDDO
+  WRITE(*, *) 'yvel0'
+  DO k=y_min-2, y_max+3
+    DO j=x_min-2, x_max+3
+      WRITE(*, '(7E12.4,X)', advance='no') yvel0(j,k)
+    ENDDO
+    WRITE(*, *) ''  ! this gives you the line break
+  ENDDO
+  WRITE(*, *) 'xvel1'
+  DO k=y_min-2, y_max+3
+    DO j=x_min-2, x_max+3
+      WRITE(*, '(7E12.4,X)', advance='no') xvel1(j,k)
+    ENDDO
+    WRITE(*, *) ''  ! this gives you the line break
+  ENDDO
+  WRITE(*, *) 'yvel1'
+  DO k=y_min-2, y_max+3
+    DO j=x_min-2, x_max+3
+      WRITE(*, '(7E12.4,X)', advance='no') yvel1(j,k)
+    ENDDO
+    WRITE(*, *) ''  ! this gives you the line break
+  ENDDO
+  WRITE(*, *) 'vol_flux_x'
+  DO k=y_min-2, y_max+2
+    DO j=x_min-2, x_max+3
+      WRITE(*, '(7E12.4,X)', advance='no') vol_flux_x(j,k)
+    ENDDO
+    WRITE(*, *) ''  ! this gives you the line break
+  ENDDO
+  WRITE(*, *) 'vol_flux_y'
+  DO k=y_min-2, y_max+3
+    DO j=x_min-2, x_max+2
+      WRITE(*, '(7E12.4,X)', advance='no') vol_flux_y(j,k)
+    ENDDO
+    WRITE(*, *) ''  ! this gives you the line break
+  ENDDO
+  WRITE(*, *) 'mass_flux_x'
+  DO k=y_min-2, y_max+2
+    DO j=x_min-2, x_max+3
+      WRITE(*, '(7E12.4,X)', advance='no') mass_flux_x(j,k)
+    ENDDO
+    WRITE(*, *) ''  ! this gives you the line break
+  ENDDO
+  WRITE(*, *) 'mass_flux_y'
+  DO k=y_min-2, y_max+3
+    DO j=x_min-2, x_max+2
+      WRITE(*, '(7E12.4,X)', advance='no') mass_flux_y(j,k)
+    ENDDO
+    WRITE(*, *) ''  ! this gives you the line break
   ENDDO
 
 END SUBROUTINE debug_kernel
