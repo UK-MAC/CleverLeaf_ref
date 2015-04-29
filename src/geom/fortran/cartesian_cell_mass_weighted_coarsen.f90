@@ -43,8 +43,10 @@ SUBROUTINE cartesian_cell_double_mass_weighted_coarsen(ifirstc0,ifirstc1,&
   INTEGER :: j,k,ir0,ir1,if0,if1
   REAL(KIND=8) :: seM
 
-!$OMP PARALLEL
-!$OMP DO PRIVATE(if1,if0,seM)
+!$OMP PARALLEL DEFAULT(NONE) PRIVATE(if1,if0,seM) &
+!$OMP& SHARED(arrayf,massf,arrayc,volf,volc,ifirstc1,ilastc1,ifirstc0,ilastc0) &
+!$OMP& SHARED(ratio,massc)
+!$OMP DO 
   DO k=ifirstc1, ilastc1
     DO j=ifirstc0, ilastc0
       seM = 0.0_8

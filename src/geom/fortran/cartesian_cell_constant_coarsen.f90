@@ -38,8 +38,9 @@ SUBROUTINE cartesian_cell_constant_int_coarsen(ifirstc0,ifirstc1,ilastc0,ilastc1
 
   INTEGER :: j,k,ir0,ir1,if0,if1
 
-!$OMP PARALLEL
-!$OMP DO PRIVATE(if1,if0)
+!$OMP PARALLEL DEFAULT(NONE) PRIVATE(if1,if0) &
+!$OMP& SHARED(arrayc,arrayf,ifirstc1,ilastc1,ifirstc0,ilastc0,ratio)
+!$OMP DO 
   DO k=ifirstc1, ilastc1
     DO j=ifirstc0, ilastc0
       DO ir1=0,ratio(1)-1
