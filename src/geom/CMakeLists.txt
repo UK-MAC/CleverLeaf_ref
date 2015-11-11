@@ -1,0 +1,14 @@
+add_library(geom
+  CartesianCleverCellDoubleConservativeLinearRefine.C
+  CartesianCleverCellDoubleMassWeightedAverage.C
+  CartesianCleverCellDoubleVolumeWeightedAverage.C
+  CartesianCleverCellIntConstantCoarsen.C
+  CartesianCleverNodeDoubleLinearRefine.C
+  CartesianCleverSideDoubleFirstOrderRefine.C
+  CartesianSideDoubleFirstOrderRefine.C
+  fortran/cartesian_cell_constant_coarsen.f90
+  fortran/cartesian_cell_mass_weighted_coarsen.f90
+  fortran/cartesian_cell_volume_weighted_coarsen.f90
+  fortran/cartesian_clever_cell_conservative_linear_refine.f90
+  fortran/cartesian_clever_node_linear_refine.f90
+  fortran/cartesian_side_double_first_order_refine.f90)

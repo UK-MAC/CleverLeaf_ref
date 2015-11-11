@@ -1,0 +1,20 @@
+add_library(hydro
+  Cleverleaf.C
+  LagrangianEulerianIntegrator.C
+  LagrangianEulerianLevelIntegrator.C
+  LagrangianEulerianPatchStrategy.C
+  fortran/accelerate_kernel.f90
+  fortran/advec_cell_kernel.f90
+  fortran/advec_mom_kernel.f90
+  fortran/calc_dt_kernel.f90
+  fortran/debug_kernel.f90
+  fortran/field_summary_kernel.f90
+  fortran/flux_calc_kernel.f90
+  fortran/generate_chunk_kernel.f90
+  fortran/ideal_gas_kernel.f90
+  fortran/initialise_chunk_kernel.f90
+  fortran/PdV_kernel.f90
+  fortran/tag.f90
+  fortran/update_halo_kernel.f90
+  fortran/viscosity_kernel.f90)
+
