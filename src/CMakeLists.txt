@@ -23,5 +23,5 @@ target_link_libraries(cleverleaf
   ${SAMRAI_TBOX_LIBRARIES}
   ${HDF5_LIBRARIES})
 
-install(TARGET cleverleaf
+install(TARGETS cleverleaf
   RUNTIME DESTINATION bin)
