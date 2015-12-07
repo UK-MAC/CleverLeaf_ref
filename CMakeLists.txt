@@ -5,13 +5,14 @@ set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 
 find_package (SAMRAI REQUIRED)
 find_package (HDF5 REQUIRED)
-find_package (BOOST REQUIRED)
+set (Boost_NO_BOOST_CMAKE ON)
+find_package (Boost REQUIRED)
 find_package (MPI REQUIRED)
 
 include_directories (
   ${SAMRAI_INCLUDE_DIRS}
   ${HDF5_INCLUDE_DIRS}
-  ${BOOST_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
   ${MPI_CXX_INCLUDE_PATH}
 )
 
