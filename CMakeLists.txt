@@ -5,10 +5,14 @@ set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 
 find_package (SAMRAI REQUIRED)
 find_package (HDF5 REQUIRED)
+find_package (BOOST REQUIRED)
+find_package (MPI REQUIRED)
 
 include_directories (
   ${SAMRAI_INCLUDE_DIRS}
   ${HDF5_INCLUDE_DIRS}
+  ${BOOST_INCLUDE_DIRS}
+  ${MPI_CXX_INCLUDE_PATH}
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
