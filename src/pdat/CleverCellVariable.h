@@ -53,7 +53,8 @@ class CleverCellVariable : public SAMRAI::hier::Variable,
         const SAMRAI::hier::Patch& patch,
         const SAMRAI::hier::Box& region,
         const std::string& variable_name,
-        int depth_index) const;
+        int depth_index,
+        double simulation_time) const;
   private:
 };
 

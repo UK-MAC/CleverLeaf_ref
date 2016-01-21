@@ -71,7 +71,8 @@ bool CleverNodeVariable<TYPE>::packDerivedDataIntoDoubleBuffer(
     const SAMRAI::hier::Patch& patch,
     const SAMRAI::hier::Box& region,
     const std::string& variable_name,
-    int depth_index) const
+    int depth_index,
+    double simulation_time) const
 {
   const SAMRAI::tbox::Dimension& dim(patch.getDim());
 
@@ -87,17 +88,17 @@ bool CleverNodeVariable<TYPE>::packDerivedDataIntoDoubleBuffer(
 
   TYPE* data = node_data->getPointer();
 
-  const hier::Box& data_box = SAMRAI::pdat::NodeGeometry::toNodeBox(
+  const SAMRAI::hier::Box& data_box = SAMRAI::pdat::NodeGeometry::toNodeBox(
       node_data->getGhostBox());
 
-  const hier::Box& node_region = SAMRAI::pdat::NodeGeometry::toNodeBox(region);
+  const SAMRAI::hier::Box& node_region = SAMRAI::pdat::NodeGeometry::toNodeBox(region);
 
   const int box_width = node_region.numberCells(0);
   const int box_height = node_region.numberCells(1);
   const int data_width = data_box.numberCells(0);
   const int data_height = data_box.numberCells(1);
   
-  if (dim == tbox::Dimension(2)) {
+  if (dim == SAMRAI::tbox::Dimension(2)) {
     int buffer_offset = 0;
     int data_offset = data_box.offset(region.lower())
       + (data_box.size()*depth_index);

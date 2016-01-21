@@ -57,7 +57,7 @@ class CleverSideData : public SAMRAI::hier::PatchData
 
     bool canEstimateStreamSizeFromBox() const;
 
-    int getDataStreamSize(const SAMRAI::hier::BoxOverlap& overlap) const;
+    size_t getDataStreamSize(const SAMRAI::hier::BoxOverlap& overlap) const;
 
     void packStream(SAMRAI::tbox::MessageStream& stream,
         const SAMRAI::hier::BoxOverlap& overlap) const;

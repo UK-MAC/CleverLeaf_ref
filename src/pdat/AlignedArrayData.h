@@ -57,7 +57,7 @@ class AlignedArrayData
         const SAMRAI::hier::BoxContainer& boxes,
         const SAMRAI::hier::Transformation& transformation);
 
-    int getDataStreamSize(
+    size_t getDataStreamSize(
         const SAMRAI::hier::BoxContainer& boxes) const;
 
     TYPE* getPointer(int depth = 0) const;

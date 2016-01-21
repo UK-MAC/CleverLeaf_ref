@@ -155,7 +155,7 @@ bool CleverCellData<TYPE>::canEstimateStreamSizeFromBox() const
 }
 
 template<typename TYPE>
-int CleverCellData<TYPE>::getDataStreamSize(
+size_t CleverCellData<TYPE>::getDataStreamSize(
     const SAMRAI::hier::BoxOverlap& overlap) const
 {
   const SAMRAI::pdat::CellOverlap* cell_overlap = 

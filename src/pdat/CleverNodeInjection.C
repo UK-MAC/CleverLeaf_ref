@@ -19,8 +19,8 @@
 #define CLEVERLEAF_PDAT_CLEVERNODEINJECTION_C_
 
 #include "CleverNodeInjection.h"
-
 #include "CleverNodeData.h"
+#include "macros.h"
 
 #define F90_FUNC(name,NAME) name ## _
 
@@ -81,13 +81,13 @@ void CleverNodeInjection<TYPE>::coarsen(
   const SAMRAI::hier::Box fine_ghost_box = 
     SAMRAI::pdat::NodeGeometry::toNodeBox(fine_data->getGhostBox());
 
-   const hier::Index filo = fine_data->getGhostBox().lower();
-   const hier::Index fihi = fine_data->getGhostBox().upper();
-   const hier::Index cilo = coarse_data->getGhostBox().lower();
-   const hier::Index cihi = coarse_data->getGhostBox().upper();
+   const SAMRAI::hier::Index filo = fine_data->getGhostBox().lower();
+   const SAMRAI::hier::Index fihi = fine_data->getGhostBox().upper();
+   const SAMRAI::hier::Index cilo = coarse_data->getGhostBox().lower();
+   const SAMRAI::hier::Index cihi = coarse_data->getGhostBox().upper();
 
-   const hier::Index ifirstc = coarse_box.lower();
-   const hier::Index ilastc = coarse_box.upper();
+   const SAMRAI::hier::Index ifirstc = coarse_box.lower();
+   const SAMRAI::hier::Index ilastc = coarse_box.upper();
 
   for(int depth = 0; depth < coarse_data->getDepth(); depth++) {
     if (fine.getDim() == SAMRAI::tbox::Dimension(2)) {

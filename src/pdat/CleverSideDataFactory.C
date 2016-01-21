@@ -24,6 +24,8 @@
 #include "SAMRAI/pdat/SideGeometry.h"
 #include <boost/make_shared.hpp>
 
+#include "macros.h"
+
 #include "CleverSideData.h"
 
 namespace clever {

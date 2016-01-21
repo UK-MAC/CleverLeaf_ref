@@ -97,7 +97,7 @@ void CartesianSideDoubleFirstOrderRefine::refine(
 
       SAMRAI::hier::Box fine_box(*b);
 
-      fine_box.upper(axis) -= 1;
+      fine_box.setUpper(axis, fine_box.upper(axis) - 1);
 
       const SAMRAI::hier::Box coarse_box = SAMRAI::hier::Box::coarsen(fine_box, ratio);
       const SAMRAI::hier::Index ifirstc = coarse_box.lower();

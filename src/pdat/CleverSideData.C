@@ -33,10 +33,10 @@ size_t CleverSideData<TYPE>::getSizeOfData(
     const SAMRAI::hier::IntVector& ghosts)
 {
   size_t size = 0;
-  const SAMRAI::hier::Box ghost_box = hier::Box::grow(box, ghosts);
+  const SAMRAI::hier::Box ghost_box = SAMRAI::hier::Box::grow(box, ghosts);
 
   for (int d = 0; d < box.getDim().getValue(); ++d) {
-      const hier::Box side_box = 
+      const SAMRAI::hier::Box side_box = 
         SAMRAI::pdat::SideGeometry::toSideBox(ghost_box, d);
       size += AlignedArrayData<TYPE, 64>::getSizeOfData(side_box, depth);
   }
@@ -184,7 +184,7 @@ bool CleverSideData<TYPE>::canEstimateStreamSizeFromBox() const
 }
 
 template<typename TYPE>
-int CleverSideData<TYPE>::getDataStreamSize(
+size_t CleverSideData<TYPE>::getDataStreamSize(
     const SAMRAI::hier::BoxOverlap& overlap) const
 {
   const SAMRAI::pdat::SideOverlap* side_overlap = 

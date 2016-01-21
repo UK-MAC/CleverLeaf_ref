@@ -86,8 +86,7 @@ void AlignedArrayData<TYPE, ALIGNMENT>::packBuffer(
    TYPE* buffer,
    const SAMRAI::hier::Box& box) const
 {
-   AlignedArrayDataOperationUtilities<TYPE, ALIGNMENT>::
-     doArrayDataBufferOperationOnBox<false>(*this,
+   AlignedArrayDataOperationUtilities<TYPE, ALIGNMENT>::template doArrayDataBufferOperationOnBox<false>(*this,
          buffer,
          box);
 }
@@ -123,8 +122,7 @@ void AlignedArrayData<TYPE, ALIGNMENT>::unpackBuffer(
    TYPE* buffer,
    const SAMRAI::hier::Box& box) const
 {
-   AlignedArrayDataOperationUtilities<TYPE, ALIGNMENT>::
-     doArrayDataBufferOperationOnBox<true>(*this,
+   AlignedArrayDataOperationUtilities<TYPE, ALIGNMENT>::template doArrayDataBufferOperationOnBox<true>(*this,
          buffer,
          box);
 }
@@ -204,7 +202,7 @@ void AlignedArrayData<TYPE, ALIGNMENT>::copy(
 }
 
 template<typename TYPE, int ALIGNMENT>
-int AlignedArrayData<TYPE, ALIGNMENT>::getDataStreamSize(
+size_t AlignedArrayData<TYPE, ALIGNMENT>::getDataStreamSize(
     const SAMRAI::hier::BoxContainer& boxes) const
 {
   const int number_of_elements = boxes.getTotalSizeOfBoxes();

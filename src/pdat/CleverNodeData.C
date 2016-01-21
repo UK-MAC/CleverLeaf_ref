@@ -162,7 +162,7 @@ bool CleverNodeData<TYPE>::canEstimateStreamSizeFromBox() const
 }
 
 template<typename TYPE>
-int CleverNodeData<TYPE>::getDataStreamSize(
+size_t CleverNodeData<TYPE>::getDataStreamSize(
     const SAMRAI::hier::BoxOverlap& overlap) const
 {
   const SAMRAI::pdat::NodeOverlap* node_overlap = 
