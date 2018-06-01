@@ -78,11 +78,11 @@ void CartesianCleverSideDoubleFirstOrderRefine::refine(
 {
   const SAMRAI::tbox::Dimension& dim(fine.getDim());
 
-  boost::shared_ptr<clever::pdat::CleverSideData<double> > cdata(
+  std::shared_ptr<clever::pdat::CleverSideData<double> > cdata(
       SHARED_PTR_CAST(clever::pdat::CleverSideData<double>,
         coarse.getPatchData(src_component)));
 
-  boost::shared_ptr<clever::pdat::CleverSideData<double> > fdata(
+  std::shared_ptr<clever::pdat::CleverSideData<double> > fdata(
       SHARED_PTR_CAST(clever::pdat::CleverSideData<double>,
         fine.getPatchData(dst_component)));
 

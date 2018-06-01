@@ -37,14 +37,14 @@ class CleverNodeDataFactory : public SAMRAI::hier::PatchDataFactory
 
     virtual ~CleverNodeDataFactory();
 
-    boost::shared_ptr<SAMRAI::hier::PatchDataFactory> cloneFactory(
+    std::shared_ptr<SAMRAI::hier::PatchDataFactory> cloneFactory(
           const SAMRAI::hier::IntVector& ghosts);
 
-    boost::shared_ptr<SAMRAI::hier::PatchData>
+    std::shared_ptr<SAMRAI::hier::PatchData>
       allocate(
           const SAMRAI::hier::Patch& patch) const;
 
-    boost::shared_ptr<SAMRAI::hier::BoxGeometry> getBoxGeometry(
+    std::shared_ptr<SAMRAI::hier::BoxGeometry> getBoxGeometry(
           const SAMRAI::hier::Box& box) const;
 
     size_t getSizeOfMemory( const SAMRAI::hier::Box& box) const;
@@ -54,7 +54,7 @@ class CleverNodeDataFactory : public SAMRAI::hier::PatchDataFactory
     bool dataLivesOnPatchBorder() const;
 
     bool validCopyTo(
-          const boost::shared_ptr<SAMRAI::hier::PatchDataFactory>& dst_pdf)
+          const std::shared_ptr<SAMRAI::hier::PatchDataFactory>& dst_pdf)
       const;
 
     int getDepth();

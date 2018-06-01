@@ -42,7 +42,7 @@ class CartesianCleverCellDoubleMassWeightedAverage:
 
     virtual ~CartesianCleverCellDoubleMassWeightedAverage();
 
-    bool findCoarsenOperator(const boost::shared_ptr<hier::Variable>& var,
+    bool findCoarsenOperator(const std::shared_ptr<hier::Variable>& var,
         const std::string& op_name) const;
 
     int getOperatorPriority() const;
@@ -57,7 +57,7 @@ class CartesianCleverCellDoubleMassWeightedAverage:
         const hier::Box& coarse_box,
         const hier::IntVector& ratio) const;
   private:
-    static boost::shared_ptr<tbox::Timer> t_coarsen;
+    static std::shared_ptr<tbox::Timer> t_coarsen;
 
     static void initializeCallback();
     static void finalizeCallback();

@@ -49,7 +49,7 @@ CartesianCleverCellDoubleMassWeightedAverage::s_initialize_handler(
     CartesianCleverCellDoubleMassWeightedAverage::finalizeCallback,
     tbox::StartupShutdownManager::priorityTimers);
 
-boost::shared_ptr<tbox::Timer>
+std::shared_ptr<tbox::Timer>
 CartesianCleverCellDoubleMassWeightedAverage::t_coarsen;
 
 CartesianCleverCellDoubleMassWeightedAverage::CartesianCleverCellDoubleMassWeightedAverage(
@@ -63,10 +63,10 @@ CartesianCleverCellDoubleMassWeightedAverage::~CartesianCleverCellDoubleMassWeig
 }
 
 bool CartesianCleverCellDoubleMassWeightedAverage::findCoarsenOperator(
-    const boost::shared_ptr<SAMRAI::hier::Variable>& var,
+    const std::shared_ptr<SAMRAI::hier::Variable>& var,
     const std::string& op_name) const
 {
-  const boost::shared_ptr<pdat::CleverCellVariable<double> > cast_var(
+  const std::shared_ptr<pdat::CleverCellVariable<double> > cast_var(
       SHARED_PTR_CAST(pdat::CleverCellVariable<double>,
         var));
 
@@ -103,10 +103,10 @@ void CartesianCleverCellDoubleMassWeightedAverage::coarsen(
   t_coarsen->start();
   const tbox::Dimension& dim(fine.getDim());
 
-  boost::shared_ptr<clever::pdat::CleverCellData<double> > fdata(
+  std::shared_ptr<clever::pdat::CleverCellData<double> > fdata(
       SHARED_PTR_CAST(clever::pdat::CleverCellData<double>,
         fine.getPatchData(src_component)));
-  boost::shared_ptr<clever::pdat::CleverCellData<double> > cdata(
+  std::shared_ptr<clever::pdat::CleverCellData<double> > cdata(
       SHARED_PTR_CAST(clever::pdat::CleverCellData<double>,
         coarse.getPatchData(dst_component)));
 
@@ -120,10 +120,10 @@ void CartesianCleverCellDoubleMassWeightedAverage::coarsen(
       variable_db->getVariable("density"), 
       variable_db->getContext("CURRENT"));
 
-  boost::shared_ptr<clever::pdat::CleverCellData<double> > fmass(
+  std::shared_ptr<clever::pdat::CleverCellData<double> > fmass(
       SHARED_PTR_CAST(clever::pdat::CleverCellData<double>,
         fine.getPatchData(density_id)));
-  boost::shared_ptr<clever::pdat::CleverCellData<double> > cmass(
+  std::shared_ptr<clever::pdat::CleverCellData<double> > cmass(
       SHARED_PTR_CAST(clever::pdat::CleverCellData<double>,
         coarse.getPatchData(density_id)));
 
@@ -132,10 +132,10 @@ void CartesianCleverCellDoubleMassWeightedAverage::coarsen(
   const hier::Index cilo = cdata->getGhostBox().lower();
   const hier::Index cihi = cdata->getGhostBox().upper();
 
-  const boost::shared_ptr<SAMRAI::geom::CartesianPatchGeometry> fgeom(
+  const std::shared_ptr<SAMRAI::geom::CartesianPatchGeometry> fgeom(
       SHARED_PTR_CAST(SAMRAI::geom::CartesianPatchGeometry,
         fine.getPatchGeometry()));
-  const boost::shared_ptr<SAMRAI::geom::CartesianPatchGeometry> cgeom(
+  const std::shared_ptr<SAMRAI::geom::CartesianPatchGeometry> cgeom(
       SHARED_PTR_CAST(SAMRAI::geom::CartesianPatchGeometry,
         coarse.getPatchGeometry()));
 

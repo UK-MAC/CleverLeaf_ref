@@ -25,24 +25,24 @@ LagrangianEulerianPatchStrategy::LagrangianEulerianPatchStrategy(
 }
 
 void LagrangianEulerianPatchStrategy::setCurrentDataContext(
-    boost::shared_ptr<hier::VariableContext> context)
+    std::shared_ptr<hier::VariableContext> context)
 {
   d_current_data_context = context;
 }
 
 void LagrangianEulerianPatchStrategy::setNewDataContext(
-    boost::shared_ptr<hier::VariableContext> context)
+    std::shared_ptr<hier::VariableContext> context)
 {
   d_new_data_context = context;
 }
 
-boost::shared_ptr<hier::VariableContext>
+std::shared_ptr<hier::VariableContext>
 LagrangianEulerianPatchStrategy::getCurrentDataContext()
 {
   return d_current_data_context;
 }
 
-boost::shared_ptr<hier::VariableContext>
+std::shared_ptr<hier::VariableContext>
 LagrangianEulerianPatchStrategy::getNewDataContext()
 {
   return d_new_data_context;

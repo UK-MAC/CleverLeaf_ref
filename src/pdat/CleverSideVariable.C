@@ -22,7 +22,6 @@
 
 #include "CleverSideDataFactory.h"
 
-#include <boost/make_shared.hpp>
 
 namespace clever {
 namespace pdat {
@@ -33,7 +32,7 @@ CleverSideVariable<TYPE>::CleverSideVariable(
     const std::string& name,
     int depth):
   SAMRAI::hier::Variable(name,
-      boost::make_shared<CleverSideDataFactory<TYPE> >(depth,
+      std::make_shared<CleverSideDataFactory<TYPE> >(depth,
         SAMRAI::hier::IntVector::getZero(dim)))
 {
 }
@@ -56,7 +55,7 @@ bool CleverSideVariable<TYPE>::dataLivesOnPatchBorder() const
 template<typename TYPE>
 int CleverSideVariable<TYPE>::getDepth() const
 {
-  boost::shared_ptr<CleverSideDataFactory<TYPE> > clever_side_data_factory(
+  std::shared_ptr<CleverSideDataFactory<TYPE> > clever_side_data_factory(
       SHARED_PTR_CAST(CleverSideDataFactory<TYPE> ,
         getPatchDataFactory()));
 

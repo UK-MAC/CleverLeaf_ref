@@ -40,7 +40,7 @@ class CartesianCleverCellIntConstantCoarsen:
     virtual ~CartesianCleverCellIntConstantCoarsen();
 
     bool findCoarsenOperator(
-        const boost::shared_ptr<SAMRAI::hier::Variable>& var,
+        const std::shared_ptr<SAMRAI::hier::Variable>& var,
         const std::string& op_name) const;
 
     int getOperatorPriority() const; 
@@ -55,7 +55,7 @@ class CartesianCleverCellIntConstantCoarsen:
         const SAMRAI::hier::Box& coarse_box,
         const SAMRAI::hier::IntVector& ratio) const;
   private:
-    static boost::shared_ptr<SAMRAI::tbox::Timer> t_coarsen;
+    static std::shared_ptr<SAMRAI::tbox::Timer> t_coarsen;
 
     static void initializeCallback();
     static void finalizeCallback();

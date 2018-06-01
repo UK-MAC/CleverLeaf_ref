@@ -49,7 +49,7 @@ CartesianCleverCellIntConstantCoarsen::s_initialize_handler(
     CartesianCleverCellIntConstantCoarsen::finalizeCallback,
     SAMRAI::tbox::StartupShutdownManager::priorityTimers);
 
-boost::shared_ptr<SAMRAI::tbox::Timer> CartesianCleverCellIntConstantCoarsen::t_coarsen;
+std::shared_ptr<SAMRAI::tbox::Timer> CartesianCleverCellIntConstantCoarsen::t_coarsen;
 
 CartesianCleverCellIntConstantCoarsen::CartesianCleverCellIntConstantCoarsen(
     const SAMRAI::tbox::Dimension& dim):
@@ -62,10 +62,10 @@ CartesianCleverCellIntConstantCoarsen::~CartesianCleverCellIntConstantCoarsen()
 }
 
 bool CartesianCleverCellIntConstantCoarsen::findCoarsenOperator(
-    const boost::shared_ptr<SAMRAI::hier::Variable>& var,
+    const std::shared_ptr<SAMRAI::hier::Variable>& var,
     const std::string& op_name) const
 {
-  const boost::shared_ptr<clever::pdat::CleverCellVariable<int> > cast_var(
+  const std::shared_ptr<clever::pdat::CleverCellVariable<int> > cast_var(
       SHARED_PTR_CAST(clever::pdat::CleverCellVariable<int>, var));
 
   if (cast_var && (op_name == getOperatorName())) {
@@ -97,10 +97,10 @@ void CartesianCleverCellIntConstantCoarsen::coarsen(
   t_coarsen->start();
   const SAMRAI::tbox::Dimension& dim(fine.getDim());
 
-  boost::shared_ptr<clever::pdat::CleverCellData<int> > fdata(
+  std::shared_ptr<clever::pdat::CleverCellData<int> > fdata(
       SHARED_PTR_CAST(clever::pdat::CleverCellData<int>,
         fine.getPatchData(src_component)));
-  boost::shared_ptr<clever::pdat::CleverCellData<int> > cdata(
+  std::shared_ptr<clever::pdat::CleverCellData<int> > cdata(
       SHARED_PTR_CAST(clever::pdat::CleverCellData<int>,
         coarse.getPatchData(dst_component)));
 
@@ -109,10 +109,10 @@ void CartesianCleverCellIntConstantCoarsen::coarsen(
   const SAMRAI::hier::Index cilo = cdata->getGhostBox().lower();
   const SAMRAI::hier::Index cihi = cdata->getGhostBox().upper();
 
-  const boost::shared_ptr<SAMRAI::geom::CartesianPatchGeometry> fgeom(
+  const std::shared_ptr<SAMRAI::geom::CartesianPatchGeometry> fgeom(
       SHARED_PTR_CAST(SAMRAI::geom::CartesianPatchGeometry,
         fine.getPatchGeometry()));
-  const boost::shared_ptr<SAMRAI::geom::CartesianPatchGeometry> cgeom(
+  const std::shared_ptr<SAMRAI::geom::CartesianPatchGeometry> cgeom(
       SHARED_PTR_CAST(SAMRAI::geom::CartesianPatchGeometry,
         coarse.getPatchGeometry()));
 

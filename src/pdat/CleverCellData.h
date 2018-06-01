@@ -73,7 +73,7 @@ class CleverCellData : public SAMRAI::hier::PatchData
 
     void fillAll(const TYPE& value);
   private:
-    boost::shared_ptr<AlignedArrayData<TYPE, 64> > d_array_data;
+    std::shared_ptr<AlignedArrayData<TYPE, 64> > d_array_data;
     int d_depth;
 };
 

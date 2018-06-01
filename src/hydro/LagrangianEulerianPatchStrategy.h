@@ -190,14 +190,14 @@ class LagrangianEulerianPatchStrategy: public xfer::RefinePatchStrategy
      *
      * @returns Current data context.
      */
-    boost::shared_ptr<hier::VariableContext> getCurrentDataContext();
+    std::shared_ptr<hier::VariableContext> getCurrentDataContext();
 
     /**
      * Get the data context corresponding to the new time.
      *
      * @returns New data context.
      */
-    boost::shared_ptr<hier::VariableContext> getNewDataContext();
+    std::shared_ptr<hier::VariableContext> getNewDataContext();
 
     /**
      * Set the data context for the current time.
@@ -207,7 +207,7 @@ class LagrangianEulerianPatchStrategy: public xfer::RefinePatchStrategy
      * @param context Context for current time.
      */
     void setCurrentDataContext(
-        boost::shared_ptr<hier::VariableContext> context);
+        std::shared_ptr<hier::VariableContext> context);
 
     /**
      * Set the data context for the new time.
@@ -217,7 +217,7 @@ class LagrangianEulerianPatchStrategy: public xfer::RefinePatchStrategy
      * @param context Context for new time.
      */
     void setNewDataContext(
-        boost::shared_ptr<hier::VariableContext> context);
+        std::shared_ptr<hier::VariableContext> context);
 
     /**
      * Set the exchange flag variable.
@@ -273,7 +273,7 @@ class LagrangianEulerianPatchStrategy: public xfer::RefinePatchStrategy
   private:
     const tbox::Dimension d_dim;
 
-    boost::shared_ptr<hier::VariableContext> d_new_data_context;
-    boost::shared_ptr<hier::VariableContext> d_current_data_context;
+    std::shared_ptr<hier::VariableContext> d_new_data_context;
+    std::shared_ptr<hier::VariableContext> d_current_data_context;
 };
 #endif

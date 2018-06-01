@@ -23,8 +23,8 @@
 #include "SAMRAI/hier/Variable.h"
 #include "SAMRAI/tbox/Dimension.h"
 #include "SAMRAI/appu/VisDerivedDataStrategy.h"
-
-#include "boost/enable_shared_from_this.hpp"
+#include <memory>
+//#include "boost/enable_shared_from_this.hpp"
 
 namespace clever {
 namespace pdat {
@@ -32,7 +32,7 @@ namespace pdat {
 template<typename TYPE>
 class CleverCellVariable : public SAMRAI::hier::Variable,
   public SAMRAI::appu::VisDerivedDataStrategy,
-  public boost::enable_shared_from_this<CleverCellVariable<TYPE> >
+  public std::enable_shared_from_this<CleverCellVariable<TYPE> >
 {
   public:
     CleverCellVariable(
