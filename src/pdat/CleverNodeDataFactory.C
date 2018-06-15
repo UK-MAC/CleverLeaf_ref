@@ -22,7 +22,6 @@
 
 #include "SAMRAI/tbox/MemoryUtilities.h"
 #include "SAMRAI/pdat/NodeGeometry.h"
-#include <boost/make_shared.hpp>
 
 #include "CleverNodeData.h"
 
@@ -44,28 +43,28 @@ template<typename TYPE>
 CleverNodeDataFactory<TYPE>::~CleverNodeDataFactory(){}
 
 template<typename TYPE>
-boost::shared_ptr<SAMRAI::hier::PatchDataFactory> 
+std::shared_ptr<SAMRAI::hier::PatchDataFactory> 
 CleverNodeDataFactory<TYPE>::cloneFactory(
     const SAMRAI::hier::IntVector& ghosts)
 {
-  return boost::make_shared<CleverNodeDataFactory>(d_depth, ghosts);
+  return std::make_shared<CleverNodeDataFactory>(d_depth, ghosts);
 }
 
 template<typename TYPE>
-boost::shared_ptr<SAMRAI::hier::PatchData> CleverNodeDataFactory<TYPE>::allocate(
+std::shared_ptr<SAMRAI::hier::PatchData> CleverNodeDataFactory<TYPE>::allocate(
     const SAMRAI::hier::Patch& patch) const
 {
-  return boost::make_shared<CleverNodeData<TYPE> >(
+  return std::make_shared<CleverNodeData<TYPE> >(
       patch.getBox(),
       d_depth,
       d_ghosts);
 }
 
 template<typename TYPE>
-boost::shared_ptr<SAMRAI::hier::BoxGeometry>
+std::shared_ptr<SAMRAI::hier::BoxGeometry>
 CleverNodeDataFactory<TYPE>::getBoxGeometry(const SAMRAI::hier::Box& box) const
 {
-  return boost::make_shared<SAMRAI::pdat::NodeGeometry>(box, d_ghosts);
+  return std::make_shared<SAMRAI::pdat::NodeGeometry>(box, d_ghosts);
 }
 
 template<typename TYPE>
@@ -93,11 +92,11 @@ bool CleverNodeDataFactory<TYPE>::dataLivesOnPatchBorder() const
 
 template<typename TYPE>
 bool CleverNodeDataFactory<TYPE>::validCopyTo(
-    const boost::shared_ptr<SAMRAI::hier::PatchDataFactory>& dst_pdf) const
+    const std::shared_ptr<SAMRAI::hier::PatchDataFactory>& dst_pdf) const
 {
   bool valid_copy = false;
 
-  boost::shared_ptr<CleverNodeDataFactory> node_data_factory(
+  std::shared_ptr<CleverNodeDataFactory> node_data_factory(
       SHARED_PTR_CAST(CleverNodeDataFactory,
         dst_pdf));
 

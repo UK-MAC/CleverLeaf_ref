@@ -21,7 +21,6 @@
 #include "CleverNodeVariable.h"
 
 
-#include <boost/make_shared.hpp>
 #include "SAMRAI/hier/VariableDatabase.h"
 
 #include "CleverNodeDataFactory.h"
@@ -35,7 +34,7 @@ CleverNodeVariable<TYPE>::CleverNodeVariable(
     const std::string& name,
     int depth):
   SAMRAI::hier::Variable(name,
-      boost::make_shared<CleverNodeDataFactory<TYPE> >(depth,
+      std::make_shared<CleverNodeDataFactory<TYPE> >(depth,
         SAMRAI::hier::IntVector::getZero(dim)))
 {
 }
@@ -58,7 +57,7 @@ bool CleverNodeVariable<TYPE>::dataLivesOnPatchBorder() const
 template<typename TYPE>
 int CleverNodeVariable<TYPE>::getDepth() const
 {
-  boost::shared_ptr<CleverNodeDataFactory<TYPE> > clever_node_data_factory(
+  std::shared_ptr<CleverNodeDataFactory<TYPE> > clever_node_data_factory(
       SHARED_PTR_CAST(CleverNodeDataFactory<TYPE> ,
         getPatchDataFactory()));
 
@@ -79,9 +78,9 @@ bool CleverNodeVariable<TYPE>::packDerivedDataIntoDoubleBuffer(
   SAMRAI::hier::VariableDatabase* variable_db = 
     SAMRAI::hier::VariableDatabase::getDatabase();
 
-  boost::shared_ptr<clever::pdat::CleverNodeData<TYPE> > node_data(
+  std::shared_ptr<clever::pdat::CleverNodeData<TYPE> > node_data(
       SHARED_PTR_CAST(clever::pdat::CleverNodeData<TYPE>,
-        patch.getPatchData(boost::const_pointer_cast<clever::pdat::CleverNodeVariable<TYPE> >(this->shared_from_this()),
+        patch.getPatchData(std::const_pointer_cast<clever::pdat::CleverNodeVariable<TYPE> >(this->shared_from_this()),
           variable_db->getContext("CURRENT"))));
 
   bool data_on_patch = false;

@@ -130,11 +130,11 @@ int main(int argc, char* argv[]) {
 
     tbox::plog << "Reading input from: " << input_path << endl;
 
-    boost::shared_ptr<tbox::InputDatabase> input_db(
+    std::shared_ptr<tbox::InputDatabase> input_db(
         new tbox::InputDatabase("input_db"));
     tbox::InputManager::getManager()->parseInputFile(input_path, input_db);
 
-    boost::shared_ptr<tbox::Database> main_db = input_db->getDatabase(
+    std::shared_ptr<tbox::Database> main_db = input_db->getDatabase(
         "Cleverleaf");
 
     string input_file = getFilenameFromPath(input_path);
@@ -165,7 +165,7 @@ int main(int argc, char* argv[]) {
       tbox::TimerManager::createManager(input_db->getDatabase("TimerManager"));
     }
 
-    boost::shared_ptr<geom::CartesianGridGeometry> grid_geometry(
+    std::shared_ptr<geom::CartesianGridGeometry> grid_geometry(
         new geom::CartesianGridGeometry(
           dim,
           "CartesianGeometry",
@@ -192,7 +192,7 @@ int main(int argc, char* argv[]) {
         ->putIntegerVector("level_1", ratio_vector);
     }
 
-    boost::shared_ptr<hier::PatchHierarchy> patch_hierarchy(
+    std::shared_ptr<hier::PatchHierarchy> patch_hierarchy(
         new hier::PatchHierarchy(
           "PatchHierarchy",
           grid_geometry,
@@ -204,31 +204,31 @@ int main(int argc, char* argv[]) {
         dim,
         grid_geometry);
 
-    boost::shared_ptr<LagrangianEulerianLevelIntegrator>
+    std::shared_ptr<LagrangianEulerianLevelIntegrator>
       lagrangian_eulerian_level_integrator(
           new LagrangianEulerianLevelIntegrator(
             input_db->getDatabase("LagrangianEulerianLevelIntegrator"),
             cleverleaf));
 
-    boost::shared_ptr<mesh::StandardTagAndInitialize> error_detector(
+    std::shared_ptr<mesh::StandardTagAndInitialize> error_detector(
         new mesh::StandardTagAndInitialize(
           "StandardTagAndInitialize",
           lagrangian_eulerian_level_integrator.get(),
           input_db->getDatabase("StandardTagAndInitialize")));
 
-    boost::shared_ptr<mesh::BergerRigoutsos> box_generator(
+    std::shared_ptr<mesh::BergerRigoutsos> box_generator(
         new mesh::BergerRigoutsos(
           dim,
           input_db->getDatabaseWithDefault(
             "BergerRigoutsos",
-            boost::shared_ptr<SAMRAI::tbox::Database>())));
+            std::shared_ptr<SAMRAI::tbox::Database>())));
 
     bool DEV_use_chop_and_pack = false;
     DEV_use_chop_and_pack = main_db->getBoolWithDefault(
         "DEV_use_chop_and_pack",
         DEV_use_chop_and_pack);
 
-    boost::shared_ptr<mesh::LoadBalanceStrategy> load_balancer;
+    std::shared_ptr<mesh::LoadBalanceStrategy> load_balancer;
 
     if (DEV_use_chop_and_pack) {
       load_balancer.reset(new mesh::ChopAndPackLoadBalancer(
@@ -245,7 +245,7 @@ int main(int argc, char* argv[]) {
       load_balancer.reset(tree_load_balancer);
     }
 
-    boost::shared_ptr<mesh::GriddingAlgorithm> gridding_algorithm(
+    std::shared_ptr<mesh::GriddingAlgorithm> gridding_algorithm(
         new mesh::GriddingAlgorithm(
           patch_hierarchy,
           "GriddingAlgorithm",
@@ -262,7 +262,7 @@ int main(int argc, char* argv[]) {
         ->putInteger("regrid_interval", regrid_interval);
     }
 
-    boost::shared_ptr<LagrangianEulerianIntegrator>
+    std::shared_ptr<LagrangianEulerianIntegrator>
       lagrangian_eulerian_integrator(
           new LagrangianEulerianIntegrator(
             input_db->getDatabase("LagrangianEulerianIntegrator"),
@@ -273,7 +273,7 @@ int main(int argc, char* argv[]) {
     int visit_number_procs_per_file = 1;
     std::string visit_dirname = createUniqueFilename(basename, "visit");
 
-    boost::shared_ptr<appu::VisItDataWriter> visit_data_writer(
+    std::shared_ptr<appu::VisItDataWriter> visit_data_writer(
         new appu::VisItDataWriter(
           dim,
           "Cleverleaf VisIt Writer",

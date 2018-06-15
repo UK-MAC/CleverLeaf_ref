@@ -103,7 +103,7 @@ class LagrangianEulerianLevelIntegrator:
      * @param patch_strategy Patch strategy object to use.
      */
     LagrangianEulerianLevelIntegrator(
-        const boost::shared_ptr<tbox::Database>& input_db,
+        const std::shared_ptr<tbox::Database>& input_db,
         LagrangianEulerianPatchStrategy* patch_strategy);
 
     /**
@@ -122,18 +122,18 @@ class LagrangianEulerianLevelIntegrator:
      * @param transfer_geom The type of geometry being used.
      */
     void registerVariable(
-        const boost::shared_ptr<hier::Variable>& var,
+        const std::shared_ptr<hier::Variable>& var,
         const int var_type,
         const int var_exchanges,
         hier::IntVector nghosts,
-        const boost::shared_ptr<hier::BaseGridGeometry>& transfer_geom);
+        const std::shared_ptr<hier::BaseGridGeometry>& transfer_geom);
 
     /**
      * Get the context to be used for visualisation.
      *
      * @returns The data context used for visualisation.
      */
-    boost::shared_ptr<hier::VariableContext> getPlotContext();
+    std::shared_ptr<hier::VariableContext> getPlotContext();
 
     /**
      * Initialize the levelIntegrator.
@@ -143,39 +143,39 @@ class LagrangianEulerianLevelIntegrator:
      * @param gridding_alg
      */
     void initializeLevelIntegrator(
-        const boost::shared_ptr<mesh::GriddingAlgorithmStrategy>& gridding_alg);
+        const std::shared_ptr<mesh::GriddingAlgorithmStrategy>& gridding_alg);
 
     void standardLevelSynchronization(
-        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+        const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const int coarsest_level,
         const int finest_level,
         const double sync_time,
         const double old_time);
 
     void synchronizeNewLevels(
-        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+        const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const int coarsest_level,
         const int finest_level,
         const double sync_time,
         const bool initial_time);
 
     void initializeLevelData(
-        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+        const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const int level_number,
         const double init_data_time,
         const bool can_be_refined,
         const bool initial_time,
-        const boost::shared_ptr<hier::PatchLevel>& old_level =
-        boost::shared_ptr<hier::PatchLevel>(),
+        const std::shared_ptr<hier::PatchLevel>& old_level =
+        std::shared_ptr<hier::PatchLevel>(),
         const bool allocate_data=true);
 
     void resetHierarchyConfiguration(
-        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+        const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const int coarsest_level,
         const int finest_level);
 
     void applyGradientDetector(
-        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+        const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const int level_number,
         const double error_data_time,
         const int tag_index,
@@ -189,7 +189,7 @@ class LagrangianEulerianLevelIntegrator:
      * @param dt The dt to advance by.
      */
     void lagrangianPredictor(
-        const boost::shared_ptr<hier::PatchLevel>& level,
+        const std::shared_ptr<hier::PatchLevel>& level,
         const double dt);
 
     /**
@@ -200,8 +200,8 @@ class LagrangianEulerianLevelIntegrator:
      * @param current_time The current simulation time.
      */
     void halfStepHaloExchange(
-        const boost::shared_ptr<hier::PatchLevel>& level,
-        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+        const std::shared_ptr<hier::PatchLevel>& level,
+        const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time);
 
     /**
@@ -211,7 +211,7 @@ class LagrangianEulerianLevelIntegrator:
      * @param dt The dt to advance by.
      */
     void lagrangianCorrector(
-        const boost::shared_ptr<hier::PatchLevel>& level,
+        const std::shared_ptr<hier::PatchLevel>& level,
         const double dt);
 
     /**
@@ -222,8 +222,8 @@ class LagrangianEulerianLevelIntegrator:
      * @param current_time The current simulation time.
      */
     void preCellHaloExchange(
-        const boost::shared_ptr<hier::PatchLevel>& level,
-        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+        const std::shared_ptr<hier::PatchLevel>& level,
+        const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time);
 
     /**
@@ -231,7 +231,7 @@ class LagrangianEulerianLevelIntegrator:
      *
      * @param level The level to work on.
      */
-    void advecCellSweep1(const boost::shared_ptr<hier::PatchLevel>& level);
+    void advecCellSweep1(const std::shared_ptr<hier::PatchLevel>& level);
 
     /**
      * Perform the pre-momentum advection halo exchange.
@@ -241,8 +241,8 @@ class LagrangianEulerianLevelIntegrator:
      * @param current_time The current simulation time.
      */
     void preMomSweep1HaloExchange(
-        const boost::shared_ptr<hier::PatchLevel>& level,
-        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+        const std::shared_ptr<hier::PatchLevel>& level,
+        const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time);
 
     /**
@@ -250,7 +250,7 @@ class LagrangianEulerianLevelIntegrator:
      *
      * @param level The level to work on.
      */
-    void advecMomSweep1(const boost::shared_ptr<hier::PatchLevel>& level);
+    void advecMomSweep1(const std::shared_ptr<hier::PatchLevel>& level);
 
     /**
      * Perform the second pre-momentum halo exchange.
@@ -260,8 +260,8 @@ class LagrangianEulerianLevelIntegrator:
      * @param current_time The current simulation time.
      */
     void preMomSweep2HaloExchange(
-        const boost::shared_ptr<hier::PatchLevel>& level,
-        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+        const std::shared_ptr<hier::PatchLevel>& level,
+        const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time);
 
     /**
@@ -269,21 +269,21 @@ class LagrangianEulerianLevelIntegrator:
      *
      * @param level The level to work on.
      */
-    void advecCellSweep2(const boost::shared_ptr<hier::PatchLevel>& level);
+    void advecCellSweep2(const std::shared_ptr<hier::PatchLevel>& level);
 
     /**
      * Run the second momentum advection sweep on a given level.
      *
      * @param level The level to work on.
      */
-    void advecMomSweep2(const boost::shared_ptr<hier::PatchLevel>& level);
+    void advecMomSweep2(const std::shared_ptr<hier::PatchLevel>& level);
 
     /**
      * Run the timestep equation of state on a given level.
      *
      * @param level The level to work on.
      */
-    void timestepEoS(const boost::shared_ptr<hier::PatchLevel>& level);
+    void timestepEoS(const std::shared_ptr<hier::PatchLevel>& level);
 
     /**
      * Perform the pre-Lagrange halo exchange.
@@ -293,8 +293,8 @@ class LagrangianEulerianLevelIntegrator:
      * @param current_time The current simulation time.
      */
     void preLagrangeHaloExchange(
-        const boost::shared_ptr<hier::PatchLevel>& level,
-        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+        const std::shared_ptr<hier::PatchLevel>& level,
+        const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time);
 
     /**
@@ -305,8 +305,8 @@ class LagrangianEulerianLevelIntegrator:
      * @param current_time The current simulation time.
      */
     void primeBoundaryHaloExchange(
-        const boost::shared_ptr<hier::PatchLevel>& level,
-        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+        const std::shared_ptr<hier::PatchLevel>& level,
+        const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time);
 
     /**
@@ -314,7 +314,7 @@ class LagrangianEulerianLevelIntegrator:
      *
      * @param level The level to work on.
      */
-    void viscosity(const boost::shared_ptr<hier::PatchLevel>& level);
+    void viscosity(const std::shared_ptr<hier::PatchLevel>& level);
 
     /**
      * Perform the post-viscosity halo exchange.
@@ -324,8 +324,8 @@ class LagrangianEulerianLevelIntegrator:
      * @param current_time The current simulation time.
      */
     void postViscosityHaloExchange(
-        const boost::shared_ptr<hier::PatchLevel>& level,
-        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
+        const std::shared_ptr<hier::PatchLevel>& level,
+        const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
         const double current_time);
 
     /**
@@ -335,7 +335,7 @@ class LagrangianEulerianLevelIntegrator:
      *
      * @returns The safe dt for the level.
      */
-    double calcDt(const boost::shared_ptr<hier::PatchLevel>& level);
+    double calcDt(const std::shared_ptr<hier::PatchLevel>& level);
 
     /**
      * Set the data time for a given level.
@@ -344,7 +344,7 @@ class LagrangianEulerianLevelIntegrator:
      * @param current_time The time to stamp the data to.
      */
     void stampDataTime(
-        const boost::shared_ptr<hier::PatchLevel>& level,
+        const std::shared_ptr<hier::PatchLevel>& level,
         const double current_time);
 
     /**
@@ -352,7 +352,7 @@ class LagrangianEulerianLevelIntegrator:
      *
      * @param level The level to work on.
      */
-    void debugLevel(const boost::shared_ptr<hier::PatchLevel>& level);
+    void debugLevel(const std::shared_ptr<hier::PatchLevel>& level);
 
     /**
      * Swap the direction of the advection sweeps.
@@ -364,14 +364,14 @@ class LagrangianEulerianLevelIntegrator:
      *
      * @param level The level to work on..
      */
-    void resetField(const boost::shared_ptr<hier::PatchLevel>& level);
+    void resetField(const std::shared_ptr<hier::PatchLevel>& level);
 
     /**
      * Copy variables in revert_vars back to the current time level.
      *
      * @param level The level to work on.
      */
-    void revert(const boost::shared_ptr<hier::PatchLevel>& level);
+    void revert(const std::shared_ptr<hier::PatchLevel>& level);
 
     /**
      * Calculate the field summary quantities for a given level.
@@ -384,7 +384,7 @@ class LagrangianEulerianLevelIntegrator:
      * @param level_kinetic_energy The total kinetic eneryg of the level.
      */
     void getFieldSummary(
-        const boost::shared_ptr<hier::PatchLevel>& level,
+        const std::shared_ptr<hier::PatchLevel>& level,
         double* level_volume,
         double* level_mass,
         double* level_pressure,
@@ -403,11 +403,11 @@ class LagrangianEulerianLevelIntegrator:
      * @{
      */
     /** "New" timelevel 1 variables. */
-    boost::shared_ptr<hier::VariableContext> d_new;
+    std::shared_ptr<hier::VariableContext> d_new;
     /** "Old" timelevel 0 variables. */
-    boost::shared_ptr<hier::VariableContext> d_current;
+    std::shared_ptr<hier::VariableContext> d_current;
     /** Context used to write ViSiT dumps. */
-    boost::shared_ptr<hier::VariableContext> d_plot_context;
+    std::shared_ptr<hier::VariableContext> d_plot_context;
     /**
      * @}
      */
@@ -415,8 +415,8 @@ class LagrangianEulerianLevelIntegrator:
     hier::ComponentSelector d_var_cur_data;
     hier::ComponentSelector d_var_new_data;
 
-    std::list<boost::shared_ptr<hier::Variable> > d_field_vars;
-    std::list<boost::shared_ptr<hier::Variable> > d_revert_vars;
+    std::list<std::shared_ptr<hier::Variable> > d_field_vars;
+    std::list<std::shared_ptr<hier::Variable> > d_revert_vars;
 
     /**
      * @name Communication exchanges
@@ -425,32 +425,32 @@ class LagrangianEulerianLevelIntegrator:
      *
      * @{
      */
-    boost::shared_ptr<xfer::RefineAlgorithm> d_bdry_fill_half_step;
-    boost::shared_ptr<xfer::RefineAlgorithm> d_bdry_fill_prime_halos;
-    boost::shared_ptr<xfer::RefineAlgorithm> d_bdry_fill_pre_lagrange;
-    boost::shared_ptr<xfer::RefineAlgorithm> d_bdry_fill_post_viscosity;
-    boost::shared_ptr<xfer::RefineAlgorithm> d_bdry_fill_pre_sweep1_cell;
-    boost::shared_ptr<xfer::RefineAlgorithm> d_bdry_fill_pre_sweep1_mom;
-    boost::shared_ptr<xfer::RefineAlgorithm> d_bdry_fill_pre_sweep2_mom;
+    std::shared_ptr<xfer::RefineAlgorithm> d_bdry_fill_half_step;
+    std::shared_ptr<xfer::RefineAlgorithm> d_bdry_fill_prime_halos;
+    std::shared_ptr<xfer::RefineAlgorithm> d_bdry_fill_pre_lagrange;
+    std::shared_ptr<xfer::RefineAlgorithm> d_bdry_fill_post_viscosity;
+    std::shared_ptr<xfer::RefineAlgorithm> d_bdry_fill_pre_sweep1_cell;
+    std::shared_ptr<xfer::RefineAlgorithm> d_bdry_fill_pre_sweep1_mom;
+    std::shared_ptr<xfer::RefineAlgorithm> d_bdry_fill_pre_sweep2_mom;
 
-    boost::shared_ptr<xfer::RefineAlgorithm> d_fill_new_level;
-    boost::shared_ptr<xfer::CoarsenAlgorithm> d_coarsen_field_data;
+    std::shared_ptr<xfer::RefineAlgorithm> d_fill_new_level;
+    std::shared_ptr<xfer::CoarsenAlgorithm> d_coarsen_field_data;
 
-    boost::shared_ptr<xfer::CoarsenAlgorithm> d_coarsen_level_indicator;
+    std::shared_ptr<xfer::CoarsenAlgorithm> d_coarsen_level_indicator;
 
-    std::vector<boost::shared_ptr<xfer::RefineSchedule> >
+    std::vector<std::shared_ptr<xfer::RefineSchedule> >
       d_half_step_schedules;
-    std::vector<boost::shared_ptr<xfer::RefineSchedule> >
+    std::vector<std::shared_ptr<xfer::RefineSchedule> >
       d_prime_halos_schedules;
-    std::vector<boost::shared_ptr<xfer::RefineSchedule> >
+    std::vector<std::shared_ptr<xfer::RefineSchedule> >
       d_pre_lagrange_schedules;
-    std::vector<boost::shared_ptr<xfer::RefineSchedule> >
+    std::vector<std::shared_ptr<xfer::RefineSchedule> >
       d_post_viscosity_schedules;
-    std::vector<boost::shared_ptr<xfer::RefineSchedule> >
+    std::vector<std::shared_ptr<xfer::RefineSchedule> >
       d_pre_sweep1_cell_schedules;
-    std::vector<boost::shared_ptr<xfer::RefineSchedule> >
+    std::vector<std::shared_ptr<xfer::RefineSchedule> >
       d_pre_sweep1_mom_schedules;
-    std::vector<boost::shared_ptr<xfer::RefineSchedule> >
+    std::vector<std::shared_ptr<xfer::RefineSchedule> >
       d_pre_sweep2_mom_schedules;
     /**
      * @}
@@ -458,48 +458,48 @@ class LagrangianEulerianLevelIntegrator:
 
     bool advect_x;
 
-    boost::shared_ptr<hier::PatchHierarchy> d_current_hierarchy;
+    std::shared_ptr<hier::PatchHierarchy> d_current_hierarchy;
 
-    static boost::shared_ptr<tbox::Timer> t_synchronize_levels_create;
-    static boost::shared_ptr<tbox::Timer> t_synchronize_levels_fill;
+    static std::shared_ptr<tbox::Timer> t_synchronize_levels_create;
+    static std::shared_ptr<tbox::Timer> t_synchronize_levels_fill;
 
-    static boost::shared_ptr<tbox::Timer> t_fill_new_levels_create;
-    static boost::shared_ptr<tbox::Timer> t_fill_new_levels_fill;
+    static std::shared_ptr<tbox::Timer> t_fill_new_levels_create;
+    static std::shared_ptr<tbox::Timer> t_fill_new_levels_fill;
 
-    static boost::shared_ptr<tbox::Timer> t_half_step_exchange_create;
-    static boost::shared_ptr<tbox::Timer> t_half_step_exchange_fill;
+    static std::shared_ptr<tbox::Timer> t_half_step_exchange_create;
+    static std::shared_ptr<tbox::Timer> t_half_step_exchange_fill;
 
-    static boost::shared_ptr<tbox::Timer> t_prime_halos_exchange_create;
-    static boost::shared_ptr<tbox::Timer> t_prime_halos_exchange_fill;
+    static std::shared_ptr<tbox::Timer> t_prime_halos_exchange_create;
+    static std::shared_ptr<tbox::Timer> t_prime_halos_exchange_fill;
 
-    static boost::shared_ptr<tbox::Timer> t_pre_lagrange_exchange_create;
-    static boost::shared_ptr<tbox::Timer> t_pre_lagrange_exchange_fill;
+    static std::shared_ptr<tbox::Timer> t_pre_lagrange_exchange_create;
+    static std::shared_ptr<tbox::Timer> t_pre_lagrange_exchange_fill;
 
-    static boost::shared_ptr<tbox::Timer> t_post_viscosity_exchange_create;
-    static boost::shared_ptr<tbox::Timer> t_post_viscosity_exchange_fill;
+    static std::shared_ptr<tbox::Timer> t_post_viscosity_exchange_create;
+    static std::shared_ptr<tbox::Timer> t_post_viscosity_exchange_fill;
 
-    static boost::shared_ptr<tbox::Timer> t_pre_sweep1_cell_exchange_create;
-    static boost::shared_ptr<tbox::Timer> t_pre_sweep1_cell_exchange_fill;
+    static std::shared_ptr<tbox::Timer> t_pre_sweep1_cell_exchange_create;
+    static std::shared_ptr<tbox::Timer> t_pre_sweep1_cell_exchange_fill;
 
-    static boost::shared_ptr<tbox::Timer> t_pre_sweep1_mom_exchange_create;
-    static boost::shared_ptr<tbox::Timer> t_pre_sweep1_mom_exchange_fill;
+    static std::shared_ptr<tbox::Timer> t_pre_sweep1_mom_exchange_create;
+    static std::shared_ptr<tbox::Timer> t_pre_sweep1_mom_exchange_fill;
 
-    static boost::shared_ptr<tbox::Timer> t_pre_sweep2_mom_exchange_create;
-    static boost::shared_ptr<tbox::Timer> t_pre_sweep2_mom_exchange_fill;
+    static std::shared_ptr<tbox::Timer> t_pre_sweep2_mom_exchange_create;
+    static std::shared_ptr<tbox::Timer> t_pre_sweep2_mom_exchange_fill;
 
-    static boost::shared_ptr<tbox::Timer> t_tag_gradient_detector_cells;
+    static std::shared_ptr<tbox::Timer> t_tag_gradient_detector_cells;
 
-    static boost::shared_ptr<tbox::Timer> t_kernel_pdv;
-    static boost::shared_ptr<tbox::Timer> t_kernel_ideal_gas;
-    static boost::shared_ptr<tbox::Timer> t_kernel_revert;
-    static boost::shared_ptr<tbox::Timer> t_kernel_reset;
-    static boost::shared_ptr<tbox::Timer> t_kernel_accelerate;
-    static boost::shared_ptr<tbox::Timer> t_kernel_flux_calc;
-    static boost::shared_ptr<tbox::Timer> t_kernel_advec_cell;
-    static boost::shared_ptr<tbox::Timer> t_kernel_advec_mom;
-    static boost::shared_ptr<tbox::Timer> t_kernel_viscosity;
-    static boost::shared_ptr<tbox::Timer> t_kernel_calc_dt;
-    static boost::shared_ptr<tbox::Timer> t_kernel_initialize_data;
+    static std::shared_ptr<tbox::Timer> t_kernel_pdv;
+    static std::shared_ptr<tbox::Timer> t_kernel_ideal_gas;
+    static std::shared_ptr<tbox::Timer> t_kernel_revert;
+    static std::shared_ptr<tbox::Timer> t_kernel_reset;
+    static std::shared_ptr<tbox::Timer> t_kernel_accelerate;
+    static std::shared_ptr<tbox::Timer> t_kernel_flux_calc;
+    static std::shared_ptr<tbox::Timer> t_kernel_advec_cell;
+    static std::shared_ptr<tbox::Timer> t_kernel_advec_mom;
+    static std::shared_ptr<tbox::Timer> t_kernel_viscosity;
+    static std::shared_ptr<tbox::Timer> t_kernel_calc_dt;
+    static std::shared_ptr<tbox::Timer> t_kernel_initialize_data;
 
     static void initializeCallback();
     static void finalizeCallback();

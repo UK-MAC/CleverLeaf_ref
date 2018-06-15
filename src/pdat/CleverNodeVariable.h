@@ -24,7 +24,7 @@
 #include "SAMRAI/tbox/Dimension.h"
 #include "SAMRAI/appu/VisDerivedDataStrategy.h"
 
-#include "boost/enable_shared_from_this.hpp"
+//#include "boost/enable_shared_from_this.hpp"
 
 namespace clever {
 namespace pdat {
@@ -32,7 +32,7 @@ namespace pdat {
 template<typename TYPE>
 class CleverNodeVariable : public SAMRAI::hier::Variable,
   public SAMRAI::appu::VisDerivedDataStrategy,
-  public boost::enable_shared_from_this<CleverNodeVariable<TYPE> >
+  public std::enable_shared_from_this<CleverNodeVariable<TYPE> >
 {
   public:
     CleverNodeVariable(

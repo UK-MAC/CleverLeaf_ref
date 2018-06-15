@@ -22,7 +22,6 @@
 
 #include <vector>
 
-#include "boost/shared_ptr.hpp"
 
 #include "SAMRAI/mesh/GriddingAlgorithmStrategy.h"
 #include "SAMRAI/hier/PatchHierarchy.h"
@@ -139,11 +138,11 @@ class LagrangianEulerianIntegrator {
      * @param gridding_algorithm The GriddingAlgorithm object to use.
      */
     LagrangianEulerianIntegrator(
-        const boost::shared_ptr<tbox::Database>& input_db,
-        const boost::shared_ptr<hier::PatchHierarchy>& hierarchy,
-        const boost::shared_ptr<LagrangianEulerianLevelIntegrator>&
+        const std::shared_ptr<tbox::Database>& input_db,
+        const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
+        const std::shared_ptr<LagrangianEulerianLevelIntegrator>&
           level_integrator,
-        const boost::shared_ptr<mesh::GriddingAlgorithmStrategy>& 
+        const std::shared_ptr<mesh::GriddingAlgorithmStrategy>& 
           gridding_algorithm);
 
     /**
@@ -197,18 +196,18 @@ class LagrangianEulerianIntegrator {
      */
     bool stepsRemaining() const;
 
-    const boost::shared_ptr<hier::PatchHierarchy> getPatchHierarchy() const
+    const std::shared_ptr<hier::PatchHierarchy> getPatchHierarchy() const
     {
       return d_patch_hierarchy;
     }
 
-    boost::shared_ptr<LagrangianEulerianLevelIntegrator>
+    std::shared_ptr<LagrangianEulerianLevelIntegrator>
     getLevelIntegrator() const
     {
       return d_level_integrator;
     }
 
-    boost::shared_ptr<mesh::GriddingAlgorithmStrategy> 
+    std::shared_ptr<mesh::GriddingAlgorithmStrategy> 
     getGriddingAlgorithm() const
     {
       return d_gridding_algorithm;
@@ -225,9 +224,9 @@ class LagrangianEulerianIntegrator {
 
     void getMinHeirarchyDt(const bool initial_time);
 
-    boost::shared_ptr<hier::PatchHierarchy> d_patch_hierarchy;
-    boost::shared_ptr<LagrangianEulerianLevelIntegrator> d_level_integrator;
-    boost::shared_ptr<mesh::GriddingAlgorithmStrategy> d_gridding_algorithm;
+    std::shared_ptr<hier::PatchHierarchy> d_patch_hierarchy;
+    std::shared_ptr<LagrangianEulerianLevelIntegrator> d_level_integrator;
+    std::shared_ptr<mesh::GriddingAlgorithmStrategy> d_gridding_algorithm;
 
     double d_dt;
     double d_grow_dt;
@@ -245,10 +244,10 @@ class LagrangianEulerianIntegrator {
     int d_regrid_interval;
     std::vector<int> d_tag_buffer;
 
-    static boost::shared_ptr<tbox::Timer> t_initialize_hierarchy;
-    static boost::shared_ptr<tbox::Timer> t_advance_hierarchy;
-    static boost::shared_ptr<tbox::Timer> t_synchronize_levels;
-    static boost::shared_ptr<tbox::Timer> t_get_min_hierarchy_dt;
+    static std::shared_ptr<tbox::Timer> t_initialize_hierarchy;
+    static std::shared_ptr<tbox::Timer> t_advance_hierarchy;
+    static std::shared_ptr<tbox::Timer> t_synchronize_levels;
+    static std::shared_ptr<tbox::Timer> t_get_min_hierarchy_dt;
 
     static void initializeCallback();
     static void finalizeCallback();

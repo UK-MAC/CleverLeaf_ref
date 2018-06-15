@@ -68,11 +68,11 @@ void CleverNodeInjection<TYPE>::coarsen(
     const SAMRAI::hier::Box& coarse_box,
     const SAMRAI::hier::IntVector& ratio) const
 {
-  boost::shared_ptr<CleverNodeData<TYPE> > fine_data(
+  std::shared_ptr<CleverNodeData<TYPE> > fine_data(
       SHARED_PTR_CAST(CleverNodeData<TYPE> ,
         fine.getPatchData(src_component)));
 
-  boost::shared_ptr<CleverNodeData<TYPE> > coarse_data(
+  std::shared_ptr<CleverNodeData<TYPE> > coarse_data(
       SHARED_PTR_CAST(CleverNodeData<TYPE> ,
         coarse.getPatchData(dst_component)));
 

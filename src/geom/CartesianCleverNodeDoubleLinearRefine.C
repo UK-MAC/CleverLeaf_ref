@@ -98,19 +98,19 @@ void CartesianCleverNodeDoubleLinearRefine::refine(
 {
   const SAMRAI::tbox::Dimension& dim(fine.getDim());
 
-  boost::shared_ptr<pdat::CleverNodeData<double> > coarse_data(
+  std::shared_ptr<pdat::CleverNodeData<double> > coarse_data(
       SHARED_PTR_CAST(pdat::CleverNodeData<double>,
         coarse.getPatchData(src_component)));
 
-  boost::shared_ptr<pdat::CleverNodeData<double> > fine_data(
+  std::shared_ptr<pdat::CleverNodeData<double> > fine_data(
       SHARED_PTR_CAST(pdat::CleverNodeData<double>,
         fine.getPatchData(dst_component)));
 
-  const boost::shared_ptr<SAMRAI::geom::CartesianPatchGeometry> coarse_geometry(
+  const std::shared_ptr<SAMRAI::geom::CartesianPatchGeometry> coarse_geometry(
       SHARED_PTR_CAST(SAMRAI::geom::CartesianPatchGeometry,
         coarse.getPatchGeometry()));
 
-  const boost::shared_ptr<SAMRAI::geom::CartesianPatchGeometry> fine_geometry(
+  const std::shared_ptr<SAMRAI::geom::CartesianPatchGeometry> fine_geometry(
       SHARED_PTR_CAST(SAMRAI::geom::CartesianPatchGeometry,
         fine.getPatchGeometry()));
 
