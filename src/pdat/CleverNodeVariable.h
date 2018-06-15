@@ -24,8 +24,6 @@
 #include "SAMRAI/tbox/Dimension.h"
 #include "SAMRAI/appu/VisDerivedDataStrategy.h"
 
-//#include "boost/enable_shared_from_this.hpp"
-
 namespace clever {
 namespace pdat {
 
