@@ -1,5 +1,6 @@
 cmake_minimum_required (VERSION 3.1)
 project (CleverLeaf CXX Fortran)
+ENABLE_LANGUAGE(C)
 
 set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 
